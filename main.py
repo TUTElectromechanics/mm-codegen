@@ -33,11 +33,30 @@ import sympy as sy
 #
 # So, we must replace u first; then replace I4.
 #
-def strip_arguments(expr, funcs):
-    # in SymPy, an unknown function uses its symbol name to name its __class__.
-    for f in funcs:
-        expr = expr.replace(f, str(f.__class__))
-    return expr
+#def strip_arguments(expr, funcs):
+#    # in SymPy, an unknown function uses its symbol name to name its __class__.
+#    for f in funcs:
+#        expr = expr.replace(f, str(f.__class__))
+#    return expr
+
+# Easy-to-use version that requires no arguments.
+#
+from sympy.core.function import UndefinedFunction
+def strip_arguments(expr):
+    def nameof_as_symbol(x):
+        if hasattr(expr, "name"):
+            return sy.symbols(x.name, **x.assumptions0)
+        else:
+            return sy.symbols(x.__class__.__name__, **x.assumptions0)
+
+    if isinstance(expr.__class__, UndefinedFunction):
+        return nameof_as_symbol(expr)
+    elif expr.is_Atom:
+        return expr
+    else:  # compound that is not an undefined function; process its args
+        out = [strip_arguments(x) for x in expr.args]
+        cls = type(expr)
+        return cls(*out)
 
 # Print a symbolic expression and its operation count.
 #
@@ -119,14 +138,6 @@ class SymbolicModelDeriver:
         #
         ϕ  = λϕ(u,v,w)
 
-#        # Suppress argument list of unknown function when printing.
-#        def printify_sympy_applied_function(obj):
-#            setattr( obj.__class__, "__str__", lambda self: str(obj.__class__) )
-#        def printify_sympy_applied_functions(*objs):
-#            for obj in objs:
-#                printify_sympy_applied_function(obj)
-#        printify_sympy_applied_functions(I4, I5, I6, up, vp, wp, u, v, w, ϕ)
-
         # We can differentiate, like this:
         #
         # derivative of an unknown function gives an unapplied Subs object
@@ -150,7 +161,7 @@ class SymbolicModelDeriver:
         #
         dϕdq = dϕdq.doit()
         print("3D model")
-        sy.pprint(strip_arguments(dϕdq, (u, v, w, up, vp, wp, I4, I5, I6)))
+        sy.pprint(strip_arguments(dϕdq))
         print("=" * 80)  # separator
 
         # Specialize to the 2D model by taking w → 0, I6 → 0.
@@ -162,90 +173,10 @@ class SymbolicModelDeriver:
         # - The second .doit() rewrites the derivatives again, without the
         #   dummy variables.
         #
-        # - For munging away the argument lists for printing, we need to
-        #   construct new applied functions out of the original λs.
-        #
-        #   E.g. the applied function "up", which is just a Python name for
-        #   the value "λup(I4,I5,I6)", no longer matches, because the expression
-        #   actually contains "λup(I4,I5,zero)" after we substitute zero for
-        #   the *object* I6 everywhere in the expression.
-        #
-        # - The same goes for u and v. Consider how we defined "u":
-        #
-        #     up = λup(I4, I5, I6)  # evaluate RHS, bind result to Python name on LHS
-        #     u  = λu(up)           # (similarly here)
-        #
-        #   so the value of the second line (i.e. the object instance that appears
-        #   in the math expression) is actually
-        #
-        #     λu(λup(I4, I5, I6))
-        #
-        #   Our call to subs() replaces I6 → 0, leading to
-        #
-        #     λu(λup(I4, I5, zero))
-        #
-        #   inside the expression.
-        #
-        #   When we apply strip_arguments() to this expression, it still prints
-        #   as u(up), because the *raw function λup* has the symbol name "up".
-        #   But the value is now different from λu(λup(I4, I5, I6)), so it's
-        #   no longer the Python "u"!
-        #
-        #   So, if we now try to munge "u", the printed expression is left
-        #   with a mysterious "u(up)" - as if strip_arguments() didn't see
-        #   the "u".
-        #
-        #   strip_arguments() replaces the funcs with their symbol names.
-        #   Thus, instead of matching the original object λu(up), we match
-        #   λu(S("up")), where S() is sy.sympify().
-        #
-        #   This matches the intuitive notion of "λu(up)", where the "up"
-        #   inside the λu is *any* symbol that has the symbol name "up";
-        #   not only the object instance denoted by the Python name "up".
-        #
         zero = sy.S("0")
         tmp = dϕdq.subs( {w : zero, I6 : zero} ).doit().doit()
-
-#        def printify_class_of(obj):
-#            setattr( obj.__class__, "__str__", lambda self: self.__class__.__name__ )
-#        def printify_classes_of(*objs):
-#            for obj in objs:
-#                printify_class_of(obj)
-#        printify_classes_of(I4, I5, I6, up, vp, wp, u, v, w)
-#        print(sy.diff(I4,q))
-#        print(str(tmp))
-
-        from sympy.core.function import UndefinedFunction
-        def printify(expr):
-            def extract_name(x):
-                if hasattr(expr, "name"):
-                    return sy.symbols(x.name)
-                else:
-                    return sy.symbols(x.__class__.__name__)
-
-            out = []
-            if isinstance(expr.__class__, UndefinedFunction):
-                return extract_name(expr)
-            else:
-                for x in expr.args:
-                    if not x.is_Atom:
-                        out.append(printify(x))
-                    else:
-                        if isinstance(x, UndefinedFunction):
-                            out.append(extract_name(x))
-                        else:  # nop
-                            out.append(x)
-                cls = type(expr)
-                return cls(*out)
-        sy.pprint(printify(tmp))
-
-        return
-
         print("2D model")
-        sy.pprint(strip_arguments(tmp, (λup(I4,I5,zero), λvp(I4,I5,zero),  # strip up(I4,I5,zero) --> up
-                                        I4, I5,                            # strip I4(...) --> I4
-                                        λu(sy.S("up")), λv(sy.S("vp")),    # strip u(...) --> u
-                                        )))
+        sy.pprint(strip_arguments(tmp))
         print("=" * 80)  # separator
 
     def Beε_to_uvw(self):
@@ -317,9 +248,10 @@ def main():
     smd = SymbolicModelDeriver()
     # The full strain ε is not used in our definition of ϕ,
     # so differentiate only w.r.t. the components of B and e.
-    for q in [key for key in smd.symdic.keys() if not key.startswith("ε")]:
+#    for q in [key for key in smd.symdic.keys() if not key.startswith("ε")]:  # production
+    for q in ("Bx",):  # debug
         smd.dϕdq(q)
-#    smd.Beε_to_uvw()
+    smd.Beε_to_uvw()
 
 if __name__ == '__main__':
     main()
