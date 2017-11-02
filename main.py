@@ -205,6 +205,42 @@ class SymbolicModelDeriver:
         #
         zero = sy.S("0")
         tmp = dϕdq.subs( {w : zero, I6 : zero} ).doit().doit()
+
+#        def printify_class_of(obj):
+#            setattr( obj.__class__, "__str__", lambda self: self.__class__.__name__ )
+#        def printify_classes_of(*objs):
+#            for obj in objs:
+#                printify_class_of(obj)
+#        printify_classes_of(I4, I5, I6, up, vp, wp, u, v, w)
+#        print(sy.diff(I4,q))
+#        print(str(tmp))
+
+        from sympy.core.function import UndefinedFunction
+        def printify(expr):
+            def extract_name(x):
+                if hasattr(expr, "name"):
+                    return sy.symbols(x.name)
+                else:
+                    return sy.symbols(x.__class__.__name__)
+
+            out = []
+            if isinstance(expr.__class__, UndefinedFunction):
+                return extract_name(expr)
+            else:
+                for x in expr.args:
+                    if not x.is_Atom:
+                        out.append(printify(x))
+                    else:
+                        if isinstance(x, UndefinedFunction):
+                            out.append(extract_name(x))
+                        else:  # nop
+                            out.append(x)
+                cls = type(expr)
+                return cls(*out)
+        sy.pprint(printify(tmp))
+
+        return
+
         print("2D model")
         sy.pprint(strip_arguments(tmp, (λup(I4,I5,zero), λvp(I4,I5,zero),  # strip up(I4,I5,zero) --> up
                                         I4, I5,                            # strip I4(...) --> I4
