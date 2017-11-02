@@ -17,7 +17,7 @@ import bspline.splinelab as splinelab
 
 import elmerspline
 
-from util import ulp, quadspace
+from numutil import ulp, quadspace
 
 def main():
     # Original knots
