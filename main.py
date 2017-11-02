@@ -365,7 +365,25 @@ def main():
                     continue  # in the solver, ϕ(u,v,w) comes from ppeval
                 k = sy.Derivative(func, var, evaluate=False)  # this is present in expr; also a label
                 v = sy.diff(exprs[fname], var)  # do it to the actual definition
-                v = collect_const_in(recursive_collect(sy.together(sy.expand(v))))
+                # simplify:
+                #   - expand() first to get rid of parentheses, giving a form that can be optimized
+                #   - together() to combine rationals
+                #   - recursive_collect() automatically detects symbols in expr
+                #     and collect()s in all of them, recursively.
+                #     This typically reduces the operation count.
+                #   - But this may leave "leftovers" in some parts of expr;
+                #     e.g. for dI6/dBx, reccollect.analyze() gives
+                #     [exy, ezx, By, Bx, Bz, exx, eyz, ezz, eyy]
+                #     because that is overall more optimal than going "B first".
+                #     This causes some duplication of Bx in terms that have been
+                #     collected on [exy, ezx], in parts of expr where "B first"
+                #     would have been a better ordering.
+                #   - To fix this specifically for the kind of expressions we work with here,
+                #     we then collect() the result *non-recursively* on B.
+                #   - Finally, collect_const_in() extracts constant factors.
+                v = recursive_collect(sy.together(sy.expand(v)))
+                v = sy.collect(v, smd.Bs)
+                v = collect_const_in(v)
                 # we will need fname,vname for generating the Fortran routine name
                 derivatives[k] = (v, fname, vname)
                 sy.pprint(k)
