@@ -12,8 +12,10 @@ Created on Tue Oct 24 14:07:45 2017
 @author: jje
 """
 
+from itertools import combinations_with_replacement
+
 import sympy as sy
-from sympy.utilities.codegen import codegen
+from sympy.utilities.codegen import codegen  # not imported by default
 
 # our custom reccollect seems to fare better in some cases than sy.rcollect
 # (maybe due to autosyms?)
@@ -358,13 +360,18 @@ def main():
     smd = SymbolicModelDeriver()
     exprs = smd.make_exprs()
 
-    # Compute ∂ϕ/∂q for q = Bx, By, Bz, εxx, ...
+    # Compute ∂ϕ/∂q and ∂²ϕ/∂q1∂q2 for q = Bx, By, Bz, εxx, ...
     #
+    independent_vars = sorted(smd.symdic.keys())
+    secondder_vars   = combinations_with_replacement(independent_vars, 2)
+
+    diff_wrts = [(var,) for var in independent_vars]  # wrap each in tuple
+    diff_wrts.extend(secondder_vars)
+
     results = {}
-#    for q in [(key,) for key in smd.symdic.keys()]:  # production; all independent variables
-#    for q in (("Bx",),):  # DEBUG
-    for q in (("Bx","Bx"),):  # DEBUG: 2nd derivatives
-        print("Computing %s" % (util.name_derivative("ϕ", q)))
+#    for q in (("Bx",), ("Bx","Bx"),):  # DEBUG
+    for q in diff_wrts:
+        print("Forming expression for %s" % (util.name_derivative("ϕ", q)))
         # Fortran routine name. Greek letters will be replaced later, just before writing into file.
         funcname = util.name_derivative("ϕ", q, as_fortran_identifier=True)
         results[funcname] = smd.dϕdq(q)
@@ -379,21 +386,27 @@ def main():
                     ("3par", all_results_3par) )
 
     for label,dic in all_results:  # 2par, 3par
+        for k in range(3):
+            print("=" * 80)  # separator
         print("%s model" % (label))
+        for k in range(3):
+            print("=" * 80)  # separator
+
         all_funcs = {}
         all_derivatives = {}
         for funcname in sorted(dic.keys()):  # process the functions in alphabetical order
                                              # to make terminal output more readable
             data = dic[funcname]
-            sy.pprint(data["name"])  # sy.pprintable expression
+            sy.pprint("%s (%s)" % (data["name"], label))
             sy.pprint(data["expr"])
 
-            print("Derivatives needed by %s; format (f, var):" % (data["name"]))
+            print("Derivatives needed by %s (%s); format (f, var):" % (data["name"], label))
             sy.pprint(data["ders"])
             print("=" * 80)  # separator
 
             # Compute the derivatives ∂ϕ/∂q depends on.
             #
+            print("Computing pieces for %s (%s)" % (data["name"], label))
             derivatives = {}
             for func,*vars in data["ders"]:
                 fname = str(func)  # func and var themselves are sy.Symbols
@@ -412,14 +425,13 @@ def main():
             # From expr, delete any derivatives that are identically zero
             # due to the structure of the functional dependencies.
             #
-            print("Final expr, with identically zero terms eliminated:")
+            print("Final expr for %s (%s), with identically zero terms eliminated:" % (data["name"], label))
             zero = sy.S.Zero
-
             def kill_zero(expr):
                 if expr in derivatives:  # ...which we collected above
                     value,*_ = derivatives[expr]
                     if value == 0:
-                        return zero
+                        return zero  # we must return an Expr, so return symbolic zero
                 return expr
             out = symutil.map_instancesof_in(kill_zero, sy.Derivative, data["expr"])
             sy.pprint(out)
