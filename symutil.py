@@ -25,7 +25,7 @@ def strip_function_arguments(expr):
     Also used internally by find_needed_derivatives().
 """
     def nameof_as_symbol(x):
-        if hasattr(expr, "name"):
+        if hasattr(x, "name"):
             return sy.symbols(x.name, **x.assumptions0)  # TODO: should we copy the assumptions like this?
         else:
             return sy.symbols(x.__class__.__name__, **x.assumptions0)
