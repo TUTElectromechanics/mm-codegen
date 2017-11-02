@@ -9,6 +9,7 @@ Created on Tue Oct 24 14:07:45 2017
 import sympy as sy
 from sympy.utilities.codegen import codegen
 
+# this seems to fare better in some cases than sy.rcollect
 from reccollect import recursive_collect
 
 ##############################################################################
@@ -87,7 +88,7 @@ def find_needed_derivatives(expr):
             return None
         else:  # compound other than a derivative
             out = [process(x) for x in e.args]
-            return [x for x in out if x is not None] 
+            return [x for x in out if x is not None]
     lst = process(strip_function_arguments(expr))
     # keep (function, var) pairs but discard the rest of the nested structure
     lst = iter_flatten_if(lst, lambda item: isinstance(item[0], (tuple, list)))
@@ -95,6 +96,19 @@ def find_needed_derivatives(expr):
     # item[0] = function as sy.Symbol, item[1:] = vars as sy.Symbol
     lst = sorted(lst, key=lambda item: [x.name for x in item])
     return lst
+
+# Collect constant factors in sums nested inside expr.
+#
+def collect_const_in(expr):
+    def process(e):
+        if e.is_Atom:
+            return e
+        else:
+            out = [process(x) for x in e.args]
+            cls = type(e)
+            tmp = cls(*out)
+            return sy.collect_const(tmp) if isinstance(tmp, sy.Add) else tmp
+    return process(expr)
 
 # Print a symbolic expression and its operation count.
 #
@@ -204,7 +218,9 @@ class SymbolicModelDeriver:
         # expressions to the standard notation.
         #
         dϕdq = dϕdq.doit()
-        results_3d = { "expr" : strip_function_arguments(dϕdq), "ders" : find_needed_derivatives(dϕdq) }
+        results_3d = { "name": "∂ϕ/∂%s" % (q),
+                       "expr": strip_function_arguments(dϕdq),
+                       "ders": find_needed_derivatives(dϕdq) }
 
         # Specialize to the 2D model by taking w → 0, I6 → 0.
         #
@@ -215,9 +231,11 @@ class SymbolicModelDeriver:
         # - The second .doit() rewrites the derivatives again, without the
         #   dummy variables.
         #
-        zero = sy.S("0")
-        tmp = dϕdq.subs( {w : zero, I6 : zero} ).doit().doit()
-        results_2d = { "expr" : strip_function_arguments(tmp), "ders" : find_needed_derivatives(tmp) }
+        zero = sy.S.Zero
+        tmp = dϕdq.subs( {w: zero, I6: zero} ).doit().doit()
+        results_2d = { "name": "∂ϕ/∂%s" % (q),
+                       "expr": strip_function_arguments(tmp),
+                       "ders": find_needed_derivatives(tmp) }
 
         return { "3D" : results_3d, "2D" : results_2d }
 
@@ -258,7 +276,7 @@ class SymbolicModelDeriver:
                     ("I6", B.T * e * e * B)):
             assert v.shape == (1,1)
             expr = v[0,0]  # extract scalar from matrix wrapper
-            expr = recursive_collect(sy.expand(expr), (self.Bs + self.es))  # simplify
+            expr = collect_const_in(recursive_collect(sy.expand(expr)))
             results[k] = expr
 
         # u', v', w' in terms of (I4,I5,I6)
@@ -309,29 +327,45 @@ def main():
     # The full strain ε is not used in our definition of ϕ,
     # so we differentiate only w.r.t. the components of B and e.
     #
+    results = {}
     for q in [key for key in smd.symdic.keys() if not key.startswith("ε")]:  # production
 #    for q in ("Bx",):  # DEBUG
-        print("Differentiating ϕ w.r.t. %s" % (q))
-        dϕdq_results = smd.dϕdq(q)
-        for key,value in sorted(dϕdq_results.items()):  # 2D, 3D
-            print("%s model" % (key))
-            sy.pprint(value["expr"])
+        print("Computing ∂ϕ/∂%s" % (q))
+        funcname = "dphi_d%s" % (q)  # Fortran routine name
+        results[funcname] = smd.dϕdq(q)
 
-            print("Derivatives needed (f, var):")
-            sy.pprint(value["ders"])
+    # We now have 2D and 3D models for the same function in a single results item;
+    # convert to a format with all 2D models in one place, and all 3D models in another.
+    #
+    all_results_2D = { k: v["2D"] for k,v in results.items() }
+    all_results_3D = { k: v["3D"] for k,v in results.items() }
+    all_results = ( ("2D", all_results_2D),
+                    ("3D", all_results_3D) )
+
+    for label,dic in all_results:  # 2D, 3D
+        print("%s model" % (label))
+        all_funcs = {}
+        all_derivatives = {}
+        for funcname in sorted(dic.keys()):  # process the functions in alphabetical order
+            data = dic[funcname]
+            sy.pprint(data["name"])  # sy.pprintable expression
+            sy.pprint(data["expr"])
+
+            print("Derivatives needed by %s; format (f, var):" % (data["name"]))
+            sy.pprint(data["ders"])
             print("=" * 80)  # separator
 
             # Compute the derivatives ∂ϕ/∂q depends on.
             #
             derivatives = {}
-            for func,var in value["ders"]:
+            for func,var in data["ders"]:
                 fname = str(func)  # func and var themselves are sy.Symbols
                 vname = str(var)
                 if fname == "ϕ":
                     continue  # in the solver, ϕ(u,v,w) comes from ppeval
-                k = sy.Derivative(func, var, evaluate=False)  # sy.pprintable label
-                v = sy.diff(exprs[fname], var)  # do it to the actual expr
-                v = recursive_collect(sy.together(sy.expand(v)), (smd.Bs + smd.es))
+                k = sy.Derivative(func, var, evaluate=False)  # this is present in expr; also a label
+                v = sy.diff(exprs[fname], var)  # do it to the actual definition
+                v = collect_const_in(recursive_collect(sy.together(sy.expand(v))))
                 # we will need fname,vname for generating the Fortran routine name
                 derivatives[k] = (v, fname, vname)
                 sy.pprint(k)
@@ -342,38 +376,60 @@ def main():
             # of the functional dependencies.
             #
             print("Final expr, with zero terms eliminated:")
-            zero = sy.S("0")
-            out = value["expr"]
+            zero = sy.S.Zero
+            out = data["expr"]
             for k,val in derivatives.items():
                 v,_,_ = val
                 if v == zero:
                     out = out.subs( {k: zero} )
             sy.pprint(out)
             print("=" * 80)  # separator
+            print("=" * 80)  # separator
 
-            # Generate the Fortran code
-
-            # Auxiliary expressions
-            #
-            name_expr_pairs = []
-            for k,v in exprs.items():
-                name_expr_pairs.append( (k, v) )
-
-            # Derivatives of auxiliary expressions
+            # Only include derivatives that are nonzero.
             #
             final_derivatives = { k:v for k,v in derivatives.items() if v[0] != zero }
-            derivative_routines = {}
-            for k,val in final_derivatives.items():
-                v,fname,vname = val
-                routine_name = "d%s_d%s" % (fname, vname)  # e.g. dI4_dBx
-                derivative_routines[k] = routine_name
-                name_expr_pairs.append( (routine_name, v) )
-            name_expr_pairs.sort()  # alphabetize helpers for easy reading of generated code
 
+            # We may overwrite, since e.g. dI4/dBx always has the same expression if it is present.
+            all_derivatives.update(final_derivatives)
+            all_funcs[funcname] = out
+
+        # Generate the Fortran code
+
+        # Auxiliary expressions I4, I5, I6, u', v', w', u, v, w
+        #
+        # (these are always generated)
+        #
+        name_expr_pairs = []
+        if label == "2D":  # FIXME: parametrize better so no need for special handling
+            cond = lambda k: k not in ("I6", "wp", "w")
+        else:
+            cond = lambda k: True
+        name_expr_pairs = [ (k,v) for k,v in exprs.items() if cond(k) ]
+        name_expr_pairs.sort()  # alphabetize helpers for easy reading of generated code
+
+        # Derivatives of auxiliary expressions
+        #
+        # (only the ones we actually needed)
+        #
+        derivative_routines = {}
+        tmp_pairs = []
+        for k,val in all_derivatives.items():
+            v,fname,vname = val
+            routine_name = "d%s_d%s" % (fname, vname)  # e.g. dI4_dBx
+            derivative_routines[k] = routine_name
+            tmp_pairs.append( (routine_name, v) )
+        tmp_pairs.sort()
+        name_expr_pairs.extend(tmp_pairs)
+
+        # The main routines
+        #
+        # We alphabetize; the reverse is needed because we insert at the beginning.
+        #
+        for funcname in reversed(sorted(all_funcs.keys())):
             # TODO: handle 2nd-order derivatives
             #
-            funcname = "dphi_d%s" % (q)
-            final_expr = out
+            final_expr = all_funcs[funcname]
             for k,v in derivative_routines.items():
                 final_expr = final_expr.subs({k: v})
             ϕ,u,v,w = sy.symbols("ϕ, u, v, w")
@@ -382,17 +438,15 @@ def main():
             final_expr = final_expr.subs({sy.Derivative(ϕ,w) : "dphi_dw"})
             final_expr = final_expr.subs({ϕ : "phi"})
 
-            # The main routine
-            #
-            name_expr_pairs.insert(0, (funcname, final_expr))  # main routine goes first
-
-            basename = "%s_%s" % (key, funcname)
-            generated_code = codegen(name_expr_pairs,
-                                     language="f95",
-                                     project="elmer-mgs-galfenol",
-                                     to_files=True,
-                                     prefix=basename)
-#            print(generated_code)  # DEBUG
+            name_expr_pairs.insert(0, (funcname, final_expr))
+    
+        basename = "mgs_%s" % (label)
+        generated_code = codegen(name_expr_pairs,
+                                 language="f95",
+                                 project="elmer-mgs-galfenol",
+                                 to_files=True,
+                                 prefix=basename)
+#        print(generated_code)  # DEBUG
 
 
 if __name__ == '__main__':
