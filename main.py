@@ -7,42 +7,51 @@ Created on Tue Oct 24 14:07:45 2017
 """
 
 import sympy as sy
+from sympy.utilities.codegen import codegen
 
+from reccollect import recursive_collect
+
+##############################################################################
+# Utilities
+##############################################################################
+
+# Remove nested structure from iterable.
+#
+# http://rightfootin.blogspot.fi/2006/09/more-on-python-flatten.html
+# This version by Danny Yoo.
+#
+def iter_flatten(iterable):
+  it = iter(iterable)
+  for e in it:
+    if isinstance(e, (list, tuple)):
+      for f in iter_flatten(e):
+        yield f
+    else:
+      yield e
+
+# Remove nested structure, but only from matching items.
+#
+# E.g. to flatten only tuples of tuples (leaving tuples of atoms intact),
+# use something like:
+#
+#   condition = lambda item: isinstance(item[0], (tuple, list))
+#
+def iter_flatten_if(iterable, condition):
+  it = iter(iterable)
+  for e in it:
+    if isinstance(e, (list, tuple)) and condition(e):
+      for f in iter_flatten_if(e, condition):
+        yield f
+    else:
+      yield e
 
 # Strip kilometer-long argument lists from expressions of unknown functions.
 #
 # Mainly useful for printing when there are several layers of dependencies
 # and one takes partial derivatives utilizing the chain rule.
 #
-# E.g. the function ϕ in
-#
-#   I4(Bx,By,Bz)
-#   u(I4,I5,I6)
-#   ϕ(u,v,w)
-#
-# will benefit from:
-#
-#   strip_arguments(ϕ, (u, v, w, I4, I5, I6))
-#
-# Funcs must be listed in decreasing order of dependencies, as shown in the
-# example above.
-#
-# E.g. if we replace I4 first, then u inside expr will no longer be
-# recognized as the symbol u(I4,I5,I6), because its arguments will have
-# changed due to the replacement of I4.
-#
-# So, we must replace u first; then replace I4.
-#
-#def strip_arguments(expr, funcs):
-#    # in SymPy, an unknown function uses its symbol name to name its __class__.
-#    for f in funcs:
-#        expr = expr.replace(f, str(f.__class__))
-#    return expr
-
-# Easy-to-use version that requires no arguments.
-#
 from sympy.core.function import UndefinedFunction
-def strip_arguments(expr):
+def strip_function_arguments(expr):
     def nameof_as_symbol(x):
         if hasattr(expr, "name"):
             return sy.symbols(x.name, **x.assumptions0)
@@ -53,10 +62,39 @@ def strip_arguments(expr):
         return nameof_as_symbol(expr)
     elif expr.is_Atom:
         return expr
-    else:  # compound that is not an undefined function; process its args
-        out = [strip_arguments(x) for x in expr.args]
+    else:  # compound other than an undefined function
+        out = [strip_function_arguments(x) for x in expr.args]
         cls = type(expr)
         return cls(*out)
+
+# Remove duplicates, preserve ordering.
+#
+def uniqify(lst):
+    # set.add() returns None, which is conveniently falsey,
+    # so we "or x" to make the expression also evaluate to x.
+    seen = set()
+    return [seen.add(x) or x for x in lst if x not in seen]
+
+# Find which derivatives an expression needs.
+#
+# The return format is a tuple of (function_name, var_name) pairs.
+#
+def find_needed_derivatives(expr):
+    def process(e):
+        if isinstance(e, sy.Derivative):
+            return e.args  # args[0] = function, args[1:] = diff. w.r.t. what
+        elif e.is_Atom:
+            return None
+        else:  # compound other than a derivative
+            out = [process(x) for x in e.args]
+            return [x for x in out if x is not None] 
+    lst = process(strip_function_arguments(expr))
+    # keep (function, var) pairs but discard the rest of the nested structure
+    lst = iter_flatten_if(lst, lambda item: isinstance(item[0], (tuple, list)))
+    lst = uniqify(lst)
+    # item[0] = function as sy.Symbol, item[1:] = vars as sy.Symbol
+    lst = sorted(lst, key=lambda item: [x.name for x in item])
+    return lst
 
 # Print a symbolic expression and its operation count.
 #
@@ -72,6 +110,11 @@ def print_and_count(expr, name=None, pretty=False, count_visual=True):
     printer(expr)
     print(sy.count_ops(expr, visual=count_visual))
     print("=" * 80)  # separator
+
+
+##############################################################################
+# Expression generator
+##############################################################################
 
 class SymbolicModelDeriver:
     def __init__(self):
@@ -92,9 +135,10 @@ class SymbolicModelDeriver:
             symdic[s.name] = s
         self.symdic = symdic
 
+    # Differentiate ϕ with respect to a variable, applying the chain rule.
+    # See self.symdic.keys for valid vars.
+    #
     def dϕdq(self, diff_wrt="Bx"):
-        print("Differentiating w.r.t. %s" % diff_wrt)
-
         # https://stackoverflow.com/questions/34786224/chain-rule-in-sympy
         #
         # Raw functions.
@@ -160,9 +204,7 @@ class SymbolicModelDeriver:
         # expressions to the standard notation.
         #
         dϕdq = dϕdq.doit()
-        print("3D model")
-        sy.pprint(strip_arguments(dϕdq))
-        print("=" * 80)  # separator
+        results_3d = { "expr" : strip_function_arguments(dϕdq), "ders" : find_needed_derivatives(dϕdq) }
 
         # Specialize to the 2D model by taking w → 0, I6 → 0.
         #
@@ -175,11 +217,15 @@ class SymbolicModelDeriver:
         #
         zero = sy.S("0")
         tmp = dϕdq.subs( {w : zero, I6 : zero} ).doit().doit()
-        print("2D model")
-        sy.pprint(strip_arguments(tmp))
-        print("=" * 80)  # separator
+        results_2d = { "expr" : strip_function_arguments(tmp), "ders" : find_needed_derivatives(tmp) }
 
-    def Beε_to_uvw(self):
+        return { "3D" : results_3d, "2D" : results_2d }
+
+    # Make symbolic expressions of the various intermediate functions.
+    #
+    def make_exprs(self):
+        results = {}
+
         Bx,By,Bz = self.Bs
         exx,eyy,ezz,eyz,ezx,exy = self.es
         εxx,εyy,εzz,εyz,εzx,εxy = self.εs
@@ -190,68 +236,164 @@ class SymbolicModelDeriver:
         #        [ε5, ε4, ε3]]
         #
         B = sy.Matrix( [Bx, By, Bz] )
-        ε = sy.Matrix( [[εxx, εxy, εzx],  # (Cauchy) strain
+        ε = sy.Matrix( [[εxx, εxy, εzx],  # Cauchy strain
                         [εxy, εyy, εyz],
                         [εzx, εyz, εzz]] )
         e = sy.Matrix( [[exx, exy, ezx],  # deviatoric strain
                         [exy, eyy, eyz],
                         [ezx, eyz, ezz]] )
 
+        # e in terms of ε
+        #
         εM = sy.symbols("εM", real=True)  # mean volumetric strain
         e_expr  = ε - εM * sy.eye(3)
         εM_expr = sy.factor(sy.S("1/3") * ε.trace())
+        results["e"]  = e_expr
+        results["εM"] = εM_expr
 
-        print_and_count(e_expr,  name="e")
-        print_and_count(εM_expr, name="εM")
-        
-
-        I4_expr = (B.T * B)[0,0]  # extract scalar from matrix wrapper
-        I5_expr = (B.T * e * B)[0,0]
-        I6_expr = (B.T * e * e * B)[0,0]
-
-        #I4_expr = collect(I4_expr)
-        #I5_expr = collect(I5_expr)
-        #I6_expr = collect(I6_expr)
-
-        I4_expr = sy.simplify(I4_expr)
-        I5_expr = sy.simplify(I5_expr)
-        I6_expr = sy.simplify(I6_expr)
-
-        # - the first doit() applies the derivatives at the front
-        # - the second doit() eliminates the dummy variables where possible
+        # I4, I5, I6 in terms of (B,e)
         #
-        # TODO: figure out why the second doit() is needed; the docs for sy.Expr.doit()
-        #       claim it applies everything recursively unless told otherwise.
+        for k,v in (("I4", B.T * B),
+                    ("I5", B.T * e * B),
+                    ("I6", B.T * e * e * B)):
+            assert v.shape == (1,1)
+            expr = v[0,0]  # extract scalar from matrix wrapper
+            expr = recursive_collect(sy.expand(expr), (self.Bs + self.es))  # simplify
+            results[k] = expr
+
+        # u', v', w' in terms of (I4,I5,I6)
         #
-    #    tmp = dϕdBx.subs({I4 : I4_expr,
-    #                      I5 : I5_expr,
-    #                      I6 : I6_expr}).doit().doit()
-#        tmp = dϕdBx.subs({I4 : I4_expr}).doit().doit()
-#        print("=" * 80)
-#        sy.pprint(strip_arguments(tmp, (u, v, w, I4, I5, I6)))
-#        print("=" * 80)
-#        return
+        # Note: here I4, I5 and I6 are just arbitrary symbols.
+        #
+        # We do not insert their expressions; that would only generate
+        # unnecessary flops due to common subexpressions.
+        #
+        # (Also: we can't easily make the symbols here real-valued;
+        #  this would make them different from symbols *of the same name*
+        #  that do not have the flag. Hence e.g. d(up)/d("I4") would be zero,
+        #  because it is not the same I4 due to the type difference.
+        #
+        #  The "diff w.r.t. what" symbols returned by find_needed_derivatives()
+        #  currently do not have the real-valued flag set.)
+        #
+        I4,I5,I6 = sy.symbols("I4, I5, I6")
+        for k,v in (("up", sy.sqrt(I4)),
+                    ("vp", sy.S("3/2") * I5 / I4),
+                    ("wp", sy.sqrt( I6*I4 - I5**2 ) / I4)):
+            results[k] = v
 
-        print_and_count(I4_expr, name="I4")
-        print_and_count(I5_expr, name="I5")
-        print_and_count(I6_expr, name="I6")
+        # u, v, w in terms of (u',v',w')
+        #
+        u,v,w = sy.symbols("u, v, w")
+        u0,v0,w0 = sy.symbols("u0, v0, w0")
+        for k,v in (("u", "up / u0"),
+                    ("v", "vp / v0"),
+                    ("w", "wp / w0")):
+            results[k] = v
 
-        u_expr = sy.sqrt(I4_expr)
-        v_expr = sy.collect( sy.S("3/2") * I5_expr / I4_expr, (self.Bs + self.es) )
-        w_expr = sy.collect( sy.sqrt( I6_expr*I4_expr - I5_expr**2 ) / I4_expr, (self.Bs + self.es) )
+        return results
 
-        print_and_count(u_expr, name="u")
-        print_and_count(v_expr, name="v")
-        print_and_count(w_expr, name="w")
+##############################################################################
+# Main program
+##############################################################################
 
 def main():
     smd = SymbolicModelDeriver()
+
+    # Compute expressions for e, I4, I5, I6, u', v', w', u, v, w
+    #
+    exprs = smd.make_exprs()
+
+    # Compute ∂ϕ/∂q for q = Bx, By, Bz, exx, ...
+    #
     # The full strain ε is not used in our definition of ϕ,
-    # so differentiate only w.r.t. the components of B and e.
-#    for q in [key for key in smd.symdic.keys() if not key.startswith("ε")]:  # production
-    for q in ("Bx",):  # debug
-        smd.dϕdq(q)
-    smd.Beε_to_uvw()
+    # so we differentiate only w.r.t. the components of B and e.
+    #
+    for q in [key for key in smd.symdic.keys() if not key.startswith("ε")]:  # production
+#    for q in ("Bx",):  # DEBUG
+        print("Differentiating ϕ w.r.t. %s" % (q))
+        dϕdq_results = smd.dϕdq(q)
+        for key,value in sorted(dϕdq_results.items()):  # 2D, 3D
+            print("%s model" % (key))
+            sy.pprint(value["expr"])
+
+            print("Derivatives needed (f, var):")
+            sy.pprint(value["ders"])
+            print("=" * 80)  # separator
+
+            # Compute the derivatives ∂ϕ/∂q depends on.
+            #
+            derivatives = {}
+            for func,var in value["ders"]:
+                fname = str(func)  # func and var themselves are sy.Symbols
+                vname = str(var)
+                if fname == "ϕ":
+                    continue  # in the solver, ϕ(u,v,w) comes from ppeval
+                k = sy.Derivative(func, var, evaluate=False)  # sy.pprintable label
+                v = sy.diff(exprs[fname], var)  # do it to the actual expr
+                v = recursive_collect(sy.together(sy.expand(v)), (smd.Bs + smd.es))
+                # we will need fname,vname for generating the Fortran routine name
+                derivatives[k] = (v, fname, vname)
+                sy.pprint(k)
+                sy.pprint(v)
+                print("=" * 80)  # separator
+
+            # Delete any terms that are always zero due to the structure
+            # of the functional dependencies.
+            #
+            print("Final expr, with zero terms eliminated:")
+            zero = sy.S("0")
+            out = value["expr"]
+            for k,val in derivatives.items():
+                v,_,_ = val
+                if v == zero:
+                    out = out.subs( {k: zero} )
+            sy.pprint(out)
+            print("=" * 80)  # separator
+
+            # Generate the Fortran code
+
+            # Auxiliary expressions
+            #
+            name_expr_pairs = []
+            for k,v in exprs.items():
+                name_expr_pairs.append( (k, v) )
+
+            # Derivatives of auxiliary expressions
+            #
+            final_derivatives = { k:v for k,v in derivatives.items() if v[0] != zero }
+            derivative_routines = {}
+            for k,val in final_derivatives.items():
+                v,fname,vname = val
+                routine_name = "d%s_d%s" % (fname, vname)  # e.g. dI4_dBx
+                derivative_routines[k] = routine_name
+                name_expr_pairs.append( (routine_name, v) )
+            name_expr_pairs.sort()  # alphabetize helpers for easy reading of generated code
+
+            # TODO: handle 2nd-order derivatives
+            #
+            funcname = "dphi_d%s" % (q)
+            final_expr = out
+            for k,v in derivative_routines.items():
+                final_expr = final_expr.subs({k: v})
+            ϕ,u,v,w = sy.symbols("ϕ, u, v, w")
+            final_expr = final_expr.subs({sy.Derivative(ϕ,u) : "dphi_du"})
+            final_expr = final_expr.subs({sy.Derivative(ϕ,v) : "dphi_dv"})
+            final_expr = final_expr.subs({sy.Derivative(ϕ,w) : "dphi_dw"})
+            final_expr = final_expr.subs({ϕ : "phi"})
+
+            # The main routine
+            #
+            name_expr_pairs.insert(0, (funcname, final_expr))  # main routine goes first
+
+            basename = "%s_%s" % (key, funcname)
+            generated_code = codegen(name_expr_pairs,
+                                     language="f95",
+                                     project="elmer-mgs-galfenol",
+                                     to_files=True,
+                                     prefix=basename)
+#            print(generated_code)  # DEBUG
+
 
 if __name__ == '__main__':
     main()
