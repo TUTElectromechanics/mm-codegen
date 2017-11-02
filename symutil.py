@@ -47,19 +47,16 @@ def find_needed_derivatives(expr):
     Returns: tuple
         containing (function_name, var_name) pairs.
 """
+    derivatives = set()
     def process(e):
         if isinstance(e, sy.Derivative):
-            return e.args  # args[0] = function, args[1:] = diff. w.r.t. what
-        elif e.is_Atom:
-            return None
-        else:  # compound other than a derivative
-            out = [process(x) for x in e.args]
-            return [x for x in out if x is not None]
-    lst = process(strip_function_arguments(expr))
-    print(lst)  # DEBUG
-    # keep (function, var) pairs but discard the rest of the nested structure
-    lst = flatten_if(lst, lambda item: isinstance(item[0], (tuple, list)))
-    lst = uniqify(lst)
+            # Prevent generating "d(0)/dx" if we substitute some functions with zeroes.
+            if not e.args[0].is_Number:
+                derivatives.add(e.args)  # args[0] = function, args[1:] = diff. w.r.t. what
+        elif not e.is_Atom:  # compound other than a derivative
+            for x in e.args:
+                process(x)
+    process(strip_function_arguments(expr))
     # item[0] = function as sy.Symbol, item[1:] = vars as sy.Symbol
     lst = sorted(lst, key=lambda item: [x.name for x in item])
     return lst
