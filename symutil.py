@@ -56,6 +56,7 @@ def find_needed_derivatives(expr):
             out = [process(x) for x in e.args]
             return [x for x in out if x is not None]
     lst = process(strip_function_arguments(expr))
+    print(lst)  # DEBUG
     # keep (function, var) pairs but discard the rest of the nested structure
     lst = flatten_if(lst, lambda item: isinstance(item[0], (tuple, list)))
     lst = uniqify(lst)
@@ -65,13 +66,22 @@ def find_needed_derivatives(expr):
 
 def collect_const_in(expr):
     """Collect constant factors in sums nested inside expr."""
-    def process(e):
-        if e.is_Atom:
-            return e
-        else:
-            # note order of processing: we must do args first, then e itself
-            out = [process(x) for x in e.args]
-            cls = type(e)
-            tmp = cls(*out)
-            return sy.collect_const(tmp) if isinstance(tmp, sy.Add) else tmp
-    return process(expr)
+    if expr.is_Atom:
+        return expr
+    else:
+        # note order of processing: we must do args first, then e itself
+        out = [collect_const_in(x) for x in expr.args]
+        cls = type(expr)
+        tmp = cls(*out)
+        return sy.collect_const(tmp) if isinstance(tmp, sy.Add) else tmp
+
+def doit_in(expr):
+    """Apply substitutions nested inside expr."""
+    if expr.is_Atom:
+        return expr
+    else:
+        # note order of processing: we must do args first, then e itself
+        out = [doit_in(x) for x in expr.args]
+        cls = type(expr)
+        tmp = cls(*out)
+        return tmp.doit() if isinstance(tmp, sy.Subs) else tmp
