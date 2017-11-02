@@ -19,6 +19,7 @@ from sympy.utilities.codegen import codegen
 # (maybe due to autosyms?)
 from reccollect import recursive_collect
 from symutil import strip_function_arguments, find_needed_derivatives, collect_const_in
+from util import degreek
 
 ##############################################################################
 # Local utilities
@@ -38,12 +39,44 @@ def print_and_count(expr, name=None, pretty=False, count_visual=True):
     print(sy.count_ops(expr, visual=count_visual))
     print("=" * 80)  # separator
 
+def my_simplify(expr, second_stage_syms=None):
+    """Simplify expr.
+
+    This particular sequence of simplification operations is specifically
+    targeted for the expressions treated by this module.
+"""
+    #   - expand() first to expand all parentheses; this gives a form
+    #     that can then be grouped back differently (i.e. optimized)
+    #   - together() to combine rationals
+    #   - recursive_collect() automatically detects symbols in expr
+    #     and collect()s in all of them, recursively.
+    #     This typically reduces the operation count.
+    #   - But this may leave "leftovers" in some parts of expr;
+    #     e.g. for dI6/dBx, reccollect.analyze() gives
+    #     [exy, ezx, By, Bx, Bz, exx, eyz, ezz, eyy]
+    #     because that is overall more optimal (by the metric used
+    #     by reccollect.analyze()) than going "B first".
+    #   - This causes some duplication of Bx in terms that have been
+    #     collected on [exy, ezx], in parts of expr where "B first"
+    #     would have been a better ordering.
+    #   - To fix this specifically for the kind of expressions
+    #     we work with here, we then collect again, explicitly on second_stage_syms
+    #     (disabling the automatic detection, which would still give the wrong symbols).
+    #     Our caller can choose second_stage_syms; a good choice is all the B components.
+    #   - Finally, collect_const_in() extracts each constant factor to the
+    #     topmost possible level in the expression.
+    #
+    expr = recursive_collect(sy.together(sy.expand(expr)))
+    expr = recursive_collect(expr, syms=second_stage_syms)
+    expr = collect_const_in(expr)
+    return expr
+
 ##############################################################################
 # Expression generator
 ##############################################################################
 
 class SymbolicModelDeriver:
-    """Mathematical definitions."""
+    """Mathematical definitions used by the code generator."""
 
     def __init__(self):
         # es and εs are listed in Voigt notation ordering:
@@ -51,23 +84,50 @@ class SymbolicModelDeriver:
         #        [ε6, ε2, ε4],    [εxy, εyy, εyz],
         #        [ε5, ε4, ε3]]    [εzx, εyz, εzz]]
         #
-        self.Bs = sy.symbols("Bx, By, Bz", real=True)
-        self.es = sy.symbols("exx, eyy, ezz, eyz, ezx, exy", real=True)
-        self.εs = sy.symbols("εxx, εyy, εzz, εyz, εzx, εxy", real=True)
-#        fargs = (Bx, By, Bz, εxx, εyy, εzz, εyz, εzx, εxy)  # parameters for callables (which are generated later)
+        self.Bs = sy.symbols("Bx, By, Bz")
+        self.εs = sy.symbols("εxx, εyy, εzz, εyz, εzx, εxy")
 
         # Symbol dictionary  name: object instance
         #
+        # Independent variables only.
+        #
         symdic = {}
-        for s in self.Bs + self.es + self.εs:  # these are lists, so + concatenates
+        for s in self.Bs + self.εs:  # these are lists, so + concatenates
             symdic[s.name] = s
         self.symdic = symdic
 
+        # Deviatoric strain.
+        #
+        # Note that e = e(ε); it is not an independent variable,
+        # so we leave it out of self.symdic.
+        #
+        # Essentially, the code here tells SymPy that e = e(ε), without defining
+        # what its expression is; for a detailed explanation, see dϕdq() below.
+        #
+        # We use the component form, because sy.diff() cannot differentiate
+        # with regard to a sy.MatrixSymbol. The component form also readily
+        # lends itself to a Fortran conversion.
+        #
+        # In Python, *L unpacks iterable L to separate function arguments:
+        # f(*L) = f(L[0], L[1], ..., L[-1])
+        #
+        λexx,λeyy,λezz,λeyz,λezx,λexy = sy.symbols("exx, eyy, ezz, eyz, ezx, exy", cls=sy.Function)
+        exx = λexx(*self.εs)
+        eyy = λeyy(*self.εs)
+        ezz = λezz(*self.εs)
+        eyz = λeyz(*self.εs)
+        ezx = λezx(*self.εs)
+        exy = λexy(*self.εs)
+        self.es = (exx,eyy,ezz,eyz,ezx,exy)
+
     # Differentiate ϕ with respect to a variable, applying the chain rule.
-    # See self.symdic.keys() for valid vars.
+    #
     #
     def dϕdq(self, diff_wrt="Bx"):
-        """Formally differentiate ϕ w.r.t. given variable, using the chain rule."""
+        """Formally differentiate ϕ w.r.t. given variable, applying the chain rule.
+
+        See self.symdic.keys() for valid vars.
+"""
         # How to chain rule in SymPy:
         # https://stackoverflow.com/questions/34786224/chain-rule-in-sympy
 
@@ -98,12 +158,12 @@ class SymbolicModelDeriver:
         #
         # We use the name "λf" for the Python object representing the
         # mathematical function "f", loosely following the convention
-        # that a "lambda expression" is a function.
+        # that a "lambda expression" is a callable.
         #
-        λI4,λI5,λI6,λup,λvp,λwp,λu,λv,λw,λϕ = sy.symbols("I4, I5, I6, up, vp, wp, u, v, w, ϕ", cls=sy.Function)
-
-        # TODO: we actually need ∂ϕ/∂ε; add another layer so that e = e(ε).
-        # Maybe component form, λexx(self.εs), ..., λezz(self.εs) ?
+        λI4,λI5,λI6 = sy.symbols("I4, I5, I6", cls=sy.Function)
+        λup,λvp,λwp = sy.symbols("up, vp, wp", cls=sy.Function)
+        λu,λv,λw = sy.symbols("u, v, w", cls=sy.Function)
+        λϕ = sy.symbols("ϕ", cls=sy.Function)
 
         # Applied functions (of symbols).
         #
@@ -113,9 +173,6 @@ class SymbolicModelDeriver:
         # Technically, SymPy creates a new Python type (class) for each function name,
         # using the symbol name of the undefined function instance as the name
         # of the new Python type. E.g. type(λI4(Bx,By,Bz)) = I4.
-        #
-        # In Python, *L unpacks iterable L to separate function arguments:
-        # f(*L) = f(L[0], L[1], ..., L[-1])
         #
         I4 = λI4(*self.Bs)  # i.e. in mathematical notation, I4 = I4(Bx, By, Bz)
         I5 = λI5(*(self.Bs + self.es))
@@ -134,7 +191,9 @@ class SymbolicModelDeriver:
         #
         #  u ∈ [ 0,1]
         #  v ∈ [-1,1]
-        #  w ∈ [-1,1]  (TODO: check w)
+        #  w ∈ [-1,1]
+        #
+        # TODO: check the range of w
         #
         u = λu(up)
         v = λv(vp)
@@ -169,11 +228,16 @@ class SymbolicModelDeriver:
         # the derivative expressions to the human-readable notation.
         #
         dϕdq = dϕdq.doit()
+
+        # This is the final result for the 3-parameter model,
+        # for which ϕ = ϕ(u,v,w).
+        #
         results_3par = { "name": "∂ϕ/∂%s" % (q),
                          "expr": strip_function_arguments(dϕdq),
                          "ders": find_needed_derivatives(dϕdq) }
 
-        # Specialize to the 2-parameter model by taking w → 0, I6 → 0.
+        # Specialize to the 2-parameter model, where ϕ = ϕ(u,v),
+        # by formally replacing w → 0, I6 → 0.
         #
         # - After the subs(), the first .doit() notices that d(0)/dwp = 0 and
         #   deletes the corresponding set of terms, but also re-introduces
@@ -190,14 +254,11 @@ class SymbolicModelDeriver:
 
         return { "3par" : results_3par, "2par" : results_2par }
 
-    # Make symbolic expressions of the various intermediate functions.
-    #
     def make_exprs(self):
-        """Create auxiliary expressions I4, I5, I6, u', v', w', u, v, w."""
+        """Generate symbolic expressions for auxiliary functions."""
         results = {}
 
         Bx,By,Bz = self.Bs
-        exx,eyy,ezz,eyz,ezx,exy = self.es
         εxx,εyy,εzz,εyz,εzx,εxy = self.εs
 
         # Voigt notation ordering:
@@ -209,52 +270,46 @@ class SymbolicModelDeriver:
         ε = sy.Matrix( [[εxx, εxy, εzx],  # Cauchy strain
                         [εxy, εyy, εyz],
                         [εzx, εyz, εzz]] )
-        e = sy.Matrix( [[exx, exy, ezx],  # deviatoric strain
+
+        # Deviatoric strain.
+        #
+        # Here we ignore that e = e(ε); the es are just arbitrary symbols.
+        #
+        exx,eyy,ezz,eyz,ezx,exy = sy.symbols("exx, eyy, ezz, eyz, ezx, exy")
+        e = sy.Matrix( [[exx, exy, ezx],
                         [exy, eyy, eyz],
                         [ezx, eyz, ezz]] )
 
-        # TODO: in the generated Fortran code, get rid of unicode symbols
-        #
-        # TODO: what is the best pratical way to create a Fortran subroutine for ε ↦ e?
-        #
-        # e in terms of ε
-        #
-        εM = sy.symbols("εM", real=True)  # mean volumetric strain
-        e_expr  = ε - εM * sy.eye(3)
-        εM_expr = sy.factor(sy.S("1/3") * ε.trace())
-        results["e"]  = e_expr
-        results["εM"] = εM_expr
+        εM_expr = sy.factor(sy.S("1/3") * ε.trace())  # mean volumetric strain
+        e_expr  = ε - εM_expr * sy.eye(3)
+        assert e_expr[1,0] == e_expr[0,1]  # exy
+        assert e_expr[2,0] == e_expr[0,2]  # ezx
+        assert e_expr[1,2] == e_expr[2,1]  # eyz
+#        results["εM"] = εM_expr  # not needed separately since the expression is inserted
+        results["exx"] = e_expr[0,0]
+        results["eyy"] = e_expr[1,1]
+        results["ezz"] = e_expr[2,2]
+        results["eyz"] = e_expr[1,2]
+        results["ezx"] = e_expr[0,2]
+        results["exy"] = e_expr[0,1]
 
         # I4, I5, I6 in terms of (B,e)
         #
         for k,v in (("I4", B.T * B),
                     ("I5", B.T * e * B),
                     ("I6", B.T * e * e * B)):
-            assert v.shape == (1,1)
+            assert v.shape == (1,1)  # result should be scalar
             expr = v[0,0]  # extract scalar from matrix wrapper
-            expr = collect_const_in(recursive_collect(sy.expand(expr)))
+            expr = my_simplify(expr, second_stage_syms=self.Bs)
             results[k] = expr
 
         # u', v', w' in terms of (I4,I5,I6)
         #
-        # Note: here I4, I5 and I6 are just arbitrary symbols.
-        #
-        # We do not insert their expressions; that would only generate
-        # unnecessary flops due to common subexpressions.
-        #
-        # (Also: we can't easily make the symbols here real-valued;
-        #  this would make them different from symbols *of the same name*
-        #  that do not have the flag. Hence e.g. d(up)/d("I4") would be zero,
-        #  because it is not the same I4 due to the type difference.
-        #
-        #  The "diff w.r.t. what" symbols returned by find_needed_derivatives()
-        #  currently do not have the real-valued flag set.)
-        #
         I4,I5,I6 = sy.symbols("I4, I5, I6")
         for k,v in (("up", sy.sqrt(I4)),
                     ("vp", sy.S("3/2") * I5 / I4),
-                    ("wp", sy.sqrt( I6*I4 - I5**2 ) / I4)):
-            results[k] = v
+                    ("wp", sy.sqrt(I6*I4 - I5**2) / I4)):
+            results[k] = v  # here no simplifications are possible, so just save.
 
         # u, v, w in terms of (u',v',w')
         #
@@ -274,26 +329,21 @@ class SymbolicModelDeriver:
 def main():
     """Generate Fortran code for both 2-parameter and 3-parameter models."""
     smd = SymbolicModelDeriver()
-
-    # Compute expressions for e, I4, I5, I6, u', v', w', u, v, w
-    #
     exprs = smd.make_exprs()
 
-    # Compute ∂ϕ/∂q for q = Bx, By, Bz, exx, ...
-    #
-    # The full strain ε is not used in our definition of ϕ,
-    # so we differentiate only w.r.t. the components of B and e.
+    # Compute ∂ϕ/∂q for q = Bx, By, Bz, εxx, ...
     #
     results = {}
-    for q in [key for key in smd.symdic.keys() if not key.startswith("ε")]:  # production
+    for q in [key for key in smd.symdic.keys()]:  # production; all independent variables
 #    for q in ("Bx",):  # DEBUG
         print("Computing ∂ϕ/∂%s" % (q))
-        funcname = "dphi_d%s" % (q)  # Fortran routine name
+        # Fortran routine name. Greek letters will be replaced later, just before writing into file.
+        funcname = "dϕ_d%s" % (q)
         results[funcname] = smd.dϕdq(q)
 
-    # We now have 2-parameter and 3-parameter models for the same function
-    # in a single results item. Convert this to a format with all 2-parameter
-    # models in one place, and all 3-parameter models in another.
+    # We now have data for 2-parameter and 3-parameter models for the same function
+    # in a single results item. Convert this to a format with data for all 2-parameter
+    # models in one place, and for all 3-parameter models in another.
     #
     all_results_2par = { k: v["2par"] for k,v in results.items() }
     all_results_3par = { k: v["3par"] for k,v in results.items() }
@@ -305,6 +355,7 @@ def main():
         all_funcs = {}
         all_derivatives = {}
         for funcname in sorted(dic.keys()):  # process the functions in alphabetical order
+                                             # to make terminal output more readable
             data = dic[funcname]
             sy.pprint(data["name"])  # sy.pprintable expression
             sy.pprint(data["expr"])
@@ -320,29 +371,10 @@ def main():
                 fname = str(func)  # func and var themselves are sy.Symbols
                 vname = str(var)
                 if fname == "ϕ":
-                    continue  # in the solver, ϕ(u,v,w) comes from ppeval
+                    continue  # in the solver, ϕ(u,v,w) comes from ppeval; no expression here.
                 k = sy.Derivative(func, var, evaluate=False)  # this is present in expr; also a label
-                v = sy.diff(exprs[fname], var)  # do it to the actual definition
-                # simplify:
-                #   - expand() first to get rid of parentheses;
-                #     this gives a form that can be optimized
-                #   - together() to combine rationals
-                #   - recursive_collect() automatically detects symbols in expr
-                #     and collect()s in all of them, recursively.
-                #     This typically reduces the operation count.
-                #   - But this may leave "leftovers" in some parts of expr;
-                #     e.g. for dI6/dBx, reccollect.analyze() gives
-                #     [exy, ezx, By, Bx, Bz, exx, eyz, ezz, eyy]
-                #     because that is overall more optimal than going "B first".
-                #     This causes some duplication of Bx in terms that have been
-                #     collected on [exy, ezx], in parts of expr where "B first"
-                #     would have been a better ordering.
-                #   - To fix this specifically for the kind of expressions
-                #     we work with here, we then collect again, now on B.
-                #   - Finally, collect_const_in() extracts all constant factors.
-                v = recursive_collect(sy.together(sy.expand(v)))
-                v = recursive_collect(v, syms=smd.Bs)
-                v = collect_const_in(v)
+                v = sy.diff(exprs[fname], var)  # differentiate the actual definition
+                v = my_simplify(v, second_stage_syms=smd.Bs)
                 # we will need fname,vname for generating the Fortran routine name
                 derivatives[k] = (v, fname, vname)
                 sy.pprint(k)
@@ -352,7 +384,7 @@ def main():
             # Delete any terms that are identically zero due to the structure
             # of the functional dependencies.
             #
-            print("Final expr, with zero terms eliminated:")
+            print("Final expr, with identically zero terms eliminated:")
             zero = sy.S.Zero
             out = data["expr"]
             for k,val in derivatives.items():
@@ -360,16 +392,18 @@ def main():
                 if v == zero:
                     out = out.subs( {k: zero} )
             sy.pprint(out)
-            print("=" * 80)  # separator
-            print("=" * 80)  # separator
 
-            # Only include derivatives that are nonzero.
+            # Only keep derivatives that are not identically zero.
             #
             final_derivatives = { k:v for k,v in derivatives.items() if v[0] != zero }
 
             # We may overwrite, since e.g. dI4/dBx always has the same expression if it is present.
             all_derivatives.update(final_derivatives)
             all_funcs[funcname] = out
+
+            # double separator to signify end of processing for this function
+            print("=" * 80)
+            print("=" * 80)
 
         # Generate the Fortran code
 
@@ -379,6 +413,10 @@ def main():
         #
         name_expr_pairs = []
         if label == "2par":  # FIXME: parameterize better so no need for special handling
+            # Strictly speaking, the invariant I6 *exists* even in the case of
+            # the 2-parameter model, but it is not used by that model (in the 2-parameter
+            # model, as far as the invariants are concerned, ϕ depends only on I4 and I5),
+            # so we leave out, from the generated code, the function to compute I6.
             cond = lambda k: k not in ("I6", "wp", "w")
         else:
             cond = lambda k: True
@@ -410,21 +448,22 @@ def main():
             for k,v in derivative_routines.items():
                 final_expr = final_expr.subs({k: v})
             ϕ,u,v,w = sy.symbols("ϕ, u, v, w")
-            final_expr = final_expr.subs({sy.Derivative(ϕ,u) : "dphi_du"})
-            final_expr = final_expr.subs({sy.Derivative(ϕ,v) : "dphi_dv"})
-            final_expr = final_expr.subs({sy.Derivative(ϕ,w) : "dphi_dw"})
-            final_expr = final_expr.subs({ϕ : "phi"})
+            final_expr = final_expr.subs({sy.Derivative(ϕ,u) : "dϕ_du"})
+            final_expr = final_expr.subs({sy.Derivative(ϕ,v) : "dϕ_dv"})
+            final_expr = final_expr.subs({sy.Derivative(ϕ,w) : "dϕ_dw"})
 
             name_expr_pairs.insert(0, (funcname, final_expr))
-    
-        basename = "mgs_%s" % (label)
+
+        basename = "mgs_%s" % (label)  # filename without extension
         generated_code = codegen(name_expr_pairs,
                                  language="f95",
                                  project="elmer-mgs-galfenol",
-                                 to_files=True,
                                  prefix=basename)
-#        print(generated_code)  # DEBUG
 
+        for filename,content in generated_code:
+            content = degreek(content, short=True)  # sanitize identifiers for non-Unicode systems
+            with open(filename, "wt", encoding="utf-8") as f:
+                f.write(content)
 
 if __name__ == '__main__':
     main()
