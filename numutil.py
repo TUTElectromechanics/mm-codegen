@@ -21,7 +21,6 @@ def ulp(x):
     fac = 2**math.floor(math.log2(x))
     return fac*eps
 
-# TODO: move quadspace() to a "numutil.py" to avoid the NumPy dependency in "util.py"?
 def quadspace(x1, x2, nx, refine='left'):
     """Make a quadratic spacing with more points either on the left or on the right."""
     xx = np.linspace(0, 1, nx)**2
