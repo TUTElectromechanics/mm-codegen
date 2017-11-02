@@ -24,14 +24,20 @@ def strip_function_arguments(expr):
 
     Also used internally by find_needed_derivatives().
 """
+    # We cannot use apply_to_instancesof_in() to implement this, since each
+    # undefined function is an instance of its own Python type, and *this type*
+    # is an instance of UndefinedFunction.
+    #
+    # This pattern is specific to UndefinedFunctions, so we implement manually.
+
     def nameof_as_symbol(x):
         if hasattr(x, "name"):
             return sy.symbols(x.name, **x.assumptions0)  # TODO: should we copy the assumptions like this?
-        else:
+        else:  # e.g. an undefined function has no name, but its *class* has a __name__.
             return sy.symbols(x.__class__.__name__, **x.assumptions0)
 
     if isinstance(expr.__class__, UndefinedFunction):
-        return nameof_as_symbol(expr)
+        return nameof_as_symbol(expr)  # don't bother recursing into args since they get deleted here
     elif expr.is_Atom:
         return expr
     else:  # compound other than an undefined function
