@@ -18,8 +18,8 @@ from sympy.utilities.codegen import codegen
 # our custom reccollect seems to fare better in some cases than sy.rcollect
 # (maybe due to autosyms?)
 from reccollect import recursive_collect
-from symutil import strip_function_arguments, find_needed_derivatives, collect_const_in
-from util import degreek
+import symutil
+import util
 
 ##############################################################################
 # Local utilities
@@ -68,7 +68,7 @@ def my_simplify(expr, second_stage_syms=None):
     #
     expr = recursive_collect(sy.together(sy.expand(expr)))
     expr = recursive_collect(expr, syms=second_stage_syms)
-    expr = collect_const_in(expr)
+    expr = symutil.collect_const_in(expr)
     return expr
 
 ##############################################################################
@@ -123,10 +123,25 @@ class SymbolicModelDeriver:
     # Differentiate ϕ with respect to a variable, applying the chain rule.
     #
     #
-    def dϕdq(self, diff_wrt="Bx"):
-        """Formally differentiate ϕ w.r.t. given variable, applying the chain rule.
+    def dϕdq(self, diff_wrt=("Bx",)):
+        """Formally differentiate ϕ w.r.t. given independent variables, applying the chain rule.
 
-        See self.symdic.keys() for valid vars.
+        self.symdic.keys() contains all independent variables recognized by this routine.
+
+        Parameters:
+            diff_wrt: tuple of str
+                Names of variables to differentiate with regard to.
+
+        Example:
+            smd = SymbolicModelDeriver()
+            smd.dϕdq( ("Bx",) )      # ∂ϕ/∂Bx
+            smd.dϕdq( ("Bx","Bx") )  # ∂²ϕ/∂Bx²
+            smd.dϕdq( ("Bx","By") )  # ∂²ϕ/∂BxBy
+
+        Returns:
+            dict:
+                with keys "2par", "3par" containing data for the 2-parameter and 3-parameter
+                models, respectively.
 """
         # How to chain rule in SymPy:
         # https://stackoverflow.com/questions/34786224/chain-rule-in-sympy
@@ -209,8 +224,10 @@ class SymbolicModelDeriver:
         # Subs (mathematical substitution) object instance:
         #   http://docs.sympy.org/latest/_modules/sympy/core/function.html
         #
-        q = self.symdic[diff_wrt]  # q = Bx, By, Bz, exx, ...
-        dϕdq = sy.diff(ϕ, q)
+        f = ϕ
+        for symname in diff_wrt:
+            q = self.symdic[symname]  # q = Bx, By, Bz, exx, ...
+            f = sy.diff(f, q)
 
         # Apply the Subs object to eliminate the dummy variables in the
         # derivative expressions. E.g.
@@ -227,30 +244,40 @@ class SymbolicModelDeriver:
         # In SymPy, applying the Subs object returned by diff() converts
         # the derivative expressions to the human-readable notation.
         #
-        dϕdq = dϕdq.doit()
+        f = symutil.doit_in(f)
+
+        # It would be tempting to simplify here, but in SymPy 1.0 that does not
+        # yet work, as the multivariate derivative support in collect() still
+        # needs work. We will apply simplification just before code generation,
+        # where we have just bare symbols.
 
         # This is the final result for the 3-parameter model,
         # for which ϕ = ϕ(u,v,w).
         #
-        results_3par = { "name": "∂ϕ/∂%s" % (q),
-                         "expr": strip_function_arguments(dϕdq),
-                         "ders": find_needed_derivatives(dϕdq) }
+        results_3par = { "name": util.name_derivative("ϕ", diff_wrt),
+                         "expr": symutil.strip_function_arguments(f),
+                         "ders": symutil.find_needed_derivatives(f) }
 
-        # Specialize to the 2-parameter model, where ϕ = ϕ(u,v),
-        # by formally replacing w → 0, I6 → 0.
+        # Specialize to the 2-parameter model, where ϕ = ϕ(u,v).
         #
-        # - After the subs(), the first .doit() notices that d(0)/dwp = 0 and
-        #   deletes the corresponding set of terms, but also re-introduces
-        #   the dummy variables into the derivative expressions.
+        # Taking functions to zero by substitution generally leads to practical
+        # issues, so we simply re-generate the relevant definitions,
+        # leaving out I6 and w.
         #
-        # - The second .doit() rewrites the derivatives again, without the
-        #   dummy variables.
-        #
-        zero = sy.S.Zero
-        tmp = dϕdq.subs( {w: zero, I6: zero} ).doit().doit()
-        results_2par = { "name": "∂ϕ/∂%s" % (q),
-                         "expr": strip_function_arguments(tmp),
-                         "ders": find_needed_derivatives(tmp) }
+        up = λup(I4, I5)
+        vp = λvp(I4, I5)
+        u = λu(up)
+        v = λv(vp)
+        ϕ = λϕ(u,v)
+        f = ϕ
+        for symname in diff_wrt:
+            q = self.symdic[symname]
+            f = sy.diff(f, q)
+        f = symutil.doit_in(f)
+
+        results_2par = { "name": util.name_derivative("ϕ", diff_wrt),
+                         "expr": symutil.strip_function_arguments(f),
+                         "ders": symutil.find_needed_derivatives(f) }
 
         return { "3par" : results_3par, "2par" : results_2par }
 
@@ -334,11 +361,12 @@ def main():
     # Compute ∂ϕ/∂q for q = Bx, By, Bz, εxx, ...
     #
     results = {}
-    for q in [key for key in smd.symdic.keys()]:  # production; all independent variables
-#    for q in ("Bx",):  # DEBUG
-        print("Computing ∂ϕ/∂%s" % (q))
+#    for q in [(key,) for key in smd.symdic.keys()]:  # production; all independent variables
+#    for q in (("Bx",),):  # DEBUG
+    for q in (("Bx","Bx"),):  # DEBUG: 2nd derivatives
+        print("Computing %s" % (util.name_derivative("ϕ", q)))
         # Fortran routine name. Greek letters will be replaced later, just before writing into file.
-        funcname = "dϕ_d%s" % (q)
+        funcname = util.name_derivative("ϕ", q, as_fortran_identifier=True)
         results[funcname] = smd.dϕdq(q)
 
     # We now have data for 2-parameter and 3-parameter models for the same function
@@ -367,33 +395,37 @@ def main():
             # Compute the derivatives ∂ϕ/∂q depends on.
             #
             derivatives = {}
-            for func,var in data["ders"]:
+            for func,*vars in data["ders"]:
                 fname = str(func)  # func and var themselves are sy.Symbols
-                vname = str(var)
+                vnames = [str(var) for var in vars]
                 if fname == "ϕ":
-                    continue  # in the solver, ϕ(u,v,w) comes from ppeval; no expression here.
-                k = sy.Derivative(func, var, evaluate=False)  # this is present in expr; also a label
-                v = sy.diff(exprs[fname], var)  # differentiate the actual definition
+                    continue  # in the solver, derivatives of ϕ come from ppeval; no expression here.
+                k = sy.Derivative(func, *vars, evaluate=False)  # this is present in expr; also a label
+                v = sy.diff(exprs[fname], *vars)  # differentiate the actual definition
                 v = my_simplify(v, second_stage_syms=smd.Bs)
                 # we will need fname,vname for generating the Fortran routine name
-                derivatives[k] = (v, fname, vname)
+                derivatives[k] = (v, fname, vnames)
                 sy.pprint(k)
                 sy.pprint(v)
                 print("=" * 80)  # separator
 
-            # Delete any terms that are identically zero due to the structure
-            # of the functional dependencies.
+            # From expr, delete any derivatives that are identically zero
+            # due to the structure of the functional dependencies.
             #
             print("Final expr, with identically zero terms eliminated:")
             zero = sy.S.Zero
-            out = data["expr"]
-            for k,val in derivatives.items():
-                v,_,_ = val
-                if v == zero:
-                    out = out.subs( {k: zero} )
+
+            def kill_zero(expr):
+                if expr in derivatives:  # ...which we collected above
+                    value,*_ = derivatives[expr]
+                    if value == 0:
+                        return zero
+                return expr
+            out = symutil.map_instancesof_in(kill_zero, sy.Derivative, data["expr"])
             sy.pprint(out)
 
-            # Only keep derivatives that are not identically zero.
+            # Only save derivatives that are not identically zero,
+            # since the identically zero ones are never called.
             #
             final_derivatives = { k:v for k,v in derivatives.items() if v[0] != zero }
 
@@ -431,7 +463,7 @@ def main():
         tmp_pairs = []
         for k,val in all_derivatives.items():
             v,fname,vname = val
-            routine_name = "d%s_d%s" % (fname, vname)  # e.g. dI4_dBx
+            routine_name = util.name_derivative(fname, vname, as_fortran_identifier=True)  # e.g. dI4_dBx
             derivative_routines[k] = routine_name
             tmp_pairs.append( (routine_name, v) )
         tmp_pairs.sort()
@@ -442,15 +474,33 @@ def main():
         # We alphabetize; the reverse is needed because we insert at the beginning.
         #
         for funcname in reversed(sorted(all_funcs.keys())):
-            # TODO: 2nd-order derivatives for e.g. ∂H/∂B = ∂²ϕ/∂B², needed by Newton solver
-            #
             final_expr = all_funcs[funcname]
-            for k,v in derivative_routines.items():
-                final_expr = final_expr.subs({k: v})
-            ϕ,u,v,w = sy.symbols("ϕ, u, v, w")
-            final_expr = final_expr.subs({sy.Derivative(ϕ,u) : "dϕ_du"})
-            final_expr = final_expr.subs({sy.Derivative(ϕ,v) : "dϕ_dv"})
-            final_expr = final_expr.subs({sy.Derivative(ϕ,w) : "dϕ_dw"})
+
+            # rename derivative objects to Fortran identifiers
+            def rename(expr):
+                fname  = str(expr.args[0])
+                vnames = [str(arg) for arg in expr.args[1:]]
+                # we must return an Expr, so wrap the identifier in a Symbol
+                return sy.symbols(util.name_derivative(fname, vnames, as_fortran_identifier=True))
+            final_expr = symutil.map_instancesof_in(rename, sy.Derivative, final_expr)
+
+            # Now that we got rid of derivatives and are operating on bare symbols,
+            # it is fine to simplify this expression.
+            #
+            # But actually, without simplification we have for d2phi_dBx2
+            #
+            #    39*ADD + 78*MUL + POW
+            #
+            # whereas with the same simplification strategy as for the
+            # other expressions,
+            #
+            #    35*ADD + 92*MUL + 20*POW
+            #
+            # so actually the original form has a lower operation count.
+            # Let's leave it as-is.
+            #
+#            final_expr = my_simplify(final_expr)
+#            print_and_count(final_expr)
 
             name_expr_pairs.insert(0, (funcname, final_expr))
 
@@ -461,7 +511,7 @@ def main():
                                  prefix=basename)
 
         for filename,content in generated_code:
-            content = degreek(content, short=True)  # sanitize identifiers for non-Unicode systems
+            content = util.degreek(content, short=True)  # sanitize identifiers for non-Unicode systems
             with open(filename, "wt", encoding="utf-8") as f:
                 f.write(content)
 
