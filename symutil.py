@@ -60,24 +60,45 @@ def find_needed_derivatives(expr):
     # item[0] = function as sy.Symbol, item[1:] = vars as sy.Symbol
     return sorted(derivatives, key=lambda item: [x.name for x in item])
 
-def collect_const_in(expr):
-    """Collect constant factors in sums nested inside expr."""
+def map_instancesof_in(func, cls, expr):
+    """Apply func to compounds of given cls in expr, recursively.
+
+    Atoms in expr will be left untouched.
+
+    If you need to adapt to different signatures, or call members of Expr
+    (e.g. doit()), use a helper function:
+
+        def apply_helper(expr):
+            expr.dostuff()
+        result = apply_to_instancesof_in(apply_helper, whatever, whatever)
+
+    Parameters:
+        func: function Expr -> Expr
+            Each subexpr that matches cls will be replaced by func(subexpr).
+        cls: type, or tuple of types
+            where type is a compound SymPy expression type such as Add, Mul, Subs, ...
+        expr: SymPy expression object
+
+    Returns:
+        expr_out:
+            SymPy expression object with func applied to each instance of cls
+            that was encountered in expr.
+"""
     if expr.is_Atom:
         return expr
     else:
-        # note order of processing: we must do args first, then e itself
-        out = [collect_const_in(x) for x in expr.args]
-        cls = type(expr)
-        tmp = cls(*out)
-        return sy.collect_const(tmp) if isinstance(tmp, sy.Add) else tmp
+        # note order of processing: we must do args first, then expr itself
+        out = [map_instancesof_in(func, cls, x) for x in expr.args]
+        expr_cls = type(expr)
+        tmp = expr_cls(*out)
+        return func(tmp) if isinstance(tmp, cls) else tmp
+
+def collect_const_in(expr):
+    """Collect constant factors in sums nested inside expr."""
+    return map_instancesof_in(sy.collect_const, sy.Add, expr)
 
 def doit_in(expr):
     """Apply substitutions nested inside expr."""
-    if expr.is_Atom:
-        return expr
-    else:
-        # note order of processing: we must do args first, then e itself
-        out = [doit_in(x) for x in expr.args]
-        cls = type(expr)
-        tmp = cls(*out)
-        return tmp.doit() if isinstance(tmp, sy.Subs) else tmp
+    def doit_func(expr):
+        return expr.doit()
+    return map_instancesof_in(doit_func, sy.Subs, expr)
