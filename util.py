@@ -8,6 +8,77 @@ Created on Thu Nov  2 00:12:57 2017
 """
 
 import re
+from itertools import groupby
+
+def name_derivative(funcname, varnames, allow_reorder=True, as_fortran_identifier=False):
+    """Construct name of a partial derivative, such as ∂²ϕ/∂Bx².
+
+    Parameters:
+        funcname: str
+            Name of the mathematical function that is differentiated.
+
+        varnames: iterable of str
+            Names of the variables with respect to which the function
+            is differentiated.
+
+            This is iterated over, so for a sequence of single-character names,
+            a single ``str`` is fine; e.g. ``"xyz"`` is equivalent to ``("x", "y", "z")``.
+
+            To specify a single longer name such as "Bx", wrap it into a tuple::
+
+                varnames=("Bx",)
+
+        allow_reorder: bool
+            If True, varnames will be sorted before writing out the derivative notation.
+
+            If False, the ordering of varnames will be preserved.
+
+        as_fortran_identifier: bool
+            If True, replace "/" -> "_" and "∂" -> "d", and do not use superscripts.
+            Greek characters are *not* automatically removed; see ``degreek()``.
+
+            If False, use "/", "∂", and Unicode superscripts.
+
+    Return value:
+        str:
+            The name of the derivative, such as ∂²ϕ/∂Bx² or d2ϕ_dBx2.
+"""
+    # special case: zeroth derivative is the function itself
+    if len(varnames) < 1:
+        return funcname
+
+    input = sorted(varnames) if allow_reorder else varnames
+
+    # https://stackoverflow.com/questions/34443946/count-consecutive-characters
+    groups = groupby(input)
+    result = [(label, sum(1 for _ in group)) for label, group in groups]
+
+    if as_fortran_identifier:
+        dsym = "d"
+        sep  = "_"
+        def sup(x):  # no Unicode superscripting; passthrough except special case
+            s = "%d" % x
+            if len(s) == 1 and s[0] == "1":  # delete lone "1"
+                s = ""
+            return s
+    else:
+        dsym = "∂"
+        sep  = "/"
+        supnumerals = { "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
+                        "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹" }
+        def sup(x):
+            s = "%d" % x
+            if len(s) == 1 and s[0] == "1":  # delete lone "1"
+                s = ""
+            else:
+                for k,v in supnumerals.items():
+                    s = re.sub(k, v, s)
+            return s
+
+    numer = "%s%s%s" % (dsym, sup(len(varnames)), funcname)
+    denom_terms = ["%s%s%s" % (dsym, label, sup(count)) for label,count in result]
+    denom = "".join(denom_terms)
+    return "%s%s%s" % (numer, sep, denom)  # e.g. ∂²f/∂x∂y
 
 def degreek(s, short=False):
     """Eliminate greek characters in string.
@@ -27,7 +98,6 @@ def degreek(s, short=False):
 
     See:
         https://github.com/clarkgrubb/latex-input
-
 """
     mapping = { # === lowercase ===
                 r"α": (r"alp", r"alpha"),
