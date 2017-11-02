@@ -58,8 +58,7 @@ def find_needed_derivatives(expr):
                 process(x)
     process(strip_function_arguments(expr))
     # item[0] = function as sy.Symbol, item[1:] = vars as sy.Symbol
-    lst = sorted(lst, key=lambda item: [x.name for x in item])
-    return lst
+    return sorted(derivatives, key=lambda item: [x.name for x in item])
 
 def collect_const_in(expr):
     """Collect constant factors in sums nested inside expr."""
