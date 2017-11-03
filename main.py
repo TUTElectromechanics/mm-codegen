@@ -41,40 +41,8 @@ def print_and_count(expr, name=None, pretty=False, count_visual=True):
     print(sy.count_ops(expr, visual=count_visual))
     print("=" * 80)  # separator
 
-def my_simplify(expr, second_stage_syms=None):
-    """Simplify expr.
-
-    This particular sequence of simplification operations is specifically
-    targeted for the expressions treated by this module.
-"""
-    #   - expand() first to expand all parentheses; this gives a form
-    #     that can then be grouped back differently (i.e. optimized)
-    #   - together() to combine rationals
-    #   - recursive_collect() automatically detects symbols in expr
-    #     and collect()s in all of them, recursively.
-    #     This typically reduces the operation count.
-    #   - But this may leave "leftovers" in some parts of expr;
-    #     e.g. for dI6/dBx, reccollect.analyze() gives
-    #     [exy, ezx, By, Bx, Bz, exx, eyz, ezz, eyy]
-    #     because that is overall more optimal (by the metric used
-    #     by reccollect.analyze()) than going "B first".
-    #   - This causes some duplication of Bx in terms that have been
-    #     collected on [exy, ezx], in parts of expr where "B first"
-    #     would have been a better ordering.
-    #   - To fix this specifically for the kind of expressions
-    #     we work with here, we then collect again, explicitly on second_stage_syms
-    #     (disabling the automatic detection, which would still give the wrong symbols).
-    #     Our caller can choose second_stage_syms; a good choice is all the B components.
-    #   - Finally, collect_const_in() extracts each constant factor to the
-    #     topmost possible level in the expression.
-    #
-    expr = recursive_collect(sy.together(sy.expand(expr)))
-    expr = recursive_collect(expr, syms=second_stage_syms)
-    expr = symutil.collect_const_in(expr)
-    return expr
-
 ##############################################################################
-# Expression generator
+# Expression and code generator
 ##############################################################################
 
 class SymbolicModelDeriver:
@@ -283,6 +251,39 @@ class SymbolicModelDeriver:
 
         return { "3par" : results_3par, "2par" : results_2par }
 
+    @staticmethod  # this doesn't need self
+    def _simplify(expr, second_stage_syms=None):
+        """Simplify expr.
+
+        This particular sequence of simplification operations is specifically
+        targeted for the expressions treated by this class.
+"""
+        #   - expand() first to expand all parentheses; this gives a form
+        #     that can then be grouped back differently (i.e. optimized)
+        #   - together() to combine rationals
+        #   - recursive_collect() automatically detects symbols in expr
+        #     and collect()s in all of them, recursively.
+        #     This typically reduces the operation count.
+        #   - But this may leave "leftovers" in some parts of expr;
+        #     e.g. for dI6/dBx, reccollect.analyze() gives
+        #     [exy, ezx, By, Bx, Bz, exx, eyz, ezz, eyy]
+        #     because that is overall more optimal (by the metric used
+        #     by reccollect.analyze()) than going "B first".
+        #   - This causes some duplication of Bx in terms that have been
+        #     collected on [exy, ezx], in parts of expr where "B first"
+        #     would have been a better ordering.
+        #   - To fix this specifically for the kind of expressions
+        #     we work with here, we then collect again, explicitly on second_stage_syms
+        #     (disabling the automatic detection, which would still give the wrong symbols).
+        #     Our caller can choose second_stage_syms; a good choice is all the B components.
+        #   - Finally, collect_const_in() extracts each constant factor to the
+        #     topmost possible level in the expression.
+        #
+        expr = recursive_collect(sy.together(sy.expand(expr)))
+        expr = recursive_collect(expr, syms=second_stage_syms)
+        expr = symutil.collect_const_in(expr)
+        return expr
+
     def make_exprs(self):
         """Generate symbolic expressions for auxiliary functions."""
         results = {}
@@ -329,7 +330,7 @@ class SymbolicModelDeriver:
                     ("I6", B.T * e * e * B)):
             assert v.shape == (1,1)  # result should be scalar
             expr = v[0,0]  # extract scalar from matrix wrapper
-            expr = my_simplify(expr, second_stage_syms=self.Bs)
+            expr = self._simplify(expr, second_stage_syms=self.Bs)
             results[k] = expr
 
         # u', v', w' in terms of (I4,I5,I6)
@@ -351,181 +352,182 @@ class SymbolicModelDeriver:
 
         return results
 
+    def run(self):
+        """Generate Fortran code for both 2-parameter and 3-parameter models."""
+
+        independent_vars = sorted(self.symdic.keys())
+        secondder_vars   = combinations_with_replacement(independent_vars, 2)
+
+        diff_wrts = [(var,) for var in independent_vars]  # wrap each in tuple
+        diff_wrts.extend(secondder_vars)
+
+        results = {}
+        for q in (("Bx",), ("Bx","Bx"),):  # DEBUG
+#        for q in diff_wrts:
+            print("Forming expression for %s" % (util.name_derivative("ϕ", q)))
+            # Fortran routine name. Greek letters will be replaced later, just before writing into file.
+            funcname = util.name_derivative("ϕ", q, as_fortran_identifier=True)
+            results[funcname] = self.dϕdq(q)
+
+        # We now have data for 2-parameter and 3-parameter models for the same function
+        # in a single results item. Convert this to a format with data for all 2-parameter
+        # models in one place, and for all 3-parameter models in another.
+        #
+        all_results_2par = { k: v["2par"] for k,v in results.items() }
+        all_results_3par = { k: v["3par"] for k,v in results.items() }
+        all_results = ( ("2par", all_results_2par),
+                        ("3par", all_results_3par) )
+
+        exprs = self.make_exprs()  # currently common to 2par and 3par cases
+        for label,dic in all_results:  # 2par, 3par
+            for k in range(3):
+                print("=" * 80)  # separator
+            print("%s model" % (label))
+            for k in range(3):
+                print("=" * 80)  # separator
+
+            all_funcs = {}
+            all_derivatives = {}
+            for funcname in sorted(dic.keys()):  # process the functions in alphabetical order
+                                                 # to make terminal output more readable
+                data = dic[funcname]
+                sy.pprint("%s (%s)" % (data["name"], label))
+                sy.pprint(data["expr"])
+
+                print("Derivatives needed by %s (%s); format (f, var):" % (data["name"], label))
+                sy.pprint(data["ders"])
+                print("=" * 80)  # separator
+
+                # Compute the derivatives ∂ϕ/∂q depends on.
+                #
+                print("Computing pieces for %s (%s)" % (data["name"], label))
+                derivatives = {}
+                for func,*vars in data["ders"]:
+                    fname = str(func)  # func and var themselves are sy.Symbols
+                    vnames = [str(var) for var in vars]
+                    if fname == "ϕ":
+                        continue  # in the solver, derivatives of ϕ come from ppeval; no expression here.
+                    k = sy.Derivative(func, *vars, evaluate=False)  # this is present in expr; also a label
+                    v = sy.diff(exprs[fname], *vars)  # differentiate the actual definition
+                    v = self._simplify(v, second_stage_syms=self.Bs)
+                    # we will need fname,vname for generating the Fortran routine name
+                    derivatives[k] = (v, fname, vnames)
+                    sy.pprint(k)
+                    sy.pprint(v)
+                    print("=" * 80)  # separator
+
+                # From expr, delete any derivatives that are identically zero
+                # due to the structure of the functional dependencies.
+                #
+                print("Final expr for %s (%s), with identically zero terms eliminated:" % (data["name"], label))
+                zero = sy.S.Zero
+                def kill_zero(expr):
+                    if expr in derivatives:  # ...which we collected above
+                        value,*_ = derivatives[expr]
+                        if value == 0:
+                            return zero  # we must return an Expr, so return symbolic zero
+                    return expr
+                out = symutil.map_instancesof_in(kill_zero, sy.Derivative, data["expr"])
+                sy.pprint(out)
+
+                # Only save derivatives that are not identically zero,
+                # since the identically zero ones are never called.
+                #
+                final_derivatives = { k:v for k,v in derivatives.items() if v[0] != zero }
+
+                # We may overwrite, since e.g. dI4/dBx always has the same expression if it is present.
+                all_derivatives.update(final_derivatives)
+                all_funcs[funcname] = out
+
+                # double separator to signify end of processing for this function
+                print("=" * 80)
+                print("=" * 80)
+
+            # Generate the Fortran code
+
+            # Auxiliary expressions I4, I5, I6, u', v', w', u, v, w
+            #
+            # (these are always generated)
+            #
+            name_expr_pairs = []
+            if label == "2par":  # FIXME: parameterize better so no need for special handling
+                # Strictly speaking, the invariant I6 *exists* even in the case of
+                # the 2-parameter model, but it is not used by that model (in the 2-parameter
+                # model, as far as the invariants are concerned, ϕ depends only on I4 and I5),
+                # so we leave out, from the generated code, the function to compute I6.
+                cond = lambda k: k not in ("I6", "wp", "w")
+            else:
+                cond = lambda k: True
+            name_expr_pairs = [ (k,v) for k,v in exprs.items() if cond(k) ]
+            name_expr_pairs.sort()  # alphabetize helpers for easy reading of generated code
+
+            # Derivatives of auxiliary expressions
+            #
+            # (only the ones we actually need)
+            #
+            derivative_routines = {}
+            tmp_pairs = []
+            for k,val in all_derivatives.items():
+                v,fname,vname = val
+                routine_name = util.name_derivative(fname, vname, as_fortran_identifier=True)  # e.g. dI4_dBx
+                derivative_routines[k] = routine_name
+                tmp_pairs.append( (routine_name, v) )
+            tmp_pairs.sort()
+            name_expr_pairs.extend(tmp_pairs)
+
+            # The main routines
+            #
+            # We alphabetize; the reverse is needed because we insert at the beginning.
+            #
+            for funcname in reversed(sorted(all_funcs.keys())):
+                final_expr = all_funcs[funcname]
+
+                # rename derivative objects to Fortran identifiers
+                def rename(expr):
+                    fname  = str(expr.args[0])
+                    vnames = [str(arg) for arg in expr.args[1:]]
+                    # we must return an Expr, so wrap the identifier in a Symbol
+                    return sy.symbols(util.name_derivative(fname, vnames, as_fortran_identifier=True))
+                final_expr = symutil.map_instancesof_in(rename, sy.Derivative, final_expr)
+
+                # Now that we got rid of derivatives and are operating on bare symbols,
+                # it is fine to simplify this expression.
+                #
+                # But actually, without simplification we have for d2phi_dBx2
+                #
+                #    39*ADD + 78*MUL + POW
+                #
+                # whereas with the same simplification strategy as for the
+                # other expressions,
+                #
+                #    35*ADD + 92*MUL + 20*POW
+                #
+                # so actually the original form has a lower operation count.
+                # Let's leave it as-is.
+                #
+    #            final_expr = my_simplify(final_expr)
+    #            print_and_count(final_expr)
+
+                name_expr_pairs.insert(0, (funcname, final_expr))
+
+            basename = "mgs_%s" % (label)  # filename without extension
+            generated_code = codegen(name_expr_pairs,
+                                     language="f95",
+                                     project="elmer-mgs-galfenol",
+                                     prefix=basename)
+
+            for filename,content in generated_code:
+                content = util.degreek(content, short=True)  # sanitize identifiers for non-Unicode systems
+                with open(filename, "wt", encoding="utf-8") as f:
+                    f.write(content)
+
 ##############################################################################
 # Main program
 ##############################################################################
 
 def main():
-    """Generate Fortran code for both 2-parameter and 3-parameter models."""
     smd = SymbolicModelDeriver()
-    exprs = smd.make_exprs()
-
-    # Compute ∂ϕ/∂q and ∂²ϕ/∂q1∂q2 for q = Bx, By, Bz, εxx, ...
-    #
-    independent_vars = sorted(smd.symdic.keys())
-    secondder_vars   = combinations_with_replacement(independent_vars, 2)
-
-    diff_wrts = [(var,) for var in independent_vars]  # wrap each in tuple
-    diff_wrts.extend(secondder_vars)
-
-    results = {}
-#    for q in (("Bx",), ("Bx","Bx"),):  # DEBUG
-    for q in diff_wrts:
-        print("Forming expression for %s" % (util.name_derivative("ϕ", q)))
-        # Fortran routine name. Greek letters will be replaced later, just before writing into file.
-        funcname = util.name_derivative("ϕ", q, as_fortran_identifier=True)
-        results[funcname] = smd.dϕdq(q)
-
-    # We now have data for 2-parameter and 3-parameter models for the same function
-    # in a single results item. Convert this to a format with data for all 2-parameter
-    # models in one place, and for all 3-parameter models in another.
-    #
-    all_results_2par = { k: v["2par"] for k,v in results.items() }
-    all_results_3par = { k: v["3par"] for k,v in results.items() }
-    all_results = ( ("2par", all_results_2par),
-                    ("3par", all_results_3par) )
-
-    for label,dic in all_results:  # 2par, 3par
-        for k in range(3):
-            print("=" * 80)  # separator
-        print("%s model" % (label))
-        for k in range(3):
-            print("=" * 80)  # separator
-
-        all_funcs = {}
-        all_derivatives = {}
-        for funcname in sorted(dic.keys()):  # process the functions in alphabetical order
-                                             # to make terminal output more readable
-            data = dic[funcname]
-            sy.pprint("%s (%s)" % (data["name"], label))
-            sy.pprint(data["expr"])
-
-            print("Derivatives needed by %s (%s); format (f, var):" % (data["name"], label))
-            sy.pprint(data["ders"])
-            print("=" * 80)  # separator
-
-            # Compute the derivatives ∂ϕ/∂q depends on.
-            #
-            print("Computing pieces for %s (%s)" % (data["name"], label))
-            derivatives = {}
-            for func,*vars in data["ders"]:
-                fname = str(func)  # func and var themselves are sy.Symbols
-                vnames = [str(var) for var in vars]
-                if fname == "ϕ":
-                    continue  # in the solver, derivatives of ϕ come from ppeval; no expression here.
-                k = sy.Derivative(func, *vars, evaluate=False)  # this is present in expr; also a label
-                v = sy.diff(exprs[fname], *vars)  # differentiate the actual definition
-                v = my_simplify(v, second_stage_syms=smd.Bs)
-                # we will need fname,vname for generating the Fortran routine name
-                derivatives[k] = (v, fname, vnames)
-                sy.pprint(k)
-                sy.pprint(v)
-                print("=" * 80)  # separator
-
-            # From expr, delete any derivatives that are identically zero
-            # due to the structure of the functional dependencies.
-            #
-            print("Final expr for %s (%s), with identically zero terms eliminated:" % (data["name"], label))
-            zero = sy.S.Zero
-            def kill_zero(expr):
-                if expr in derivatives:  # ...which we collected above
-                    value,*_ = derivatives[expr]
-                    if value == 0:
-                        return zero  # we must return an Expr, so return symbolic zero
-                return expr
-            out = symutil.map_instancesof_in(kill_zero, sy.Derivative, data["expr"])
-            sy.pprint(out)
-
-            # Only save derivatives that are not identically zero,
-            # since the identically zero ones are never called.
-            #
-            final_derivatives = { k:v for k,v in derivatives.items() if v[0] != zero }
-
-            # We may overwrite, since e.g. dI4/dBx always has the same expression if it is present.
-            all_derivatives.update(final_derivatives)
-            all_funcs[funcname] = out
-
-            # double separator to signify end of processing for this function
-            print("=" * 80)
-            print("=" * 80)
-
-        # Generate the Fortran code
-
-        # Auxiliary expressions I4, I5, I6, u', v', w', u, v, w
-        #
-        # (these are always generated)
-        #
-        name_expr_pairs = []
-        if label == "2par":  # FIXME: parameterize better so no need for special handling
-            # Strictly speaking, the invariant I6 *exists* even in the case of
-            # the 2-parameter model, but it is not used by that model (in the 2-parameter
-            # model, as far as the invariants are concerned, ϕ depends only on I4 and I5),
-            # so we leave out, from the generated code, the function to compute I6.
-            cond = lambda k: k not in ("I6", "wp", "w")
-        else:
-            cond = lambda k: True
-        name_expr_pairs = [ (k,v) for k,v in exprs.items() if cond(k) ]
-        name_expr_pairs.sort()  # alphabetize helpers for easy reading of generated code
-
-        # Derivatives of auxiliary expressions
-        #
-        # (only the ones we actually need)
-        #
-        derivative_routines = {}
-        tmp_pairs = []
-        for k,val in all_derivatives.items():
-            v,fname,vname = val
-            routine_name = util.name_derivative(fname, vname, as_fortran_identifier=True)  # e.g. dI4_dBx
-            derivative_routines[k] = routine_name
-            tmp_pairs.append( (routine_name, v) )
-        tmp_pairs.sort()
-        name_expr_pairs.extend(tmp_pairs)
-
-        # The main routines
-        #
-        # We alphabetize; the reverse is needed because we insert at the beginning.
-        #
-        for funcname in reversed(sorted(all_funcs.keys())):
-            final_expr = all_funcs[funcname]
-
-            # rename derivative objects to Fortran identifiers
-            def rename(expr):
-                fname  = str(expr.args[0])
-                vnames = [str(arg) for arg in expr.args[1:]]
-                # we must return an Expr, so wrap the identifier in a Symbol
-                return sy.symbols(util.name_derivative(fname, vnames, as_fortran_identifier=True))
-            final_expr = symutil.map_instancesof_in(rename, sy.Derivative, final_expr)
-
-            # Now that we got rid of derivatives and are operating on bare symbols,
-            # it is fine to simplify this expression.
-            #
-            # But actually, without simplification we have for d2phi_dBx2
-            #
-            #    39*ADD + 78*MUL + POW
-            #
-            # whereas with the same simplification strategy as for the
-            # other expressions,
-            #
-            #    35*ADD + 92*MUL + 20*POW
-            #
-            # so actually the original form has a lower operation count.
-            # Let's leave it as-is.
-            #
-#            final_expr = my_simplify(final_expr)
-#            print_and_count(final_expr)
-
-            name_expr_pairs.insert(0, (funcname, final_expr))
-
-        basename = "mgs_%s" % (label)  # filename without extension
-        generated_code = codegen(name_expr_pairs,
-                                 language="f95",
-                                 project="elmer-mgs-galfenol",
-                                 prefix=basename)
-
-        for filename,content in generated_code:
-            content = util.degreek(content, short=True)  # sanitize identifiers for non-Unicode systems
-            with open(filename, "wt", encoding="utf-8") as f:
-                f.write(content)
+    smd.run()
 
 if __name__ == '__main__':
     main()
