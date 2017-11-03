@@ -120,6 +120,7 @@ def degreek(s, short=False):
                 r"π": (r"pi",  r"pi"),  # LaTeX \pi
                 r"ϖ": (r"pi",  r"pi"),  # LaTeX \varpi
                 r"ρ": (r"rho", r"rho"),
+                r"ϱ": (r"rho", r"rho"),  # LaTeX \varrho
                 r"σ": (r"sig", r"sigma"),
                 r"ς": (r"sig", r"sigma"),  # word-final form, rare in math; https://en.wikipedia.org/wiki/Greek_alphabet
                 r"τ": (r"tau", r"tau"),
