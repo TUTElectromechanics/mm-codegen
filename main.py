@@ -505,8 +505,8 @@ class SymbolicModelDeriver:
                 # so actually the original form has a lower operation count.
                 # Let's leave it as-is.
                 #
-    #            final_expr = my_simplify(final_expr)
-    #            print_and_count(final_expr)
+#                final_expr = my_simplify(final_expr)
+#                print_and_count(final_expr)
 
                 name_expr_pairs.insert(0, (funcname, final_expr))
 
