@@ -166,8 +166,8 @@ class SymbolicModelDeriver:
         # Now we build the chain by creating applied functions of other applied functions;
         # they are also symbols.
         #
-        up = λup(I4, I5, I6)
-        vp = λvp(I4, I5, I6)
+        up = λup(I4)
+        vp = λvp(I4, I5)
         wp = λwp(I4, I5, I6)
 
         # u',v',w' are raw unscaled u,v,w.
@@ -234,7 +234,7 @@ class SymbolicModelDeriver:
         # issues, so we simply re-generate the relevant definitions,
         # leaving out I6 and w.
         #
-        up = λup(I4, I5)
+        up = λup(I4)
         vp = λvp(I4, I5)
         u = λu(up)
         v = λv(vp)
