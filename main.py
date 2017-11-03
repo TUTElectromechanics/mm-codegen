@@ -361,10 +361,11 @@ class SymbolicModelDeriver:
         diff_wrts = [(var,) for var in independent_vars]  # wrap each in tuple
         diff_wrts.extend(secondder_vars)
 
+#        diff_wrts = (("Bx",), ("Bx","Bx"),)  # DEBUG
+
         results = {}
-        for q in (("Bx",), ("Bx","Bx"),):  # DEBUG
-#        for q in diff_wrts:
-            print("Forming expression for %s" % (util.name_derivative("ϕ", q)))
+        for i,q in enumerate(diff_wrts):
+            print("(%d/%d) Forming expression for %s" % (i+1, len(diff_wrts), util.name_derivative("ϕ", q)))
             # Fortran routine name. Greek letters will be replaced later, just before writing into file.
             funcname = util.name_derivative("ϕ", q, as_fortran_identifier=True)
             results[funcname] = self.dϕdq(q)
