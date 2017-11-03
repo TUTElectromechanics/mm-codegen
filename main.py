@@ -12,6 +12,7 @@ Created on Tue Oct 24 14:07:45 2017
 @author: jje
 """
 
+import re
 from itertools import combinations_with_replacement
 
 import sympy as sy
@@ -352,7 +353,7 @@ class SymbolicModelDeriver:
 
         return results
 
-    def run(self):
+    def run(self, write_code_to_files=True):
         """Generate Fortran code for both 2-parameter and 3-parameter models."""
 
         independent_vars = sorted(self.symdic.keys())
@@ -361,7 +362,7 @@ class SymbolicModelDeriver:
         diff_wrts = [(var,) for var in independent_vars]  # wrap each in tuple
         diff_wrts.extend(secondder_vars)
 
-#        diff_wrts = (("Bx",), ("Bx","Bx"),)  # DEBUG
+        diff_wrts = (("Bx",), ("Bx","Bx"),)  # DEBUG
 
         results = {}
         for i,q in enumerate(diff_wrts):
@@ -380,6 +381,7 @@ class SymbolicModelDeriver:
                         ("3par", all_results_3par) )
 
         exprs = self.make_exprs()  # currently common to 2par and 3par cases
+        generated_code_out = []
         for label,dic in all_results:  # 2par, 3par
             for k in range(3):
                 print("=" * 80)  # separator
@@ -511,16 +513,22 @@ class SymbolicModelDeriver:
 
                 name_expr_pairs.insert(0, (funcname, final_expr))
 
-            basename = "mgs_%s" % (label)  # filename without extension
+            basename = "mgs_%s_impl" % (label)  # filename without extension
             generated_code = codegen(name_expr_pairs,
                                      language="f95",
                                      project="elmer-mgs-galfenol",
                                      prefix=basename)
 
             for filename,content in generated_code:
-                content = util.degreek(content, short=True)  # sanitize identifiers for non-Unicode systems
-                with open(filename, "wt", encoding="utf-8") as f:
-                    f.write(content)
+                # sanitize identifiers for non-Unicode systems
+                content = util.degreek(content, short=True)
+                generated_code_out.append((label, filename, content))
+
+                if write_code_to_files:
+                    with open(filename, "wt", encoding="utf-8") as f:
+                        f.write(content)
+
+        return generated_code_out
 
 ##############################################################################
 # Main program
@@ -528,7 +536,84 @@ class SymbolicModelDeriver:
 
 def main():
     smd = SymbolicModelDeriver()
-    smd.run()
+    code = smd.run(write_code_to_files=False)
+
+    # skip header files (.h, Fortran interfaces)
+    implementations = [(label,fn,content) for label,fn,content in code if not fn.endswith(".h")]
+
+    for i,item in enumerate(implementations):
+        label,infile,content = item
+        outfile = "mgs_%s.f90" % (label)
+
+        print("(%d/%d) Generating wrappers for '%s'" % (i+1, len(implementations), infile))
+
+        # HACK: parse the generated code by regex matching to build the function call dependencies.
+        # TODO: use a proper Fortran parser?
+        #
+        from enum import Enum
+        class ReaderState(Enum):
+            SCANNING  = 0
+            CAPTURING = 1
+
+        result = []
+        def commit(fname, fargs):
+            result.append( (fname, fargs) )
+        def function_header_ends(line):
+            endparen = re.findall(r"\)", line)
+            return (len(endparen) > 0)
+
+        state = ReaderState.SCANNING
+        for line in content.split("\n"):
+            if state == ReaderState.SCANNING:
+                # match "function" but not "end function" (see "help re")
+                m = re.findall(r"(?<!\bend\b)\s+\bfunction\b", line)
+
+                if len(m):  # if found, start capturing
+                    # - skip keyword "function" and whitespace
+                    # - capture function name (non-whitespace, 1 or more)
+                    # - then skip "("
+                    # - finally capture arguments:
+                    #     - up to end of line, 0 or more of anything that is not "&" or ")"
+                    #     - *0* or more because some functions might not take any arguments!
+                    matches = re.findall(r"\bfunction\b\s+(\S+)\(([^&)]*)", line)
+                    assert len(matches) == 1  # should be just one match for the whole regex
+                    groups = matches[0]
+
+                    fname = groups[0]
+                    fargs = groups[1].strip().split(",")
+                    fargs = [s.strip() for s in fargs if len(s.strip())]
+#                    print("Function '%s'" % (fname))  # DEBUG
+
+                    # Before we change state, we must check whether the whole
+                    # function header was on this line.
+                    #
+                    # If so, we are done, and we commit and resume scanning;
+                    # otherwise, we change state to capture the rest of fargs
+                    # from the following lines.
+                    #
+                    if function_header_ends(line):
+                        commit(fname, fargs)
+                    else:
+                        state = ReaderState.CAPTURING
+
+            elif state == ReaderState.CAPTURING:
+                # capture function arguments from this line
+                groups = re.findall(r"[^&)]+", line)  # one group only, no wrapper
+                morefargs = groups[0].strip().split(",")
+                morefargs = [s.strip() for s in morefargs if len(s.strip())]
+                fargs.extend(morefargs)
+
+                # If these were the last fargs, commit and resume scanning.
+                if function_header_ends(line):
+                    commit(fname, fargs)
+                    state = ReaderState.SCANNING
+
+            else:
+                assert False, "Unknown reader state"
+
+        # When we finish, the reader should be in the SCANNING state.
+        if state == ReaderState.CAPTURING:
+            raise ValueError("End of file while capturing function arguments for '%s'" % (fname))
 
 if __name__ == '__main__':
     main()
