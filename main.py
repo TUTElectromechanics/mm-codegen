@@ -21,6 +21,7 @@ from sympy.utilities.codegen import codegen  # not imported by default
 # our custom reccollect seems to fare better in some cases than sy.rcollect
 # (maybe due to autosyms?)
 from reccollect import recursive_collect
+from iterutil import uniqify
 import symutil
 import util
 
@@ -554,6 +555,8 @@ class WrapperGenerator:
         This is very simplistic, and likely specific to code generated
         by SymPy's code generator.
 
+        Only functions are supported; subroutines are ignored.
+
         Parameters:
             code: str
                 Content of a Fortran interface (".h" file), as a single string.
@@ -561,8 +564,9 @@ class WrapperGenerator:
         Return value:
             tuple of tuples:
                 Each item has the format (fname, arg1, arg2, ..., argn)
+                Ordering of the args is preserved.
 """
-        # HACK: parse the generated code by regex matching to build the function call dependencies.
+        # HACK: parse by regex matching.
         # TODO: use a proper Fortran parser?
         #
         from enum import Enum
@@ -570,13 +574,14 @@ class WrapperGenerator:
             SCANNING  = 0
             CAPTURING = 1
 
-        result = []
         def commit(fname, fargs):
             result.append( (fname, fargs) )
+
         def function_header_ends(line):
             endparen = re.findall(r"\)", line)
             return (len(endparen) > 0)
 
+        result = []
         state = ReaderState.SCANNING
         for line in code.split("\n"):
             if state == ReaderState.SCANNING:
@@ -602,9 +607,8 @@ class WrapperGenerator:
                     # Before we change state, we must check whether the whole
                     # function header was on this line.
                     #
-                    # If so, we are done, and we commit and resume scanning;
-                    # otherwise, we change state to capture the rest of fargs
-                    # from the following lines.
+                    # If so, commit and resume scanning; else change state
+                    # to capture the rest of fargs from the following lines.
                     #
                     if function_header_ends(line):
                         commit(fname, fargs)
@@ -626,41 +630,120 @@ class WrapperGenerator:
             else:
                 assert False, "Unknown reader state"
 
-        # When we finish, the reader should be in the SCANNING state.
+        # When we finish, the reader should NOT be in the CAPTURING state,
+        # as that indicates that a function header was not terminated correctly.
+        #
         if state == ReaderState.CAPTURING:
             raise ValueError("End of file while capturing function arguments for '%s'" % (fname))
 
         return result
 
-    def run(self):
+    def run(self, write_code_to_files=True):
+        """Generate the high-level code."""
+
+        generated_code_output = []
         for i,item in enumerate(self.data):
             label,input_filename,content = item
     
             print("(%d/%d) Generating wrappers for '%s'" % (i+1, len(self.data), input_filename))
 
-            deps = self.analyze(content)
-            for fname,args in deps:
-                print(fname)
+            output = \
+"""!******************************************************************************
+!*                 Code generated with mgs-galfenol-codegen                   *
+!*                                                                            *
+!*                 This file is part of 'elmer-mgs-galfenol'                  *
+!******************************************************************************"""
+
+            # Parse dependencies within the generated low-level module
+            #
+            funcs = self.analyze(content)
+            lookup = {fname:args for fname,args in funcs}
+
+            # TODO: consolidated version that does not re-compute everything
+            # (e.g. I6) for each output tensor component, but computes once
+            # and re-uses the result.
+
+            # Split args to bound and free sets.
+            #
+            # - any argument names that exist in funcs are considered bound
+            #   to those functions
+            # - all other arguments are free
+            #
+            def analyze_args(args, recurse):
+                bound = []
+                free  = []
                 for arg in args:
-                    print("\t%s" % (arg))
+                    if arg in lookup:  # if we know a function of this name
+                        bound.append(arg)
+                        if recurse:
+                            b,f = analyze_args(lookup[arg], recurse)
+                            bound.extend(b)
+                            free.extend(f)
+                    else:
+                        free.append(arg)
+                return (sorted(uniqify(bound)), sorted(uniqify(free)))
 
-            # TODO: use analysis result
+            for fname,args in funcs:
+#                # DEBUG
+#                print(fname)
+#                for arg in args:
+#                    print("\t%s" % (arg))
 
-            output_basename = "mgs_%s" % (label)
-            output_implname = "%s.f90" % (output_basename)
-            output_intfname = "%s.h"   % (output_basename)
-            # TODO: write to file
+                # To write the wrapper for a function f, we need two things:
+                #
+                #  - free args needed by f or anything it calls, recursively
+                #      -> add to arg list of wrapper
+                #  - bound args needed by f, locally
+                #      -> call them in the function body of the wrapper,
+                #         then use the obtained values
+                #
+                # This binds values to all arguments of f; we may then assign
+                # them to temporary variables and call the original f.
+                #
+                # Note that in any *calls*, we must use data from funcs
+                # (or lookup), because they preserve the original ordering
+                # of args (which are positional in Fortran!); the sets of
+                # bound and free arguments are only used for deciding what
+                # action to perform with each symbol.
+                #
+                rbound,rfree = analyze_args(args, recurse=True)
+                lbound,lfree = analyze_args(args, recurse=False)
+                print(fname, lbound, rfree)
+
+#                output += "REAL*8 function %s
+
+                # TODO: finish implementing this
+
+#            output_basename = "mgs_%s" % (label)
+#            output_implname = "%s.f90" % (output_basename)
+#            output_intfname = "%s.h"   % (output_basename)
+
+#            generated_code_output.append( (label, output_implname, output_impl) )
+#            generated_code_output.append( (label, output_implname, output_intf) )
+
+            # TODO: write to file, too
+#            if write_code_to_files:
+#                pass
+
+        return generated_code_output
 
 ##############################################################################
 # Main program
 ##############################################################################
 
+# TODO: split to three modules: main, symbolic_model_deriver and wrapper_generator
+# TODO: maybe rename: symbolic_model_deriver -> codegen_lowlevel
+# TODO: maybe rename: wrapper_generator -> codegen_highlevel
+
 def main():
+#    write = True  # production
+    write = False  # DEBUG
+
     smd = SymbolicModelDeriver()
-    code = smd.run(write_code_to_files=False)
+    code = smd.run(write_code_to_files=write)
 
     wg = WrapperGenerator(code)
-    wg.run()
+    wg.run(write_code_to_files=write)
 
 if __name__ == '__main__':
     main()
