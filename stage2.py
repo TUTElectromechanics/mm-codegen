@@ -409,12 +409,12 @@ class CodeGenerator:
 #                lbound,lfree = self.analyze_args(args, recurse=False)  # l=local
 #                print(fname, lbound, rfree)
 
-                def sorted_by(key):
+                def make_sorted_by(key):
                     # Return a one-argument function that takes in the data iterable
                     # and returns a sorted copy, sorting by the key given here.
                     return lambda data: sorted(data, key=key)
-#                sorted_by_name_asc = sorted_by(self.make_sortkey(primary="name"))
-                sorted_by_level_dsc = sorted_by(self.make_sortkey(primary="level", reverse_primary=True))
+#                sorted_by_name_asc = make_sorted_by(self.make_sortkey(primary="name"))
+                sorted_by_level_dsc = make_sorted_by(self.make_sortkey(primary="level", reverse_primary=True))
 
 #                print(fname, self.strip_levels(sorted_by_name(lbound)),
 #                             self.strip_levels(sorted_by_name(lfree)))
