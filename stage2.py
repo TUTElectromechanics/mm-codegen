@@ -53,7 +53,7 @@ class CodeGenerator:
 
         Return value: (funcs, lookup), where
             funcs: tuple of tuples
-                Each item has the format (fname, arg1, arg2, ..., argn)
+                Each item has the format (fname, (arg1, arg2, ..., argn))
                 Ordering of the args is preserved.
 
             lookup: dictionary
