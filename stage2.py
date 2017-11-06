@@ -430,6 +430,13 @@ class CodeGenerator:
                 self.validate_bound_args(rbound)
 
                 # TODO: generate both .f90 and .h
+                #  - the contents are almost the same:
+                #    - .f90 has the function body
+                #    - .h has the interface declaration
+                #    - otherwise identical
+                #  - use a tagged internal format for each line,
+                #    with tags representing "to .f90" and "to .h",
+                #    and then filter based on the tags?
 
                 # Free variables do not have a particular ordering at the API
                 # of func itself, as they are generally propagated from the
