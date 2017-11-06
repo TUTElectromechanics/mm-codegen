@@ -405,34 +405,48 @@ class CodeGenerator:
 #                    print("\t%s" % (arg))
 
                 rbound,rfree = self.analyze_args(args, recurse=True)   # r=recursive
-                lbound,lfree = self.analyze_args(args, recurse=False)  # l=local
+#                lbound,lfree = self.analyze_args(args, recurse=False)  # l=local
 #                print(fname, lbound, rfree)
 
                 def sorted_by(key):
+                    # Return a one-argument function that takes in the data iterable
+                    # and returns a sorted copy, sorting by the key given here.
                     return lambda data: sorted(data, key=key)
-                sorted_by_name = sorted_by(self.make_sortkey(primary="name"))
-                sorted_by_level_rev = sorted_by(self.make_sortkey(primary="level", reverse_primary=True))
+#                sorted_by_name_asc = sorted_by(self.make_sortkey(primary="name"))
+                sorted_by_level_dsc = sorted_by(self.make_sortkey(primary="level", reverse_primary=True))
 
 #                print(fname, self.strip_levels(sorted_by_name(lbound)),
 #                             self.strip_levels(sorted_by_name(lfree)))
 #                print(fname, sorted_by_name(rbound), sorted_by_name(rfree))
 
-                # Check that the declared interface doesn't imply
+                # Check that the declared interface doesn't try to do
                 # anything silly that is not supported by this stage2
-                # code generator
+                # code generator.
                 #
-                # (concerning the use of the bound variables, which are
-                #  defined by the stage1 generated functions)
+                # (concerning dependencies between the bound variables,
+                #  which are defined by the stage1 generated functions)
                 #
                 self.validate_bound_args(rbound)
 
                 # TODO: generate both .f90 and .h
 
+                # Free variables do not have a particular ordering at the API
+                # of func itself, as they are generally propagated from the
+                # deeper levels of the call tree.
+                #
+                # Bound variables must be ordered by level, decreasing,
+                # as noted above.
+                #
+                freevars  = sorted(uniqify(self.strip_levels(rfree)))
+                boundvars = tuple(uniqify(self.strip_levels(sorted_by_level_dsc(rbound))))
+                # mapping for boundvar: localvar for temp variables
+                # generated for storing values of boundvars at this call site.
+                localvars = {}
+
                 # Function header
                 #
-                wname = "%s_public"% (fname)  # wrapper name
+                wname = "%s_public"% (fname)  # name of public API function to write
                 output += "\nREAL*8 function %s(" % (wname)
-                freevars = sorted(uniqify(self.strip_levels(rfree)))
                 output += ", ".join(freevars)
                 output += ")\n"
 
@@ -440,14 +454,58 @@ class CodeGenerator:
                 output += "implicit none\n"
                 for var in freevars:
                     output += "REAL*8, intent(in) :: %s\n" % (var)
-                output += "\n"  # end argument declarations with blank line
 
-                # TODO: function body:
-                #   TODO: declarations for variables for computed quantities
-                #   TODO: compute, save to variable (in reverse order of levels)
-                #   TODO: keep track of what already computed and name saved under
-                #   TODO: call the main function for this wrapper
-                output += "%s = ...\n" % (wname)  # TODO: result
+                # Declare any needed localvars and populate them by calls to
+                # the stage1 functions represented by boundvars.
+
+                def bind_local(myargs):
+                    # bind bound variables in myargs to corresponding
+                    # local variables (if any), preserving ordering.
+                    # Any free variables in myargs are passed through as-is.
+                    result = [(localvars[arg] if arg in boundvars else arg) for arg in myargs]
+                    # sanity check: each bound var in myargs should now be bound,
+                    # so the result should have only localvars or freevars
+                    for arg in result:
+                        if arg in localvars.values() or arg in freevars:
+                            continue
+                        raise RuntimeError("undefined symbol '%s': neither in localvars nor in freevars" % (arg))
+                    return result
+                # temp storage buffer: we must first process all boundvars to generate
+                # all of localvars, but in the output, we must write the declarations
+                # of all localvars first, before writing the calls to the boundvar
+                # functions (that then populate the localvars).
+                output_buffer = ""
+                for var in boundvars:  # keep in mind the ordering by level, descending
+                    tmp = "%s_" % (var)
+                    # output: call the stage1 function for this boundvar.
+                    #
+                    # Note that in any argument lists for *calls to* functions
+                    # representing the bound variables, we must use data
+                    # from self.lookup[] (or funcs), because it preserves
+                    # the original ordering of args (which are positional
+                    # in Fortran!).
+                    output_buffer += "%s = %s(%s)\n" % (tmp, var, ", ".join(bind_local(self.lookup[var])))
+                    localvars[var] = tmp
+                    print(var)
+                # end bound vars init section (if any needed) with blank line
+                if len(boundvars):
+                    output_buffer += "\n"
+
+                # output: declare localvars
+                for var in boundvars:  # same order as boundvars
+                    output += "REAL*8 %s\n" % (localvars[var])
+
+                # end argument and local variable declarations with blank line
+                # (there is always at least the "implicit none"; if not,
+                #  we would have to check the combined length of freevars and
+                #  localvars)
+                output += "\n"
+
+                # output: evaluate localvars
+                output += output_buffer
+
+                # output: call the stage1 function for fname
+                output += "%s = %s(%s)\n" % (wname, fname, ", ".join(bind_local(args)))
 
                 output += "\n"  # end function body with blank line
                 output += "end function\n"
