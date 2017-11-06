@@ -364,7 +364,7 @@ class CodeGenerator:
         for i,item in enumerate(self.data):
             label,input_filename,content = item
 
-            print("(%d/%d) Generating wrappers for '%s'" % (i+1, len(self.data), input_filename))
+            print("(%d/%d) stage2: generating public API based on '%s'" % (i+1, len(self.data), input_filename))
 
             output = _fileheader
 
