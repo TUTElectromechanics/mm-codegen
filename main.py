@@ -665,19 +665,62 @@ class Stage2CodeGenerator:
             #   to those functions
             # - all other arguments are free
             #
-            def analyze_args(args, recurse):
-                bound = []
-                free  = []
-                for arg in args:
+            # - "level" keeps track of the depth of recursion i.e. how deep
+            #   in the call tree the arg is needed.
+            #   - 0 means top level
+            #   - i > 0 means "needed by level i-1"
+            #
+            # - Mutual recursion:
+            #   - analyze_args() is the public API, and injects the level info
+            #   - _analyze_args_internal() does the work, but uses analyze_args()
+            #     to inject level information into the raw arg list
+            #
+            def analyze_args(args, recurse, level=0):
+                return _analyze_args_internal([(level,arg) for arg in args], recurse)
+            def _analyze_args_internal(args, recurse):
+                bound = set()
+                free  = set()
+                for item in args:
+                    print(item)
+                    level,arg = item
                     if arg in lookup:  # if we know a function of this name
-                        bound.append(arg)
+                        bound.add((level,arg))
                         if recurse:
-                            b,f = analyze_args(lookup[arg], recurse)
-                            bound.extend(b)
-                            free.extend(f)
+                            b,f = analyze_args(lookup[arg], recurse, level+1)
+                            bound.update(b)
+                            free.update(f)
                     else:
-                        free.append(arg)
-                return (sorted(uniqify(bound)), sorted(uniqify(free)))
+                        free.add((level,arg))
+                return (bound,free)
+            def sorted_by_level(args):  # level first, then name as tie-breaker
+                return sorted(tuple(args), key=lambda item: (item[0], item[1]))
+            def sorted_by_name(args):   # name first, then level as tie-breaker
+                return sorted(tuple(args), key=lambda item: (item[1], item[0]))
+
+            # Check that each call goes to a strictly deeper level, because our
+            # code generation algorithm does not work for mutually recursive
+            # call sequences.
+            #
+            # This guarantees the correctness (in this respect) of the
+            # generated Fortran program.
+            #
+            def validate(bound):
+                # find the deepest level where each bound arg was used
+                args = [arg for (_,arg) in bound]
+                arg_to_level = {}
+                for arg in args:
+                    maxlevel = max(l for (l,a) in bound if a == arg)
+                    arg_to_level[arg] = maxlevel
+
+                # check that all args *used by* each of our bound args
+                # are at a strictly deeper level than the arg itself
+                for arg,level in arg_to_level.items():
+                    deps = lookup[arg]
+                    for a in deps:
+                        if a in args:  # if a is bound
+                            al = arg_to_level[a]  # max level where a was seen
+                            if al <= level:
+                                raise ValueError("%s (max level %d) requires %s (max level %d); recursive calls not supported by this code generator" % (arg,level,a,al))
 
             # To write the wrapper for a function f, we need two things:
             #
@@ -704,7 +747,10 @@ class Stage2CodeGenerator:
 
                 rbound,rfree = analyze_args(args, recurse=True)   # r=recursive
                 lbound,lfree = analyze_args(args, recurse=False)  # l=local
-                print(fname, lbound, rfree)
+#                print(fname, lbound, rfree)
+                print(fname, sorted_by_name(lbound), sorted_by_name(lfree))
+                print(fname, sorted_by_name(rbound), sorted_by_name(rfree))
+                validate(rbound)
 
 #                output += "REAL*8 function %s
 
