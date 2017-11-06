@@ -364,7 +364,7 @@ class CodeGenerator:
             #   current chain of calls.
             if arg in self.lookup:  # only validate if arg is bound (free args may occur anywhere along the chain)
                 if arg in callstack:
-                    raise ValueError("Top-level arg %s: recursive call to %s not allowed (current call stack: %s)" % (toplevel_arg,arg,callstack))
+                    raise NotImplementedError("top-level arg %s: recursive call to %s not allowed (current call stack: %s)" % (toplevel_arg,arg,callstack))
                 update_callers_of(arg, set(callstack))
                 s = callstack.copy()
                 s.append(arg)
@@ -380,7 +380,7 @@ class CodeGenerator:
         for a in callers_of.keys():     # a = the thing being called
             for b in callers_of[a]:     # b = its callers (i.e. each b is known to call a, at least implicitly)
                 if a in callers_of[b]:  # so if a calls b (even if implicitly), there is mutual recursion
-                    raise ValueError("mutual recursion (possibly implicit) detected between %s and %s (callers of %s: %s; callers of %s: %s)" % (a,b,a,callers_of[a],b,callers_of[b]))
+                    raise NotImplementedError("mutual recursion (possibly implicit) detected between %s and %s (callers of %s: %s; callers of %s: %s)" % (a,b,a,callers_of[a],b,callers_of[b]))
 
     def run(self):
         """Generate the high-level code."""
