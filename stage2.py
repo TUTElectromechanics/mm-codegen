@@ -220,39 +220,74 @@ class CodeGenerator:
             None
                 ``ValueError`` is raised if the validity check fails.
 """
-        # Find the shallowest (min) and deepest (max) level where
-        # each bound arg was seen.
-        #
-        args = [arg for (_,arg) in bound]
-        arg_to_level = {}
-        for arg in args:
-            levels = [l for (l,a) in bound if a == arg]
-            minlevel = min(levels)
-            maxlevel = max(levels)
-            arg_to_level[arg] = (minlevel,maxlevel)
+#    # This global property is *not* satisfied by our code; e.g. in d2phi_dBx2,
+#    # I5 (max level 1) needs exx (min level 1 due to use elsewhere).
+#    # Thus, we must do a local check instead.
+#    #
+#        # Find the shallowest (min) and deepest (max) level where
+#        # each bound arg was seen.
+#        #
+#        args = self.strip_levels(bound)
+#        arg_to_level = {}
+#        for arg in args:
+#            levels = [l for (l,a) in bound if a == arg]
+#            minlevel = min(levels)
+#            maxlevel = max(levels)
+#            arg_to_level[arg] = (minlevel,maxlevel)
+#
+#        # Validate.
+#        #
+#        # - Each arg may only call into args having levels strictly deeper
+#        #   than its own maxlevel. (The arg must be evaluable at *all* of its
+#        #   call sites, whence especially at the deepest one.)
+#        #
+#        # - When the arg calls another arg, the minlevel *of the other arg*
+#        #   must be > maxlevel *of this arg* (also to make sure that this arg,
+#        #   at its deepest call site, is evaluable).
+#        #
+#        # We dont need to recurse, because analyze_args() already gives us
+#        # a flattened list of all occurrences of each arg.
+#        #
+#        for arg,levels in arg_to_level.items():
+#            minlevel,maxlevel = levels
+#            deps = self.lookup[arg]  # other args this arg depends on
+#            for a in deps:
+#                if a in args:  # only validate if a is bound (free args may occur anywhere)
+#                    almin,almax = arg_to_level[a]  # max level where a was seen
+#                    if almin > maxlevel:
+#                        continue
+#                    raise ValueError("%s (max level %d) requires %s (min level %d); recursive calls not supported by this code generator" % (arg,maxlevel,a,almin))
 
-        # Validate.
+        # So, let's check the following local property: each call chain
+        # must not call anything already seen in that particular call chain.
         #
-        # - Each arg may only call into args having levels strictly deeper
-        #   than its own maxlevel. (The arg must be evaluable at *all* of its
-        #   call sites, whence especially at the deepest one.)
-        #
-        # - When the arg calls another arg, the minlevel *of the other arg*
-        #   must be > maxlevel *of this arg* (also to make sure that this arg,
-        #   at its deepest call site, is evaluable).
-        #
-        # We dont need to recurse, because analyze_args() already gives us
-        # a flattened list of all occurrences of each arg.
-        #
-        for arg,levels in arg_to_level.items():
-            minlevel,maxlevel = levels
-            deps = self.lookup[arg]  # other args this arg depends on
-            for a in deps:
-                if a in args:  # only validate if a is bound (free args may occur anywhere)
-                    almin,almax = arg_to_level[a]  # max level where a was seen
-                    if almin > maxlevel:
-                        continue
-                    raise ValueError("%s (max level %d) requires %s (min level %d); recursive calls not supported by this code generator" % (arg,maxlevel,a,almin))
+        # This doesn't detect mutual recursion ("a" depends on "b",
+        # while "b" depends on "a", possibly in different call chains),
+        # but maybe it's good enough?
+
+        # check top level; we should be given only bound args
+        args = self.strip_levels(bound)
+        for toplevel_arg in args:
+            if toplevel_arg not in self.lookup:
+                raise ValueError("Got free top-level arg %s; only bound args supported by this checker" % (toplevel_arg))
+
+        def process(arg, callstack):
+            # - We want to track *each chain of calls* independently.
+            #   (E.g. in dwp_dI6 in the 3par model, both I5 and I6,
+            #    at the same level, depend on exx.)
+            # - Python is call-by-sharing (call-by-object).
+            # - Hence, to avoid munging caller's "callstack", we create a copy.
+            # - This makes "callstack" what it says on the tin, for the
+            #   current chain of calls.
+            if arg in self.lookup:  # only validate if arg is bound (free args may occur anywhere along the chain)
+                if arg in callstack:
+                    raise ValueError("Top-level arg %s: recursive call to %s not allowed (current call stack: %s)" % (toplevel_arg,arg,callstack))
+                s = callstack.copy()
+                s.append(arg)
+                for a in self.lookup[arg]:  # recurse into the call tree
+                    process(a, s)
+        for toplevel_arg in args:
+            process(toplevel_arg, list())
 
     def run(self):
         """Generate the high-level code."""
