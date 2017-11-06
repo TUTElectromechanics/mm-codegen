@@ -32,7 +32,8 @@ _fileheader = \
 !*              Code generated with mgs-galfenol-codegen stage2               *
 !*                                                                            *
 !*                 This file is part of 'elmer-mgs-galfenol'                  *
-!******************************************************************************"""
+!******************************************************************************
+"""
 
 ##############################################################################
 # stage2 code generator
@@ -517,14 +518,16 @@ class CodeGenerator:
 #            output += " "
 #            output += "diipa daapa " * 20
 
-            print(fold_fortran_code(output))  # DEBUG
+#            print(fold_fortran_code(output))  # DEBUG
 
-#            output_basename = "mgs_%s" % (label)
-#            output_implname = "%s.f90" % (output_basename)
+            output += "\n"  # end whole file with a blank line
+
+            output_basename = "mgs_%s" % (label)
+            output_implname = "%s.f90" % (output_basename)
 #            output_intfname = "%s.h"   % (output_basename)
 
-#            generated_code_output.append( (label, output_implname, output_impl) )
-#            generated_code_output.append( (label, output_implname, output_intf) )
+            generated_code_output.append( (label, output_implname, output) )  # TODO: output_impl
+#            generated_code_output.append( (label, output_intfname, output_intf) )
 
         return generated_code_output
 
@@ -541,7 +544,10 @@ def test():
     s2gen = CodeGenerator(s1code)  # stage2 i.e. ours
     s2code = s2gen.run()
 
-    # TODO: write to files
+    for label,filename,content in s2code:
+        print("stage2: writing %s for %s" % (filename, label))
+        with open(filename, "wt", encoding="utf-8") as f:
+            f.write(content)
 
 if __name__ == '__main__':
     test()
