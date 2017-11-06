@@ -366,7 +366,7 @@ class CodeGenerator:
 
             print("(%d/%d) stage2: generating public API based on '%s'" % (i+1, len(self.data), input_filename))
 
-            output = _fileheader
+            output = ""
 
             # Parse dependencies between the stage1 generated functions.
             #
@@ -517,9 +517,7 @@ class CodeGenerator:
 #            output += " "
 #            output += "diipa daapa " * 20
 
-#            print(fold_fortran_code(output))  # DEBUG
-
-            output += "\n"  # end whole file with a blank line
+            output = _fileheader + fold_fortran_code(output)
 
             output_basename = "mgs_%s" % (label)
             output_implname = "%s.f90" % (output_basename)
