@@ -683,31 +683,31 @@ class WrapperGenerator:
                         free.append(arg)
                 return (sorted(uniqify(bound)), sorted(uniqify(free)))
 
+            # To write the wrapper for a function f, we need two things:
+            #
+            #  - free args needed by f or anything it calls, recursively
+            #      -> add to arg list of wrapper
+            #  - bound args needed by f, locally
+            #      -> call them in the function body of the wrapper,
+            #         then use the obtained values
+            #
+            # This binds values to all arguments of f; we may then assign
+            # them to temporary variables and call the original f.
+            #
+            # Note that in any *calls*, we must use data from funcs
+            # (or lookup), because they preserve the original ordering
+            # of args (which are positional in Fortran!); the sets of
+            # bound and free arguments are only used for deciding
+            # which action to perform with each symbol.
+            #
             for fname,args in funcs:
 #                # DEBUG
 #                print(fname)
 #                for arg in args:
 #                    print("\t%s" % (arg))
 
-                # To write the wrapper for a function f, we need two things:
-                #
-                #  - free args needed by f or anything it calls, recursively
-                #      -> add to arg list of wrapper
-                #  - bound args needed by f, locally
-                #      -> call them in the function body of the wrapper,
-                #         then use the obtained values
-                #
-                # This binds values to all arguments of f; we may then assign
-                # them to temporary variables and call the original f.
-                #
-                # Note that in any *calls*, we must use data from funcs
-                # (or lookup), because they preserve the original ordering
-                # of args (which are positional in Fortran!); the sets of
-                # bound and free arguments are only used for deciding what
-                # action to perform with each symbol.
-                #
-                rbound,rfree = analyze_args(args, recurse=True)
-                lbound,lfree = analyze_args(args, recurse=False)
+                rbound,rfree = analyze_args(args, recurse=True)   # r=recursive
+                lbound,lfree = analyze_args(args, recurse=False)  # l=local
                 print(fname, lbound, rfree)
 
 #                output += "REAL*8 function %s
