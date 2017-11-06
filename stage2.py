@@ -230,15 +230,27 @@ class CodeGenerator:
             else:
                 free.add((level,arg))
         return (bound,free)
+
     @staticmethod
-    def sorted_by_level(args, reverse=False):  # level first, then name as tie-breaker
-        """Sort helper for output of analyze_args()."""
-        sign = -1 if reverse else +1
-        return sorted(tuple(args), key=lambda item: (sign*item[0], item[1]))
-    @staticmethod
-    def sorted_by_name(args):   # name first, then level as tie-breaker
-        """Sort helper for output of analyze_args()."""
-        return sorted(tuple(args), key=lambda item: (item[1], item[0]))
+    def make_sortkey(primary="level", reverse_primary=False, reverse_secondary=False):
+        """Sort helper for output of analyze_args().
+
+        Parameters:
+            primary: str
+                "level": level first, then name as tie-breaker
+                "name": name first, then level as tie-breaker
+
+        Returns:
+            lambda item: ... that can be used in ``sorted()`` as ``key``.
+"""
+        if primary not in ("level","name"):
+            raise ValueError("Unknown primary sort criterion '%s'; valid: 'level', 'name'" % (primary))
+        indx0 = 0 if primary == "level" else 1
+        indx1 = 1 - indx0
+        sign0 = -1 if reverse_primary else +1
+        sign1 = -1 if reverse_secondary else +1
+        return lambda item: (sign0*item[indx0], sign1*item[indx1])
+
     @staticmethod
     def strip_levels(args):
         """Strip level information from output of analyze_args()."""
@@ -415,9 +427,15 @@ class CodeGenerator:
                 rbound,rfree = self.analyze_args(args, recurse=True)   # r=recursive
                 lbound,lfree = self.analyze_args(args, recurse=False)  # l=local
 #                print(fname, lbound, rfree)
-                print(fname, self.strip_levels(self.sorted_by_name(lbound)),
-                             self.strip_levels(self.sorted_by_name(lfree)))
-                print(fname, self.sorted_by_name(rbound), self.sorted_by_name(rfree))
+
+                def sorted_by(key):
+                    return lambda data: sorted(data, key=key)
+                sorted_by_name = sorted_by(self.make_sortkey(primary="name"))
+                sorted_by_level_rev = sorted_by(self.make_sortkey(primary="level", reverse_primary=True))
+
+#                print(fname, self.strip_levels(sorted_by_name(lbound)),
+#                             self.strip_levels(sorted_by_name(lfree)))
+#                print(fname, sorted_by_name(rbound), sorted_by_name(rfree))
 
                 # Check that the declared interface doesn't imply
                 # anything silly that is not supported by this stage2
