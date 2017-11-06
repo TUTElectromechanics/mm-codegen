@@ -74,7 +74,7 @@ class CodeGenerator:
                 lookup[fname] = (arg1, arg2, ..., argn)
                 This is provided for convenience.
 """
-        # HACK: We parse by regex matching. Use a proper Fortran parser?
+        # HACK: parse by regex matching. (Use a proper Fortran parser?)
         #
         from enum import Enum
         class ReaderState(Enum):
@@ -155,9 +155,11 @@ class CodeGenerator:
 
         Parameters:
             args: tuple of str
-                Formal arguments of a stage1 generated function. These are,
-                generally, names of other stage1 generated functions or
-                free arguments. See ``analyze_interface()``.
+                Formal argument names of a stage1 generated function.
+                Each name is, generally:
+                  a) the name of another stage1 generated function, or
+                  b) a free argument (anything not defined by stage1 code).
+                See ``analyze_interface()``.
 
             recurse: bool
                 If True, recurse into ``args``.
@@ -215,7 +217,7 @@ class CodeGenerator:
         if primary not in ("level","name"):
             raise ValueError("Unknown primary sort criterion '%s'; valid: 'level', 'name'" % (primary))
         indx0 = 0 if primary == "level" else 1
-        indx1 = 1 - indx0
+        indx1 = 1 - indx0  # the other one
         sign0 = -1 if reverse_primary else +1
         sign1 = -1 if reverse_secondary else +1
         return lambda item: (sign0*item[indx0], sign1*item[indx1])
@@ -233,8 +235,8 @@ class CodeGenerator:
 
           - recursive (a function calling into itself or into any parent
                        on its call stack)
-          - mutually recursive (a calling b, b calling a)
-            - the calls may be in different call chains
+          - mutually recursive (a calling b and b calling a; this is detected
+                                even if the calls are in different call chains)
 
         on the condition that ``analyze_interface()`` and ``analyze_args()``
         are implemented correctly.
@@ -288,13 +290,14 @@ class CodeGenerator:
 #                        continue
 #                    raise ValueError("%s (max level %d) requires %s (min level %d); recursive calls not supported by this code generator" % (arg,maxlevel,a,almin))
 
-        # So, let's check the following local property: each call chain
-        # must not call anything already seen in that particular call chain.
+        # We check the following local property: each call chain must
+        # not call anything already seen in that particular call chain.
         #
         # Also, we disallow mutual recursion: if "a" is in the set of callers
         # of "b", then "b" must not be in the set of callers of "a".
 
-        # check top level; we should be given only bound args
+        # Check top level; we should be given only bound args.
+        #
         args = self.strip_levels(bound)
         for toplevel_arg in args:
             if toplevel_arg not in self.lookup:
@@ -303,16 +306,16 @@ class CodeGenerator:
         # Sets of callers of each bound var, for mutual recursion detection.
         #
         # Basically the callers of "func" are the content of the call stack
-        # just before we push "func" itself onto the stack. (This includes
+        # just before we push "func" itself onto the stack. This includes
         # "implicit" callers, in the sense that f in f(g(h(x))) implicitly
-        # calls h, because g does.)
+        # calls h, because g does.
         #
         # (To collect only the explicit callers, we would take only the
         #  current topmost item in the call stack.)
         #
         # The sets of callers are built globally across all call chains;
-        # the set for "func" is updated with any new callers of "func"
-        # detected in any call chain.
+        # the set of callers of "func" is updated with any new callers
+        # of "func" encountered in any call chain.
         #
         callers_of = {}
         def update_callers_of(k,v):
@@ -321,7 +324,7 @@ class CodeGenerator:
             else:
                 callers_of[k].update(v)
 
-        # Validate each chain individually.
+        # Validate each chain individually (and build callers_of).
         #
         def process(arg, callstack):
             # - We want to track *each chain of calls* independently.
@@ -342,9 +345,11 @@ class CodeGenerator:
         for toplevel_arg in args:
             process(toplevel_arg, list())
 
-        # Detect mutual recursion between chains.
+        # Detect mutual recursion between different call chains.
         #
-        # TODO: improve error message? (what information do we need to store to pinpoint the location of the error?)
+        # TODO: improve error message?
+        #   - what information do we need to store to pinpoint the location of the error?
+        #   - maybe the state of the call stack at each call site?
         #
         for a in callers_of.keys():     # a = the thing being called
             for b in callers_of[a]:     # b = its callers (i.e. each b is known to call a, at least implicitly)
@@ -370,22 +375,28 @@ class CodeGenerator:
             # (e.g. I6) for each output tensor component, but computes once
             # and re-uses the result.
 
-            # To write the wrapper for a function f, we need two things:
+            # To write the wrapper for a function f, we need:
             #
-            #  - free args needed by f or anything it calls, recursively
-            #      -> add to arg list of wrapper
-            #  - bound args needed by f, locally
-            #      -> call them in the function body of the wrapper,
-            #         then use the obtained values
+            #  - Free args:
+            #      - Must be supplied by caller; add to arg list of wrapper
+            #  - Bound args:
+            #      - Call the corresponding stage1 generated functions in the
+            #        body of the wrapper, then use the obtained values.
+            #      - If we do this in reverse order of call tree depth
+            #        of the deepest instance seen of each bound arg,
+            #        we already have available any bound inputs for that call.
+            #      - This follows from the facts that:
+            #          1) No recursion or mutual recursion in the call tree
+            #             (as checked by validate_bound_args())
+            #          2) The "leaf" calls in the call tree only depend
+            #             on free args (at most)
+            #          3) The stage1 generated code consists of pure functions;
+            #             each computed value, even if needed several times
+            #             during the computation of our output, is always the
+            #             same (for the same values of the free vars).
             #
-            # This binds values to all arguments of f; we may then assign
-            # them to temporary variables and call the original f.
-            #
-            # Note that in any *calls*, we must use data from funcs
-            # (or lookup), because they preserve the original ordering
-            # of args (which are positional in Fortran!); the sets of
-            # bound and free arguments are only used for deciding
-            # which action to perform with each symbol.
+            # We must do this recursively; for variables needed directly by f,
+            # and for variables needed by something f calls.
             #
             for fname,args in funcs:
 #                # DEBUG
