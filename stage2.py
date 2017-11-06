@@ -193,7 +193,7 @@ class CodeGenerator:
     @staticmethod
     def strip_levels(args):
         """Strip level information from output of analyze_args."""
-        return [item[1] for item in args]
+        return [arg for (_,arg) in args]
 
     def validate_bound_args(self, bound):
         """Validate bound args.
