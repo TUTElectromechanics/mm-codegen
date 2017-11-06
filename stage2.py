@@ -21,6 +21,7 @@ Created on Tue Oct 24 14:07:45 2017
 import re
 
 from iterutil import uniqify
+from util import fold_fortran_code
 
 ##############################################################################
 # Local definitions
@@ -32,38 +33,6 @@ _fileheader = \
 !*                                                                            *
 !*                 This file is part of 'elmer-mgs-galfenol'                  *
 !******************************************************************************"""
-
-##############################################################################
-# Local utilities
-##############################################################################
-
-def fold_fortran_code(content, width=80):
-    """Simplistic fold to n columns, breaking at whitespace."""
-    lines = content.split(sep="\n")
-    result = ""
-    for input_line in lines:
-        words = input_line.split()
-        output_line = ""
-        l = 0  # current length of output line
-        for w in words:
-            # 3 = space before w, space after w, &
-            if l + len(w) < width - 3:
-                if len(output_line):
-                    addme = " %s" % (w)
-                else:
-                    addme = w
-                output_line += addme
-                l += len(addme)
-            else:
-                if len(output_line):
-                    output_line += " &\n"    # Fortran line continuation...
-                    result += output_line
-                    output_line = 6*" " + w  # ...and indent
-                else:
-                    output_line = w
-                l = len(output_line)
-        result += (output_line + "\n")
-    return result
 
 ##############################################################################
 # stage2 code generator

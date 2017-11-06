@@ -159,3 +159,35 @@ def degreek(s, short=False):
     for letter,replacement in mapping.items():
         s = re.sub(letter, replacement[i], s)
     return s
+
+def fold_fortran_code(content, width=79):
+    """Simplistic fold to n columns, breaking at whitespace.
+
+    Fortran line continuation (&) with a six-space following indent
+    are used where necessary.
+"""
+    lines = content.split(sep="\n")
+    result = ""
+    for input_line in lines:
+        words = input_line.split()
+        output_line = ""
+        l = 0  # current length of output line
+        for w in words:
+            # 3 = space before w, space after w, &
+            if l + len(w) < width - 3:
+                if len(output_line):
+                    addme = " %s" % (w)
+                else:
+                    addme = w
+                output_line += addme
+                l += len(addme)
+            else:
+                if len(output_line):
+                    output_line += " &\n"    # Fortran line continuation...
+                    result += output_line
+                    output_line = 6*" " + w  # ...and indent
+                else:
+                    output_line = w
+                l = len(output_line)
+        result += (output_line + "\n")
+    return result
