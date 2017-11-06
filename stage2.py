@@ -131,23 +131,26 @@ class CodeGenerator:
 
         return (result, {fname:args for fname,args in result})
 
-    def analyze_args(self, args, recurse, level=0):
+    def analyze_args(self, args, recurse, _level=0):
         """Split args to bound and free sets.
 
-        Any argument names that exist in self.lookup are considered
+        Any arg names that exist in ``self.lookup[]`` are considered to be
         bound to those functions.
 
         All other arguments are considered free.
 
         Parameters:
             args: tuple of str
-                Names of arguments used by a stage1 generated function.
-                See analyze_interface().
+                Formal arguments of a stage1 generated function. These are,
+                generally, names of other stage1 generated functions or
+                free arguments. See ``analyze_interface()``.
 
             recurse: bool
-                Whether to recurse into args.
+                If True, recurse into ``args``.
 
-            level: int
+                If False, analyze only the local level.
+
+            _level: int
                 Internal parameter that keeps track of the depth of recursion,
                 i.e. how deep in the call tree the arg is needed.
 
@@ -161,19 +164,19 @@ class CodeGenerator:
 
                 ``i > 0`` means "needed by level ``i-1``".
 
-                Note that the same arg may have been seen at multiple levels;
-                each level then has its own instance in the results.
+                The same arg may appear at multiple levels; in this case,
+                each level has its own instance in the results.
 """
         # Implemented using mutual recursion:
-        #   - analyze_args() injects the level info into a raw args list
+        #   - analyze_args() injects the level information into a raw args list
         #   - _analyze_args_internal() does the rest of the work
-        return self._analyze_args_internal([(level,arg) for arg in args], recurse)
+        return self._analyze_args_internal([(_level,arg) for arg in args], recurse)
     def _analyze_args_internal(self, args, recurse):
         bound = set()
         free  = set()
         for item in args:
             level,arg = item
-            if arg in self.lookup:  # if we know a function of this name
+            if arg in self.lookup:  # if we know a stage1 function of this name
                 bound.add((level,arg))
                 if recurse:
                     b,f = self.analyze_args(self.lookup[arg], recurse, level+1)
@@ -192,24 +195,24 @@ class CodeGenerator:
         return sorted(tuple(args), key=lambda item: (item[1], item[0]))
     @staticmethod
     def strip_levels(args):
-        """Strip level information from output of analyze_args."""
+        """Strip level information from output of analyze_args()."""
         return [arg for (_,arg) in args]
 
     def validate_bound_args(self, bound):
         """Validate bound args.
 
-        Check that each bound argument calls other bound arguments of only
-        strictly deeper levels, because our code generation algorithm
-        is not designed to handle mutually recursive call sequences.
+        If this check passes, it proves that the dependencies between the
+        functions declared in the analyzed Fortran interface are NOT:
 
-        If the check passes, it proves that the generated Fortran program
-        cannot get stuck in an infinite recursion.
+          - recursive (a function calling into itself or into any parent
+                       on its call stack)
+          - mutually recursive (a calling b, b calling a)
+            - the calls may be in different call chains
 
-        (Strictly speaking, this only proves the non-recursiveness of the
-        dependencies declared between the function definitions in the interface
-        that was analyzed, and that only provided that the analysis is correct.
+        on the condition that ``analyze_interface()`` and ``analyze_args()``
+        are implemented correctly.
 
-        We still need to rely on other means to make sure that the stage2
+        (We still need to rely on other means to make sure that the stage2
         analyzer and code generator are correct.)
 
         Parameters:
@@ -218,7 +221,7 @@ class CodeGenerator:
 
         Returns:
             None
-                ``ValueError`` is raised if the validity check fails.
+                ``ValueError`` is raised if the check fails.
 """
 #    # This global property is *not* satisfied by our code; e.g. in d2phi_dBx2,
 #    # I5 (max level 1) needs exx (min level 1 due to use elsewhere).
@@ -261,9 +264,8 @@ class CodeGenerator:
         # So, let's check the following local property: each call chain
         # must not call anything already seen in that particular call chain.
         #
-        # This doesn't detect mutual recursion ("a" depends on "b",
-        # while "b" depends on "a", possibly in different call chains),
-        # but maybe it's good enough?
+        # Also, we disallow mutual recursion: if "a" is in the set of callers
+        # of "b", then "b" must not be in the set of callers of "a".
 
         # check top level; we should be given only bound args
         args = self.strip_levels(bound)
@@ -271,6 +273,29 @@ class CodeGenerator:
             if toplevel_arg not in self.lookup:
                 raise ValueError("Got free top-level arg %s; only bound args supported by this checker" % (toplevel_arg))
 
+        # Sets of callers of each bound var, for mutual recursion detection.
+        #
+        # Basically the callers of "func" are the content of the call stack
+        # just before we push "func" itself onto the stack. (This includes
+        # "implicit" callers, in the sense that f in f(g(h(x))) implicitly
+        # calls h, because g does.)
+        #
+        # (To collect only the explicit callers, we would take only the
+        #  current topmost item in the call stack.)
+        #
+        # The sets of callers are built globally across all call chains;
+        # the set for "func" is updated with any new callers of "func"
+        # detected in any call chain.
+        #
+        callers_of = {}
+        def update_callers_of(k,v):
+            if k not in callers_of:
+                callers_of[k] = v
+            else:
+                callers_of[k].update(v)
+
+        # Validate each chain individually.
+        #
         def process(arg, callstack):
             # - We want to track *each chain of calls* independently.
             #   (E.g. in dwp_dI6 in the 3par model, both I5 and I6,
@@ -282,12 +307,22 @@ class CodeGenerator:
             if arg in self.lookup:  # only validate if arg is bound (free args may occur anywhere along the chain)
                 if arg in callstack:
                     raise ValueError("Top-level arg %s: recursive call to %s not allowed (current call stack: %s)" % (toplevel_arg,arg,callstack))
+                update_callers_of(arg, set(callstack))
                 s = callstack.copy()
                 s.append(arg)
                 for a in self.lookup[arg]:  # recurse into the call tree
                     process(a, s)
         for toplevel_arg in args:
             process(toplevel_arg, list())
+
+        # Detect mutual recursion between chains.
+        #
+        # TODO: improve error message? (what information do we need to store to pinpoint the location of the error?)
+        #
+        for a in callers_of.keys():     # a = the thing being called
+            for b in callers_of[a]:     # b = its callers (i.e. each b is known to call a, at least implicitly)
+                if a in callers_of[b]:  # so if a calls b (even if implicitly), there is mutual recursion
+                    raise ValueError("mutual recursion (possibly implicit) detected between %s and %s (callers of %s: %s; callers of %s: %s)" % (a,b,a,callers_of[a],b,callers_of[b]))
 
     def run(self):
         """Generate the high-level code."""
