@@ -42,7 +42,7 @@ def print_and_count(expr, name=None, pretty=False, count_visual=True):
     print("=" * 80)  # separator
 
 ##############################################################################
-# Low-level expression and code generator
+# stage1 code generator
 ##############################################################################
 
 class CodeGenerator:
