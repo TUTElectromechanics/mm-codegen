@@ -20,6 +20,51 @@ Created on Tue Oct 24 14:07:45 2017
 
 import re
 
+from iterutil import uniqify
+
+##############################################################################
+# Local definitions
+##############################################################################
+
+_fileheader = \
+"""!******************************************************************************
+!*                 Code generated with mgs-galfenol-codegen                   *
+!*                                                                            *
+!*                 This file is part of 'elmer-mgs-galfenol'                  *
+!******************************************************************************"""
+
+##############################################################################
+# Local utilities
+##############################################################################
+
+def fold_fortran_code(content, width=80):
+    """Simplistic fold to n columns, breaking at whitespace."""
+    lines = content.split(sep="\n")
+    result = ""
+    for input_line in lines:
+        words = input_line.split()
+        output_line = ""
+        l = 0  # current length of output line
+        for w in words:
+            # 3 = space before w, space after w, &
+            if l + len(w) < width - 3:
+                if len(output_line):
+                    addme = " %s" % (w)
+                else:
+                    addme = w
+                output_line += addme
+                l += len(addme)
+            else:
+                if len(output_line):
+                    output_line += " &\n"    # Fortran line continuation...
+                    result += output_line
+                    output_line = 6*" " + w  # ...and indent
+                else:
+                    output_line = w
+                l = len(output_line)
+        result += (output_line + "\n")
+    return result
+
 ##############################################################################
 # stage2 code generator
 ##############################################################################
@@ -186,9 +231,10 @@ class CodeGenerator:
                 free.add((level,arg))
         return (bound,free)
     @staticmethod
-    def sorted_by_level(args):  # level first, then name as tie-breaker
+    def sorted_by_level(args, reverse=False):  # level first, then name as tie-breaker
         """Sort helper for output of analyze_args()."""
-        return sorted(tuple(args), key=lambda item: (item[0], item[1]))
+        sign = -1 if reverse else +1
+        return sorted(tuple(args), key=lambda item: (sign*item[0], item[1]))
     @staticmethod
     def sorted_by_name(args):   # name first, then level as tie-breaker
         """Sort helper for output of analyze_args()."""
@@ -333,12 +379,7 @@ class CodeGenerator:
 
             print("(%d/%d) Generating wrappers for '%s'" % (i+1, len(self.data), input_filename))
 
-            output = \
-"""!******************************************************************************
-!*                 Code generated with mgs-galfenol-codegen                   *
-!*                                                                            *
-!*                 This file is part of 'elmer-mgs-galfenol'                  *
-!******************************************************************************"""
+            output = _fileheader
 
             # Parse dependencies between the stage1 generated functions.
             #
@@ -377,11 +418,50 @@ class CodeGenerator:
                 print(fname, self.strip_levels(self.sorted_by_name(lbound)),
                              self.strip_levels(self.sorted_by_name(lfree)))
                 print(fname, self.sorted_by_name(rbound), self.sorted_by_name(rfree))
+
+                # Check that the declared interface doesn't imply
+                # anything silly that is not supported by this stage2
+                # code generator
+                #
+                # (concerning the use of the bound variables, which are
+                #  defined by the stage1 generated functions)
+                #
                 self.validate_bound_args(rbound)
 
-#                output += "REAL*8 function %s
+                # TODO: generate both .f90 and .h
 
-                # TODO: finish implementing this
+                # Function header
+                #
+                wname = "%s_public"% (fname)  # wrapper name
+                output += "\nREAL*8 function %s(" % (wname)
+                freevars = sorted(uniqify(self.strip_levels(rfree)))
+                output += ", ".join(freevars)
+                output += ")\n"
+
+                # argument declarations (free variables only!)
+                output += "implicit none\n"
+                for var in freevars:
+                    output += "REAL*8, intent(in) :: %s\n" % (var)
+                output += "\n"  # end argument declarations with blank line
+
+                # TODO: function body:
+                #   TODO: declarations for variables for computed quantities
+                #   TODO: compute, save to variable (in reverse order of levels)
+                #   TODO: keep track of what already computed and name saved under
+                #   TODO: call the main function for this wrapper
+                output += "%s = ...\n" % (wname)  # TODO: result
+
+                output += "\n"  # end function body with blank line
+                output += "end function\n"
+
+#            # DEBUG/TEST Fortran code folding
+#            output += "diipa daapa " * 20
+#            output += " "
+#            output += "e" * 90
+#            output += " "
+#            output += "diipa daapa " * 20
+
+            print(fold_fortran_code(output))  # DEBUG
 
 #            output_basename = "mgs_%s" % (label)
 #            output_implname = "%s.f90" % (output_basename)
