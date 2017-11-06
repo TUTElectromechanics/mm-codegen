@@ -487,7 +487,6 @@ class CodeGenerator:
                     # in Fortran!).
                     output_buffer += "%s = %s(%s)\n" % (tmp, var, ", ".join(bind_local(self.lookup[var])))
                     localvars[var] = tmp
-                    print(var)
                 # end bound vars init section (if any needed) with blank line
                 if len(boundvars):
                     output_buffer += "\n"
