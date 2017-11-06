@@ -46,7 +46,7 @@ def print_and_count(expr, name=None, pretty=False, count_visual=True):
 ##############################################################################
 
 class CodeGenerator:
-    """Generate mathematical expressions and low-level code to evaluate them."""
+    """Generate mathematical expressions and stage1 code (internal functions) to evaluate them."""
 
     def __init__(self):
         # es and εs are listed in Voigt notation ordering:
@@ -353,7 +353,7 @@ class CodeGenerator:
         return results
 
     def run(self):
-        """Generate Fortran code for both 2-parameter and 3-parameter models."""
+        """Generate stage1 Fortran code for both 2-parameter and 3-parameter models."""
 
         independent_vars = sorted(self.symdic.keys())
         secondder_vars   = combinations_with_replacement(independent_vars, 2)
@@ -534,7 +534,7 @@ def test():
     code = gen.run()
 
     for label,filename,content in code:
-        print("Writing %s for %s" % (filename, label))
+        print("stage1: writing %s for %s" % (filename, label))
         with open(filename, "wt", encoding="utf-8") as f:
             f.write(content)
 

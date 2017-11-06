@@ -49,7 +49,7 @@ def main():
     s1code = s1gen.run()
 
     for label,filename,content in s1code:
-        print("Writing %s for %s" % (filename, label))
+        print("stage1: writing %s for %s" % (filename, label))
         with open(filename, "wt", encoding="utf-8") as f:
             f.write(content)
 
