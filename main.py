@@ -56,7 +56,10 @@ def main():
     s2gen = stage2.CodeGenerator(s1code)
     s2code = s2gen.run()
 
-    # TODO: write to files
+    for label,filename,content in s2code:
+        print("stage2: writing %s for %s" % (filename, label))
+        with open(filename, "wt", encoding="utf-8") as f:
+            f.write(content)
 
 if __name__ == '__main__':
     main()
