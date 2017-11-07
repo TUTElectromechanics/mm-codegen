@@ -191,3 +191,70 @@ def fold_fortran_code(content, width=79):
                 l = len(output_line)
         result += (output_line + "\n")
     return result
+
+class TextMultiBuffer:
+    """Send text to one or multiple named buffers.
+
+    This is useful for generating two or more mostly identical text files.
+
+    An example are the .f90 and .h of a Fortran implementation and interface,
+    where the function *declarations* to be written to both files are
+    identical. The difference is that .h has the "interface/end interface"
+    declaration, while the .f90 has the function body.
+"""
+
+    def __init__(self):
+        self.data = {}
+
+    def append(self, keys, text):
+        """Append text to named buffer(s).
+
+        When given a new key for the first time, the buffer is created
+        automatically.
+
+        Parameters:
+            keys: str, hashable, or iterable of hashables
+                Where each item uniquely identifies a buffer.
+
+                str is handled as a special case, and names a single buffer
+                (e.g. "foo", not "f", "o", "o").
+
+            text: str
+                The text to append to the specified named buffer(s).
+
+        Returns:
+            None
+"""
+        def addto(key, txt):
+            if key not in self.data:
+                self.data[key] = ""
+            self.data[key] += txt  # TODO: horribly inefficient; maybe use StringIO or something?
+
+        if isinstance(keys, str):  # special-case str so its characters will not be iterated over
+            key = keys
+        else:  # maybe iterable
+            try:
+                for key in iter(keys):
+                    addto(key, text)
+                return
+            except TypeError:  # not iterable
+                key = keys
+        # single-key case
+        addto(key, text)
+
+    def buffers(self):
+        """Get keys of currently defined named buffers."""
+        return self.data.keys()
+
+    def get(self, key):
+        """Get content of named buffer.
+
+        Parameters:
+            key: hashable
+                Identifier of the buffer whose content to return.
+
+        Returns:
+            str:
+                The text stored in the specified named buffer.
+"""
+        return self.data[key]

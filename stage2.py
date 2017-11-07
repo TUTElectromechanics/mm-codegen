@@ -21,7 +21,7 @@ Created on Tue Oct 24 14:07:45 2017
 import re
 
 from iterutil import uniqify
-from util import fold_fortran_code
+from util import fold_fortran_code, TextMultiBuffer
 
 ##############################################################################
 # Local definitions
@@ -361,13 +361,19 @@ class CodeGenerator:
     def run(self):
         """Generate the stage2 code (i.e. the public API)."""
 
-        generated_code_output = []
+        generated_code_out = []
+        key_impl = "implementation"
+        key_intf = "interface"
+        key_both = (key_impl, key_intf)
         for i,item in enumerate(self.data):
             label,input_filename,content = item
 
             print("(%d/%d) stage2: generating public API based on '%s'" % (i+1, len(self.data), input_filename))
 
-            output = ""
+            # Text of implementation and interface will be added into named
+            # buffers. This is convenient because they are mostly identical.
+            #
+            output = TextMultiBuffer()
 
             # Parse dependencies between the stage1 generated functions.
             #
@@ -452,17 +458,20 @@ class CodeGenerator:
                 # generated for storing values of boundvars at this call site.
                 localvars = {}
 
+
                 # Function header
                 #
                 wname = "%s_public"% (fname)  # name of public API function to write
-                output += "\nREAL*8 function %s(" % (wname)
-                output += ", ".join(freevars)
-                output += ")\n"
+                output.append(key_both, "\n")  # blank line before start of item
+                output.append(key_intf, "interface\n")
+                output.append(key_both, "REAL*8 function %s(" % (wname))
+                output.append(key_both, ", ".join(freevars))
+                output.append(key_both, ")\n")
 
                 # argument declarations (free variables only!)
-                output += "implicit none\n"
+                output.append(key_both, "implicit none\n")
                 for var in freevars:
-                    output += "REAL*8, intent(in) :: %s\n" % (var)
+                    output.append(key_both, "REAL*8, intent(in) :: %s\n" % (var))
 
                 # Declare any needed localvars and populate them by calls to
                 # the stage1 functions represented by boundvars.
@@ -483,7 +492,7 @@ class CodeGenerator:
                 # all of localvars, but in the output, we must write the declarations
                 # of all localvars first, before writing the calls to the boundvar
                 # functions (that then populate the localvars).
-                output_buffer = ""
+                tmpbuffer = ""
                 for var in boundvars:  # keep in mind the ordering by level, descending
                     tmp = "%s_" % (var)
                     # output: call the stage1 function for this boundvar.
@@ -493,30 +502,31 @@ class CodeGenerator:
                     # from self.lookup[] (or funcs), because it preserves
                     # the original ordering of args (which are positional
                     # in Fortran!).
-                    output_buffer += "%s = %s(%s)\n" % (tmp, var, ", ".join(bind_local(self.lookup[var])))
+                    tmpbuffer += "%s = %s(%s)\n" % (tmp, var, ", ".join(bind_local(self.lookup[var])))
                     localvars[var] = tmp
                 # end bound vars init section (if any needed) with blank line
                 if len(boundvars):
-                    output_buffer += "\n"
+                    tmpbuffer += "\n"
 
                 # output: declare localvars
                 for var in boundvars:  # same order as boundvars
-                    output += "REAL*8 %s\n" % (localvars[var])
+                    output.append(key_impl, "REAL*8 %s\n" % (localvars[var]))
 
                 # end argument and local variable declarations with blank line
                 # (there is always at least the "implicit none"; if not,
                 #  we would have to check the combined length of freevars and
                 #  localvars)
-                output += "\n"
+                output.append(key_impl, "\n")
 
                 # output: evaluate localvars
-                output += output_buffer
+                output.append(key_impl, tmpbuffer)
 
                 # output: call the stage1 function for fname
-                output += "%s = %s(%s)\n" % (wname, fname, ", ".join(bind_local(args)))
+                output.append(key_impl, "%s = %s(%s)\n" % (wname, fname, ", ".join(bind_local(args))))
 
-                output += "\n"  # end function body with blank line
-                output += "end function\n"
+                output.append(key_impl, "\n")  # end function body with blank line
+                output.append(key_both, "end function\n")
+                output.append(key_intf, "end interface\n")
 
 #            # DEBUG/TEST Fortran code folding
 #            output += "diipa daapa " * 20
@@ -525,16 +535,17 @@ class CodeGenerator:
 #            output += " "
 #            output += "diipa daapa " * 20
 
-            output = _fileheader + fold_fortran_code(output)
+            outfile_basename = "mgs_%s" % (label)
+            outfile_implname = "%s.f90" % (outfile_basename)
+            outfile_intfname = "%s.h"   % (outfile_basename)
 
-            output_basename = "mgs_%s" % (label)
-            output_implname = "%s.f90" % (output_basename)
-#            output_intfname = "%s.h"   % (output_basename)
+            output_impl = _fileheader + fold_fortran_code(output.get(key_impl))
+            output_intf = _fileheader + fold_fortran_code(output.get(key_intf))
 
-            generated_code_output.append( (label, output_implname, output) )  # TODO: output_impl
-#            generated_code_output.append( (label, output_intfname, output_intf) )
+            generated_code_out.append( (label, outfile_implname, output_impl) )
+            generated_code_out.append( (label, outfile_intfname, output_intf) )
 
-        return generated_code_output
+        return generated_code_out
 
 ##############################################################################
 # Testing
