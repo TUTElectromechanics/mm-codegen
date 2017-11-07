@@ -519,7 +519,7 @@ class CodeGenerator:
 ##############################################################################
 
 def test():
-    gen = CodeGenerator()
+    gen = CodeGenerator()  # stage1 CodeGenerator
     code = gen.run()
 
     for label,filename,content in code:

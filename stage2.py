@@ -502,7 +502,7 @@ def test():
     s1gen = stage1.CodeGenerator()
     s1code = s1gen.run()
 
-    s2gen = CodeGenerator(s1code)  # stage2 i.e. ours
+    s2gen = CodeGenerator(s1code)  # stage2 CodeGenerator
     s2code = s2gen.run()
 
     for label,filename,content in s2code:
