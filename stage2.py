@@ -110,7 +110,6 @@ class CodeGenerator:
                     fname = groups[0]
                     fargs = groups[1].strip().split(",")
                     fargs = [s.strip() for s in fargs if len(s.strip())]
-#                    print("Function '%s'" % (fname))  # DEBUG
 
                     # Before we change state, we must check whether the whole
                     # function header was on this line.
@@ -254,44 +253,6 @@ class CodeGenerator:
                 ``NotImplementedError`` is raised if the check fails
                 (as this generator cannot currently handle such interfaces).
 """
-#    # This global property is *not* satisfied by our stage1 code; e.g. in
-#    # d2phi_dBx2, I5 (max level 1) needs exx (min level 1 due to use elsewhere).
-#    # Thus, we must do a local check instead.
-#    #
-#        # Find the shallowest (min) and deepest (max) level where
-#        # each bound arg was seen.
-#        #
-#        args = self.strip_levels(bound)
-#        arg_to_level = {}
-#        for arg in args:
-#            levels = [l for (l,a) in bound if a == arg]
-#            minlevel = min(levels)
-#            maxlevel = max(levels)
-#            arg_to_level[arg] = (minlevel,maxlevel)
-#
-#        # Validate.
-#        #
-#        # - Each arg may only call into args having levels strictly deeper
-#        #   than its own maxlevel. (The arg must be evaluable at *all* of its
-#        #   call sites, whence especially at the deepest one.)
-#        #
-#        # - When the arg calls another arg, the minlevel *of the other arg*
-#        #   must be > maxlevel *of this arg* (also to make sure that this arg,
-#        #   at its deepest call site, is evaluable).
-#        #
-#        # We dont need to recurse, because analyze_args() already gives us
-#        # a flattened list of all occurrences of each arg.
-#        #
-#        for arg,levels in arg_to_level.items():
-#            minlevel,maxlevel = levels
-#            deps = self.lookup[arg]  # other args this arg depends on
-#            for a in deps:
-#                if a in args:  # only validate if a is bound (free args may occur anywhere)
-#                    almin,almax = arg_to_level[a]  # max level where a was seen
-#                    if almin > maxlevel:
-#                        continue
-#                    raise NotImplementedError("%s (max level %d) requires %s (min level %d); recursive calls not supported by this code generator" % (arg,maxlevel,a,almin))
-
         # We check the following local property: each call chain must
         # not call anything already seen in that particular call chain.
         #
@@ -361,6 +322,12 @@ class CodeGenerator:
     def run(self):
         """Generate the stage2 code (i.e. the public API)."""
 
+        def make_sorted_by(key):
+            # Return a one-argument function that takes in the data iterable
+            # and returns a sorted copy, sorting by the key given here.
+            return lambda data: sorted(data, key=key)
+        sorted_by_level_dsc = make_sorted_by(self.make_sortkey(primary="level", reverse_primary=True))
+
         generated_code_out = []
         key_impl = "implementation"
         key_intf = "interface"
@@ -407,25 +374,7 @@ class CodeGenerator:
             # and for variables needed by something f calls.
             #
             for fname,args in funcs:
-#                # DEBUG
-#                print(fname)
-#                for arg in args:
-#                    print("\t%s" % (arg))
-
-                rbound,rfree = self.analyze_args(args, recurse=True)   # r=recursive
-#                lbound,lfree = self.analyze_args(args, recurse=False)  # l=local
-#                print(fname, lbound, rfree)
-
-                def make_sorted_by(key):
-                    # Return a one-argument function that takes in the data iterable
-                    # and returns a sorted copy, sorting by the key given here.
-                    return lambda data: sorted(data, key=key)
-#                sorted_by_name_asc = make_sorted_by(self.make_sortkey(primary="name"))
-                sorted_by_level_dsc = make_sorted_by(self.make_sortkey(primary="level", reverse_primary=True))
-
-#                print(fname, self.strip_levels(sorted_by_name(lbound)),
-#                             self.strip_levels(sorted_by_name(lfree)))
-#                print(fname, sorted_by_name(rbound), sorted_by_name(rfree))
+                bound_set,free_set = self.analyze_args(args, recurse=True)
 
                 # Check that the declared interface doesn't try to do
                 # anything silly that is not supported by this stage2
@@ -434,23 +383,22 @@ class CodeGenerator:
                 # (concerning dependencies between the bound variables,
                 #  which are defined by the stage1 generated functions)
                 #
-                self.validate_bound_args(rbound)
+                self.validate_bound_args(bound_set)
 
                 # Free variables do not have a particular ordering at the API
                 # of func itself, as they are generally propagated from the
-                # deeper levels of the call tree.
+                # deeper levels of the call tree. Just order them lexicographically.
                 #
                 # Bound variables must be ordered by level, decreasing,
                 # as noted above.
                 #
-                freevars  = sorted(uniqify(self.strip_levels(rfree)))
-                boundvars = tuple(uniqify(self.strip_levels(sorted_by_level_dsc(rbound))))
+                freevars  = sorted(uniqify(self.strip_levels(free_set)))
+                boundvars = tuple(uniqify(self.strip_levels(sorted_by_level_dsc(bound_set))))
                 # mapping for boundvar: localvar for temp variables
                 # generated for storing values of boundvars at this call site.
                 localvars = {}
 
-
-                # Function header
+                # output: function header
                 #
                 wname = "%s_public"% (fname)  # name of public API function to write
                 output.append(key_both, "\n")  # blank line before start of item
@@ -459,7 +407,7 @@ class CodeGenerator:
                 output.append(key_both, ", ".join(freevars))
                 output.append(key_both, ")\n")
 
-                # argument declarations (free variables only!)
+                # output: argument declarations for the public API function (free variables only!)
                 output.append(key_both, "implicit none\n")
                 for var in freevars:
                     output.append(key_both, "REAL*8, intent(in) :: %s\n" % (var))
@@ -467,22 +415,26 @@ class CodeGenerator:
                 # Declare any needed localvars and populate them by calls to
                 # the stage1 functions represented by boundvars.
 
+                # bind bound variables in myargs to corresponding
+                # local variables (if any), preserving ordering.
+                # Any free variables in myargs are passed through as-is.
                 def bind_local(myargs):
-                    # bind bound variables in myargs to corresponding
-                    # local variables (if any), preserving ordering.
-                    # Any free variables in myargs are passed through as-is.
                     result = [(localvars[arg] if arg in boundvars else arg) for arg in myargs]
                     # sanity check: each bound var in myargs should now be bound,
                     # so the result should have only localvars or freevars
                     for arg in result:
+                        # localvars.keys()   = the names of the *bound* vars
+                        # localvars.values() = the names of the *local* vars
                         if arg in localvars.values() or arg in freevars:
                             continue
-                        raise RuntimeError("undefined symbol '%s': neither in localvars nor in freevars" % (arg))
+                        raise RuntimeError("post-binding check: undefined symbol '%s', neither in localvars nor in freevars" % (arg))
                     return result
-                # temp storage buffer: we must first process all boundvars to generate
-                # all of localvars, but in the output, we must write the declarations
-                # of all localvars first, before writing the calls to the boundvar
-                # functions (that then populate the localvars).
+
+                # We need a temp storage buffer: we must first process all
+                # boundvars to generate all of localvars, but in the output,
+                # we must write the declarations of all localvars first,
+                # before writing the calls to the boundvar functions
+                # (that then populate the localvars).
                 tmpbuffer = ""
                 for var in boundvars:  # keep in mind the ordering by level, descending
                     tmp = "%s_" % (var)
@@ -500,11 +452,11 @@ class CodeGenerator:
                     tmpbuffer += "\n"
 
                 # output: declare localvars
-                for var in boundvars:  # same order as boundvars
+                for var in boundvars:  # use same ordering as boundvars
                     output.append(key_impl, "REAL*8 %s\n" % (localvars[var]))
 
                 # end argument and local variable declarations with blank line
-                # (there is always at least the "implicit none"; if not,
+                # (there is always at least the "implicit none"; if there wasn't,
                 #  we would have to check the combined length of freevars and
                 #  localvars)
                 output.append(key_impl, "\n")
@@ -519,13 +471,8 @@ class CodeGenerator:
                 output.append(key_both, "end function\n")
                 output.append(key_intf, "end interface\n")
 
-#            # DEBUG/TEST Fortran code folding
-#            output += "diipa daapa " * 20
-#            output += " "
-#            output += "e" * 90
-#            output += " "
-#            output += "diipa daapa " * 20
-
+            # Generate the final code for the output files
+            #
             outfile_basename = "mgs_%s" % (label)
             outfile_implname = "%s.f90" % (outfile_basename)
             outfile_intfname = "%s.h"   % (outfile_basename)
@@ -533,8 +480,8 @@ class CodeGenerator:
             output_impl = _fileheader + fold_fortran_code(output.get(key_impl))
             output_intf = _fileheader + fold_fortran_code(output.get(key_intf))
 
-            generated_code_out.append( (label, outfile_implname, output_impl) )
-            generated_code_out.append( (label, outfile_intfname, output_intf) )
+            generated_code_out.append((label, outfile_implname, output_impl))
+            generated_code_out.append((label, outfile_intfname, output_intf))
 
         return generated_code_out
 
