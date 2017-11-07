@@ -251,7 +251,8 @@ class CodeGenerator:
 
         Returns:
             None
-                ``ValueError`` is raised if the check fails.
+                ``NotImplementedError`` is raised if the check fails
+                (as this generator cannot currently handle such interfaces).
 """
 #    # This global property is *not* satisfied by our stage1 code; e.g. in
 #    # d2phi_dBx2, I5 (max level 1) needs exx (min level 1 due to use elsewhere).
@@ -289,7 +290,7 @@ class CodeGenerator:
 #                    almin,almax = arg_to_level[a]  # max level where a was seen
 #                    if almin > maxlevel:
 #                        continue
-#                    raise ValueError("%s (max level %d) requires %s (min level %d); recursive calls not supported by this code generator" % (arg,maxlevel,a,almin))
+#                    raise NotImplementedError("%s (max level %d) requires %s (min level %d); recursive calls not supported by this code generator" % (arg,maxlevel,a,almin))
 
         # We check the following local property: each call chain must
         # not call anything already seen in that particular call chain.
