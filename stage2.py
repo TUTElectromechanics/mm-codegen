@@ -335,7 +335,8 @@ class CodeGenerator:
         for i,item in enumerate(self.data):
             label,input_filename,content = item
 
-            print("(%d/%d) stage2: generating public API based on '%s'" % (i+1, len(self.data), input_filename))
+            progress_header_outer = "(%d/%d)" % (i+1, len(self.data))
+            print("stage2: %s %s model: generating public API based on '%s'" % (progress_header_outer, label, input_filename))
 
             # Text of implementation and interface will be added into named
             # buffers. This is convenient because they are mostly identical.
@@ -373,7 +374,13 @@ class CodeGenerator:
             # We must do this recursively; for variables needed directly by f,
             # and for variables needed by something f calls.
             #
-            for fname,args in funcs:
+            for j,func_item in enumerate(funcs):
+                fname,args = func_item
+
+                progress_header_inner = "(%d/%d)" % (j+1, len(funcs))
+                progress_header = "%s %s" % (progress_header_outer, progress_header_inner)
+                print("stage2: %s %s model: public API for %s" % (progress_header, label, fname))
+
                 bound_set,free_set = self.analyze_args(args, recurse=True)
 
                 # Check that the declared interface doesn't try to do

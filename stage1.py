@@ -365,7 +365,7 @@ class CodeGenerator:
 
         results = {}
         for i,q in enumerate(diff_wrts):
-            print("(%d/%d) Forming expression for %s" % (i+1, len(diff_wrts), util.name_derivative("ϕ", q)))
+            print("stage1: (%d/%d) forming expression for %s" % (i+1, len(diff_wrts), util.name_derivative("ϕ", q)))
             # Fortran routine name. Greek letters will be replaced later, just before writing into file.
             funcname = util.name_derivative("ϕ", q, as_fortran_identifier=True)
             results[funcname] = self.dϕdq(q)
@@ -381,28 +381,24 @@ class CodeGenerator:
 
         exprs = self.make_exprs()  # currently common to 2par and 3par cases
         generated_code_out = []
-        for label,dic in all_results:  # 2par, 3par
-            for k in range(3):
-                print("=" * 80)  # separator
-            print("%s model" % (label))
-            for k in range(3):
-                print("=" * 80)  # separator
+        for i,result_item in enumerate(all_results):  # 2par, 3par
+            label,dic = result_item
+
+            progress_header_outer = "(%d/%d)" % (i+1, len(all_results))
+            print("stage1: %s %s model: generating auxiliary expressions" % (progress_header_outer, label))
 
             all_funcs = {}
             all_derivatives = {}
-            for funcname in sorted(dic.keys()):  # process the functions in alphabetical order
-                                                 # to make terminal output more readable
-                data = dic[funcname]
-                sy.pprint("%s (%s)" % (data["name"], label))
-                sy.pprint(data["expr"])
+            for j,funcname in enumerate(sorted(dic.keys())):  # process the functions in alphabetical order
+                                                              # to make terminal output more readable
+                data = dic[funcname]  # data: dict with keys "name", "expr", "ders" (see self.dϕdq())
 
-                print("Derivatives needed by %s (%s); format (f, var):" % (data["name"], label))
-                sy.pprint(data["ders"])
-                print("=" * 80)  # separator
+                progress_header_inner = "(%d/%d)" % (j+1, len(dic.keys()))
+                progress_header = "%s %s" % (progress_header_outer, progress_header_inner)
+                print("stage1: %s %s model: %s" % (progress_header, label, data["name"]))
 
                 # Compute the derivatives ∂ϕ/∂q depends on.
                 #
-                print("Computing pieces for %s (%s)" % (data["name"], label))
                 derivatives = {}
                 for func,*vars in data["ders"]:
                     fname = str(func)  # func and var themselves are sy.Symbols
@@ -414,14 +410,10 @@ class CodeGenerator:
                     v = self._simplify(v, second_stage_syms=self.Bs)
                     # we will need fname,vname for generating the Fortran routine name
                     derivatives[k] = (v, fname, vnames)
-                    sy.pprint(k)
-                    sy.pprint(v)
-                    print("=" * 80)  # separator
 
                 # From expr, delete any derivatives that are identically zero
                 # due to the structure of the functional dependencies.
                 #
-                print("Final expr for %s (%s), with identically zero terms eliminated:" % (data["name"], label))
                 zero = sy.S.Zero
                 def kill_zero(expr):
                     if expr in derivatives:  # ...which we collected above
@@ -430,7 +422,6 @@ class CodeGenerator:
                             return zero  # we must return an Expr, so return symbolic zero
                     return expr
                 out = symutil.map_instancesof_in(kill_zero, sy.Derivative, data["expr"])
-                sy.pprint(out)
 
                 # Only save derivatives that are not identically zero,
                 # since the identically zero ones are never called.
@@ -441,11 +432,9 @@ class CodeGenerator:
                 all_derivatives.update(final_derivatives)
                 all_funcs[funcname] = out
 
-                # double separator to signify end of processing for this function
-                print("=" * 80)
-                print("=" * 80)
-
             # Generate the Fortran code
+
+            print("stage1: %s %s model: generating code" % (progress_header_outer, label))
 
             # Auxiliary expressions I4, I5, I6, u', v', w', u, v, w
             #
