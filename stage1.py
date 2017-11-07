@@ -515,10 +515,10 @@ class CodeGenerator:
         return generated_code_out
 
 ##############################################################################
-# Testing
+# Main program (stage1 only)
 ##############################################################################
 
-def test():
+def main():
     gen = CodeGenerator()  # stage1 CodeGenerator
     code = gen.run()
 
@@ -528,4 +528,4 @@ def test():
             f.write(content)
 
 if __name__ == '__main__':
-    test()
+    main()

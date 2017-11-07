@@ -493,16 +493,16 @@ class CodeGenerator:
         return generated_code_out
 
 ##############################################################################
-# Testing
+# Main program (stage2 only)
 ##############################################################################
 
-def test():
+def main():
 #    # we could call stage1, like this:
 #    import stage1
 #    s1gen = stage1.CodeGenerator()
 #    s1code = s1gen.run()
 
-    # but we can just load stage1 files to be able to test s2 faster:
+    # But we can just load stage1 files to be able to run s2 standalone.
     #
     def relevant(filename):
         return len(re.findall(r"[23]par_impl.*\.(f90|h)", filename))
@@ -513,6 +513,8 @@ def test():
     path = "."
     just_files = [x for x in os.listdir(path) if os.path.isfile(os.path.join(path, x))]
     matching_files = [x for x in just_files if relevant(x)]
+    if not len(matching_files):
+        raise(ValueError("No stage1 files found; please generate them first by running stage1.py."))
     s1code = []
     for filename in matching_files:
         label = npar(filename)
@@ -529,4 +531,4 @@ def test():
             f.write(content)
 
 if __name__ == '__main__':
-    test()
+    main()
