@@ -497,10 +497,28 @@ class CodeGenerator:
 ##############################################################################
 
 def test():
-    # TODO: just load files to run s2 test faster?
-    import stage1
-    s1gen = stage1.CodeGenerator()
-    s1code = s1gen.run()
+#    # we could call stage1, like this:
+#    import stage1
+#    s1gen = stage1.CodeGenerator()
+#    s1code = s1gen.run()
+
+    # but we can just load stage1 files to be able to test s2 faster:
+    #
+    def relevant(filename):
+        return len(re.findall(r"[23]par_impl.*\.(f90|h)", filename))
+    def npar(filename):
+        groups = re.findall(r"(\d+par)", filename)  # 2par, 3par
+        return groups[0]
+    import os
+    path = "."
+    just_files = [x for x in os.listdir(path) if os.path.isfile(os.path.join(path, x))]
+    matching_files = [x for x in just_files if relevant(x)]
+    s1code = []
+    for filename in matching_files:
+        label = npar(filename)
+        with open(filename, "rt", encoding="utf-8") as f:
+            content = f.read()
+        s1code.append((label,filename,content))
 
     s2gen = CodeGenerator(s1code)  # stage2 CodeGenerator
     s2code = s2gen.run()
