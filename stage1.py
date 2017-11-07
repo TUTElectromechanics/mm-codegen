@@ -361,7 +361,7 @@ class CodeGenerator:
         diff_wrts = [(var,) for var in independent_vars]  # wrap each in tuple
         diff_wrts.extend(secondder_vars)
 
-        diff_wrts = (("Bx",), ("Bx","Bx"),)  # DEBUG
+#        diff_wrts = (("Bx",), ("Bx","Bx"),)  # DEBUG
 
         results = {}
         for i,q in enumerate(diff_wrts):
