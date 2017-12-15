@@ -360,9 +360,9 @@ class CodeGenerator:
 
             # To write the wrapper for a function f, we need:
             #
-            #  - Free args:
+            #  - Free symbols (in the mathematical sense):
             #      - Must be supplied by caller; add to arg list of wrapper
-            #  - Bound args:
+            #  - Bound symbols:
             #      - Call the corresponding stage1 generated functions in the
             #        body of the wrapper, then use the obtained values.
             #      - If we do this in reverse order of call tree depth
