@@ -92,6 +92,16 @@ class CodeGenerator:
 
         # TODO: support subroutine declarations, too (needed for Elmer)
 
+        # TODO: record the type: function or subroutine
+        #
+        # TODO: when validating, check that function args name no subroutines
+        #       (Would require nontrivial special handling. We only support
+        #        subroutines in the final layer of the "cake", where the
+        #        output args go to the user. We generate a wrapper subroutine,
+        #        which fills any "bound" input args (that name stage1 functions),
+        #        and then calls the user-provided subroutine, passing through
+        #        the output args.)
+
         def function_header_ends(line):
             endparen = re.findall(r"\)", line)
             return (len(endparen) > 0)
