@@ -354,6 +354,9 @@ class CodeGenerator:
             #
             funcs,self.lookup = self.analyze_interface(content)
 
+            # TODO: analyze another interface for additional definitions
+            # (e.g. phi) and combine the results.
+
             # TODO: consolidated version that does not re-compute everything
             # (e.g. I6) for each output tensor component, but computes once
             # and re-uses the result.
