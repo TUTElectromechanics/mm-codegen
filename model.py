@@ -186,7 +186,7 @@ class Model(ModelBase):
 
         Parameters:
             qs: tuple of str
-                Names of variables to differentiate with regard to.
+                Names of independent variables to differentiate with regard to.
                 An empty list means no differentiation; return the function ϕ itself.
 
             strip: bool
@@ -204,18 +204,45 @@ class Model(ModelBase):
         Returns:
             tuple (sym, expr)
 """
-        # Now we can differentiate. SymPy will apply the chain rule automatically.
+        # check precondition
+        invalid_inputs = [q for q in qs if q not in self.indepvars]
+        if len(invalid_inputs):
+            raise ValueError("Invalid input: variable(s) %s not in self.indepvars" % (", ".join(invalid_inputs)))
+
+        # For the Symbol representing the function name, we can't use a
+        # bare Symbol (i.e. a variable, not a function), because even with
+        # evaluate=False, SymPy thinks that sy.diff(Derivative(ϕ, Bx), By) = 0,
+        # if ϕ is a bare Symbol.
         #
+        # Since all possible qs are in self.indepvars, we can use the following
+        # strategy to generate a bare Symbol that represents the name:
+        #
+        # We first make an unknown function ϕ; then convert it to an applied
+        # function that depends on all indepvars; then perform any requested
+        # differentiations on that; and finally strip the argument lists from
+        # the result, producing a bare Symbol.
+        #
+        λϕ = sy.symbols("ϕ", cls=sy.Function)
+        sym = λϕ(*self.indepvars.values())  # note: *Symbols* of the indepvars
+
+        # For the expression part (RHS of the API function being generated),
+        # we use the layer cake version of ϕ, which depends on u, v, w;
+        # which then depend on... and so on, until the independent variables
+        # are reached.
+        #
+        # When we differentiate this, SymPy will apply the chain rule
+        # automatically.
+        #
+        expr = self.build_ϕ()
+
         # In SymPy, differentiating an unknown function gives an unapplied
         # Subs (mathematical substitution) object instance:
         #   http://docs.sympy.org/latest/_modules/sympy/core/function.html
-        #
-        sym  = sy.symbols("ϕ")  # just a bare symbol, not a function
-        expr = self.build_ϕ()
         for varname in qs:
             q    = self.indepvars[varname]
             sym  = sy.diff(sym, q, evaluate=False)
             expr = sy.diff(expr, q)
+        sym = symutil.strip_function_arguments(sym)  # always strip the name
 
         # Apply the Subs object to eliminate the dummy variables in the
         # derivative expressions. E.g.
@@ -237,6 +264,9 @@ class Model(ModelBase):
 
         if strip:
             expr = symutil.strip_function_arguments(expr)
+
+        # check postcondition
+        assert sym != 0, "BUG in dϕdq(): symbol for function name is 0"
 
         return (sym, expr)
 
