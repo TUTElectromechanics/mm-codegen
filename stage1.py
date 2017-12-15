@@ -62,7 +62,7 @@ class CodeGenerator:
                 print("stage1: %s %s model: processing %s" % (progress_header, label, name))
 
                 derivatives = {}
-                for f,*vars in symutil.derivatives_needed_by(expr):  # TODO: rename to derivatives_needed_by(expr)
+                for f,*vars in symutil.derivatives_needed_by(expr):
                     if f not in helpers:  # process only if f is bound by Model.define_helpers()
                         continue
                     k = sy.Derivative(f, *vars, evaluate=False)  # this is present in expr; also a label
