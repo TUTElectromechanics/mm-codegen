@@ -144,37 +144,20 @@ class Model(ModelBase):
 
         results = {}
 
-#        # TODO: this does not work; it generates phi_Beps(u,v) = phi(u,v),
-#        # and thinks phi is a REAL*8.
-#        #
-#        # TODO: To do this properly, we need externs in stage2:
-#        #  - read in another Fortran interface that defines available functions.
-#        #  - in Model and stage1, allow same name on RHS as on LHS as a special case
-#        #    that means "call an extern of this name". (TODO: think this through)
-#        #
-#        # For the sake of completeness: provide a function to evaluate ϕ
-#        # itself, in terms of our independent variables. Here we generate
-#        # just "ϕ(u,v,w)"; the stage2 code generator will do the rest,
-#        # when it notices that the stage1 interface declares Fortran functions
-#        # for u, v and w.
-#        #
-#        # We cannot use the name "ϕ" for the exported symbol, because ppeval
-#        # supplies a function "phi" (with which "ϕ" would conflict after
-#        # degreeking), and the expr on the RHS must refer to the "phi"
-#        # from ppeval.
-#        #
-#        # We want the RHS to read "ϕ(u,v,w)", i.e., strip arglists internally,
-#        # but not at the top level. We cannot use self.dϕdq(qs=(), strip=...),
-#        # because that will either strip ϕ, or will not strip u,v,w.
-#        #
-#        print("model: %s forming expression for ϕ" % (self.kind))
-#        λϕ = sy.symbols("ϕ", cls=sy.Function)
-#        u,v,w = sy.symbols("u, v, w")
-#        if self.kind == "2par":
-#            expr = λϕ(u,v)
-#        else: # self.kind == "3par":
-#            expr = λϕ(u,v,w)
-#        results[sy.symbols("ϕ_Bε")] = expr
+        # For the sake of completeness, we also provide a function to evaluate
+        # ϕ itself, in terms of our independent variables. Here we generate
+        # just "ϕ"; the stage2 code generator will do the rest, when it
+        # notices that the interfaces input to it declare Fortran functions
+        # for ϕ, u, v and w.
+        #
+        # We cannot use the name "ϕ" for the exported symbol, because ppeval
+        # supplies a function "phi" (with which "ϕ" would conflict after
+        # degreeking), and the expr on the RHS must refer to the "phi"
+        # from ppeval. Hence we name it "ϕ_Bε", which becomes "phi_Beps".
+        #
+        print("model: %s forming expression for ϕ" % (self.kind))
+        sym,expr = self.dϕdq(qs=(), strip=True)
+        results[sy.symbols("ϕ_Bε")] = expr
 
         # All 1st and 2nd derivatives of ϕ.
         #
