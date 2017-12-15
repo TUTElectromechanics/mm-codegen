@@ -118,6 +118,8 @@ class CodeGenerator:
                     fargs = groups[1].strip().split(",")
                     fargs = [s.strip() for s in fargs if len(s.strip())]
 
+                    # TODO: parse args from decls, ignore any args with intent(out)
+
                     # Before we change state, we must check whether the whole
                     # function header was on this line.
                     #
