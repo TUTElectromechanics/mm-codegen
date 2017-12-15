@@ -101,9 +101,12 @@ class CodeGenerator:
 
             # Auxiliary expressions I4, I5, I6, u', v', w', u, v, w
             #
-            # (these are always generated)
+            # These are always generated, whether needed or not. This makes it
+            # easier to generate an API function for ϕ, because we will have
+            # u, v, w, even though they don't appear in any RHS in the model.
             #
-            # TODO: generate code only for helpers that are actually referred to by at least one of the API functions?
+            # (These are needed for phi, which is provided by ppeval. The model
+            # and stage1 don't even know that a "ppeval" exists!)
             #
             # Alphabetize helpers for easy reading of generated code.
             #
