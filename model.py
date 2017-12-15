@@ -140,6 +140,8 @@ class Model(ModelBase):
         return ϕ
 
     def define_api(self):
+        """See docstring for ``ModelBase.define_api()``."""
+
         results = {}
 
 #        # TODO: this does not work; it generates phi_Beps(u,v) = phi(u,v),
@@ -256,6 +258,8 @@ class Model(ModelBase):
         return (sym, expr)
 
     def define_helpers(self):
+        """See docstring for ``ModelBase.define_helpers()``."""
+
         results = {}
 
         print("model: %s defining auxiliary expressions" % (self.kind))
