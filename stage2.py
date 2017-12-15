@@ -101,6 +101,11 @@ class CodeGenerator:
         #        which fills any "bound" input args (that name stage1 functions),
         #        and then calls the user-provided subroutine, passing through
         #        the output args.)
+        #
+        # TODO later: if no function matches, find if there is a subroutine
+        #      that provides the desired variable as an output arg. Call it.
+        #      (Still, *subroutine* names must not appear as function args,
+        #       although their output arg names can.)
 
         def function_header_ends(line):
             endparen = re.findall(r"\)", line)
