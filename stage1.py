@@ -25,10 +25,12 @@ from model import Model  # TODO: parameterize this?
 ##############################################################################
 
 class CodeGenerator:
-    def __init__(self):
-        pass
+    """Generate stage1 Fortran code (internal functions)."""
 
-    def run(self):
+    # no constructor, we have just static and class methods
+
+    @staticmethod
+    def run():
         """Generate stage1 Fortran code for both 2-parameter and 3-parameter models."""
 
         # TODO: maybe take a Model as input?
@@ -155,8 +157,7 @@ class CodeGenerator:
 ##############################################################################
 
 def main():
-    gen = CodeGenerator()  # stage1 CodeGenerator
-    code = gen.run()
+    code = CodeGenerator.run()  # stage1 CodeGenerator
 
     for label,filename,content in code:
         print("stage1: writing %s for %s" % (filename, label))

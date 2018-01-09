@@ -45,16 +45,14 @@ import stage2
 ##############################################################################
 
 def main():
-    s1gen = stage1.CodeGenerator()
-    s1code = s1gen.run()
+    s1code = stage1.CodeGenerator.run()
 
     for label,filename,content in s1code:
         print("stage1: writing %s for %s" % (filename, label))
         with open(filename, "wt", encoding="utf-8") as f:
             f.write(content)
 
-    s2gen = stage2.CodeGenerator(s1code)
-    s2code = s2gen.run()
+    s2code = stage2.CodeGenerator.run(s1code)
 
     for label,filename,content in s2code:
         print("stage2: writing %s for %s" % (filename, label))
