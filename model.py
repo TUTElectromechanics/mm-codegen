@@ -311,7 +311,7 @@ class Model(ModelBase):
         assert e_expr[1,0] == e_expr[0,1]  # exy
         assert e_expr[2,0] == e_expr[0,2]  # ezx
         assert e_expr[1,2] == e_expr[2,1]  # eyz
-#        results["εM"] = εM_expr  # not needed separately since the expression is inserted
+#        results["εM"] = εM_expr  # not needed separately since already inserted to e_expr
         results[sy.symbols("exx")] = e_expr[0,0]
         results[sy.symbols("eyy")] = e_expr[1,1]
         results[sy.symbols("ezz")] = e_expr[2,2]
@@ -321,10 +321,10 @@ class Model(ModelBase):
 
         # I4, I5, I6 in terms of (B,e)
         #
-        for k,v in (("I4", B.T * B),
-                    ("I5", B.T * e * B),
-                    ("I6", B.T * e * e * B)):
-            if self.kind == "2par" and k == "I6":  # 2-parameter model does not use I6
+        for k,v,kind in (("I4", B.T * B, None),
+                         ("I5", B.T * e * B, None),
+                         ("I6", B.T * e * e * B, "3par")): # only in 3par model
+            if kind and self.kind != kind:
                 continue
             assert v.shape == (1,1)  # result should be scalar
             expr = v[0,0]  # extract scalar from matrix wrapper
@@ -334,10 +334,10 @@ class Model(ModelBase):
         # u', v', w' in terms of (I4,I5,I6)
         #
         I4,I5,I6 = sy.symbols("I4, I5, I6")
-        for k,v in (("up", sy.sqrt(I4)),
-                    ("vp", sy.S("3/2") * I5 / I4),
-                    ("wp", sy.sqrt(I6*I4 - I5**2) / I4)):
-            if self.kind == "2par" and k == "wp":  # 2-parameter model does not use wp
+        for k,v,kind in (("up", sy.sqrt(I4), None),
+                         ("vp", sy.S("3/2") * I5 / I4, None),
+                         ("wp", sy.sqrt(I6*I4 - I5**2) / I4, "3par")):
+            if kind and self.kind != kind:
                 continue
             results[sy.symbols(k)] = v  # here no simplifications are possible, so just save.
 
@@ -345,10 +345,10 @@ class Model(ModelBase):
         #
         u,v,w = sy.symbols("u, v, w")
         u0,v0,w0 = sy.symbols("u0, v0, w0")
-        for k,v in (("u", "up / u0"),
-                    ("v", "vp / v0"),
-                    ("w", "wp / w0")):
-            if self.kind == "2par" and k == "w":  # 2-parameter model does not use w
+        for k,v,kind in (("u", "up / u0", None),
+                         ("v", "vp / v0", None),
+                         ("w", "wp / w0", "3par")):
+            if kind and self.kind != kind:
                 continue
             results[sy.symbols(k)] = v
 
