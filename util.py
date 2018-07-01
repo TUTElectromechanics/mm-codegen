@@ -258,3 +258,7 @@ class TextMultiBuffer:
                 The text stored in the specified named buffer.
 """
         return self.data[key]
+
+    def __getitem__(self, key):
+        """self[key], same as self.get(key)."""
+        return self.get(key)

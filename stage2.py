@@ -493,6 +493,9 @@ class CodeGenerator:
                 progress_header = "%s %s" % (progress_header_outer, progress_header_inner)
                 print("stage2: %s %s model: public API for %s" % (progress_header, label, stage1_fname))
 
+                # Check which intent(in) args of fname match stage1 functions.
+                # This gives us bound and free argument sets for fname.
+                #
                 bound_set,free_set = analyze_args(stage1_inargs, recurse=True)
 
                 # Check that the declared interface doesn't try to do
@@ -504,12 +507,14 @@ class CodeGenerator:
                 #
                 validate_bound_args(bound_set)
 
-                # Free variables do not have a particular ordering at the API
-                # of func itself, as they are generally propagated from the
-                # deeper levels of the call tree. Just order them lexicographically.
+                # Args corresponding to free variables do not have a particular
+                # ordering in the API of fname itself, as they are generally
+                # propagated from the deeper levels of the call tree
+                # (i.e. needed by something that fname itself calls).
+                # Just order them lexicographically.
                 #
-                # Bound variables must be ordered by level, decreasing,
-                # as noted above.
+                # Args corresponding to bound variables must be ordered
+                # by level, decreasing, as noted above.
                 #
                 freevars  = sorted(uniqify(cls.strip_levels(free_set)))
                 boundvars = tuple(uniqify(cls.strip_levels(sorted_by_level_dsc(bound_set))))
@@ -615,8 +620,8 @@ class CodeGenerator:
             outfile_implname = "%s.f90" % (outfile_basename)
             outfile_intfname = "%s.h"   % (outfile_basename)
 
-            output_impl = _fileheader + fold_fortran_code(output.get(key_impl))
-            output_intf = _fileheader + fold_fortran_code(output.get(key_intf))
+            output_impl = _fileheader + fold_fortran_code(output[key_impl])
+            output_intf = _fileheader + fold_fortran_code(output[key_intf])
 
             generated_code_out.append((label, outfile_implname, output_impl))
             generated_code_out.append((label, outfile_intfname, output_intf))
