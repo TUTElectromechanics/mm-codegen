@@ -113,6 +113,7 @@ class CodeGenerator:
             for line in code.split("\n"):
                 if state == ReaderState.SCANNING:
                     # match "function" but not "end function" (see "help re")
+                    # (and similarly for subroutines)
                     m = re.findall(r"(?<!\bend\b)\s+\b%s\b"% (ftype), line)
 
                     if len(m):  # if found, start capturing
@@ -256,7 +257,8 @@ class CodeGenerator:
 
             Returns:
                 set of ``(level,arg)`` pairs
-                    where ``level`` is the recursion depth where ``arg`` was seen.
+                    where ``level`` (int) is the recursion depth where
+                    ``arg`` (str) was seen.
 
                     0 means top level.
 
@@ -334,13 +336,14 @@ class CodeGenerator:
             analyzer and code generator are correct.)
 
             Parameters:
-                bound: set of ``(level,arg)`` pairs
+                bound: set of ``(level,arg)`` (int, str) pairs
                     as output by ``analyze_args()`` with ``recursive=True``.
 
             Returns:
                 None
-                    ``NotImplementedError`` is raised if the check fails
-                    (as this generator cannot currently handle such interfaces).
+                    ``NotImplementedError`` is raised if the validation fails
+                    (as this stage2 code generator cannot currently handle
+                     interfaces which do not pass this validation).
             """
             # We check the following local property: each call chain must
             # not call anything already seen in that particular call chain.
@@ -369,33 +372,35 @@ class CodeGenerator:
             # the set of callers of "func" is updated with any new callers
             # of "func" encountered in any call chain.
             #
-            callers_of = {}
-            def update_callers_of(k,v):
+            callers_of = {}  # str: set
+            def update_callers_of(k, more_v):
                 if k not in callers_of:
-                    callers_of[k] = v
+                    callers_of[k] = more_v
                 else:
-                    callers_of[k].update(v)
+                    callers_of[k].update(more_v)
 
-            # Validate each chain individually (and build callers_of).
+            # Validate each chain individually.
+            #
+            # As a side effect, this builds the callers_of dictionary.
             #
             def process(arg, callstack):
                 # - We want to track *each chain of calls* independently.
                 #   (E.g. in dwp_dI6 in the 3par model, both I5 and I6,
                 #    at the same level, depend on exx.)
                 # - Python is call-by-sharing (call-by-object).
-                # - Hence, to avoid munging caller's "callstack", we create a copy.
+                # - Hence, to avoid munging caller's "callstack" object, we copy.
                 # - This makes "callstack" what it says on the tin, for the
                 #   current chain of calls.
                 if arg in lookup:  # only validate if arg is bound (free args may occur anywhere along the chain)
                     if arg in callstack:
-                        raise NotImplementedError("top-level arg %s: recursive call to %s not allowed (current call stack: %s)" % (toplevel_arg,arg,callstack))
+                        raise NotImplementedError("top-level arg %s: recursive call to %s detected (current call stack: %s)" % (toplevel_arg,arg,callstack))
                     update_callers_of(arg, set(callstack))
-                    s = callstack.copy()
-                    s.append(arg)
+                    new_callstack = callstack.copy()
+                    new_callstack.append(arg)
                     for a in lookup[arg]:  # recurse into the call tree
-                        process(a, s)
+                        process(a, new_callstack)
             for toplevel_arg in args:
-                process(toplevel_arg, list())
+                process(toplevel_arg, [])
 
             # Detect mutual recursion between different call chains.
             #
@@ -422,8 +427,10 @@ class CodeGenerator:
         stage1_intf = [(l,f,c) for l,f,c in data if f.endswith(".h")]
 
         def make_sorted_by(key):
-            # Return a one-argument function that takes in the data iterable
-            # and returns a sorted copy, sorting by the key given here.
+            # Return a sorter that uses key.
+            #
+            # A sorter is a one-argument function that takes in a data iterable
+            # and returns a sorted copy, sorting by the key.
             return lambda data: sorted(data, key=key)
         sorted_by_level_dsc = make_sorted_by(cls.make_sortkey(primary="level", reverse_primary=True))
 
