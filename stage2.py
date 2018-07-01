@@ -438,8 +438,7 @@ class CodeGenerator:
         key_impl = "implementation"
         key_intf = "interface"
         key_both = (key_impl, key_intf)
-        for i,item in enumerate(stage1_intf):
-            label,input_filename,content = item
+        for i, (label, input_filename, content) in enumerate(stage1_intf):
 
             progress_header_outer = "(%d/%d)" % (i+1, len(stage1_intf))
             print("stage2: %s %s model: generating public API based on '%s'" % (progress_header_outer, label, input_filename))
@@ -488,8 +487,7 @@ class CodeGenerator:
             # We must do this recursively; for variables needed directly by f,
             # and for variables needed by something f calls.
             #
-            for j,func_item in enumerate(funcs):
-                stage1_fname, stage1_inargs, stage1_outargs, stage1_allargs = func_item
+            for j, (stage1_fname, stage1_inargs, stage1_outargs, stage1_allargs) in enumerate(funcs):
 
                 progress_header_inner = "(%d/%d)" % (j+1, len(funcs))
                 progress_header = "%s %s" % (progress_header_outer, progress_header_inner)
@@ -660,7 +658,7 @@ def main():
 
     s2code = CodeGenerator.run(s1code)  # stage2 CodeGenerator
 
-    for label,filename,content in s2code:
+    for label, filename, content in s2code:
         print("stage2: writing %s for %s" % (filename, label))
         with open(filename, "wt", encoding="utf-8") as f:
             f.write(content)
