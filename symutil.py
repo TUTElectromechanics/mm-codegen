@@ -75,7 +75,7 @@ def derivatives_needed_by(expr):
     This works by matching unevaluated ``Derivative`` symbols in ``expr``, recursively.
 
     Returns: tuple
-        containing tuples symbols (f, x1, x2, ..., xn), where:
+        containing tuples of symbols (f, x1, x2, ..., xn), where:
             f: the function that is differentiated. This is the original symbol
                from ``expr``.
 
@@ -109,6 +109,9 @@ def map_instancesof_in(func, cls, expr):
     Parameters:
         func: function ``Expr`` -> ``Expr``
             Each subexpr that matches ``cls`` will be replaced by ``func(subexpr)``.
+            Note that the output may be any subclass of Expr, i.e. type changes
+            are also allowed. The Expr output type is because the output, just
+            like the input, must be a valid node for a SymPy expression tree.
         cls: type, or tuple of types
             where type is a SymPy expression type such as ``Add``, ``Mul``, ``Subs``, ...
         expr: SymPy expression object
@@ -140,7 +143,7 @@ def doit_in(expr):
     return map_instancesof_in(doit_func, sy.Subs, expr)
 
 def derivatives_to_names_in(expr, as_fortran_identifier=False):
-    """Rename derivative objects in ``expr``.
+    """Rename derivative objects in ``expr``, recursively.
 
     Derivatives in ``expr`` will be replaced by bare symbols. The symbols are named
     using a naming scheme that depends on the option ``as_fortran_identifier``.

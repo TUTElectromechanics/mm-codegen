@@ -68,7 +68,7 @@ class ModelBase:
         to the end user.
 
         Only references made directly by the RHS expressions of the API
-        functions are detected. The API expressions are expeccted to be already
+        functions are detected. The API expressions are expected to be already
         flattened in the sense that all chain rule based dependencies are
         directly visible, so that there is no need to recurse.
 
