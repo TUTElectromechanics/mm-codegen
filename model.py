@@ -298,6 +298,9 @@ class Model(ModelBase):
         #
         # Here we ignore that e = e(ε); the es are just arbitrary symbols.
         #
+        # Due to how stage1.run() works, the dependencies must be declared
+        # in define_api(); the helpers should be flat.
+        #
         exx,eyy,ezz,eyz,ezx,exy = sy.symbols("exx, eyy, ezz, eyz, ezx, exy")
         e = sy.Matrix( [[exx, exy, ezx],
                         [exy, eyy, eyz],

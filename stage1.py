@@ -46,7 +46,8 @@ class CodeGenerator:
             helpers = model.define_helpers()
 
             # Scan each API function defined by the model to see if we need to
-            # differentiate any helpers.
+            # differentiate any helpers to be able to compute it (and which
+            # ones, and w.r.t. which variables).
             #
             # We process the functions in alphabetical order to make terminal
             # output more readable.
