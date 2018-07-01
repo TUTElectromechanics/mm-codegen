@@ -39,8 +39,18 @@ def flatten(iterable):
         else:
             yield e
 
+def flatten1(iterable):
+    """Remove nested structure from iterable, outermost level only."""
+    it = iter(iterable)
+    for e in it:
+        if isinstance(e, (list, tuple)):
+            for f in e:
+                yield f
+        else:
+            yield e
+
 def flatten_if(iterable, condition):
-    """Remove nested structure, but only from matching items.
+    """Remove nested structure from iterable, matching items only.
 
     E.g. to flatten only tuples of tuples (leaving tuples of atoms intact),
     use something like:
@@ -54,3 +64,14 @@ def flatten_if(iterable, condition):
                 yield f
         else:
             yield e
+
+
+def test():
+    assert tuple(uniqify((1, 1, 2, 2, 2, 2, 4, 3, 3, 3))) == (1, 2, 4, 3)
+    assert tuple(flatten(((1, 2), (3, (4, 5), 6), (7, 8, 9)))) == (1, 2, 3, 4, 5, 6, 7, 8, 9)
+    assert tuple(flatten1(((1, 2), (3, (4, 5), 6), (7, 8, 9)))) == (1, 2, 3, (4, 5), 6, 7, 8, 9)
+    assert tuple(flatten_if((((1, 2), (3, 4)), (5, 6)), lambda e: isinstance(e[0], (tuple, list)))) == ((1, 2), (3, 4), (5, 6))
+    print("All tests passed")
+
+if __name__ == '__main__':
+    test()
