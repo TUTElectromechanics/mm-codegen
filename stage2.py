@@ -426,6 +426,26 @@ class CodeGenerator:
         # we need to analyze only the interfaces (headers, ".h")
         stage1_intf = [(l,f,c) for l,f,c in data if f.endswith(".h")]
 
+        # Add in user-defined interfaces.
+        #
+        # These are just pasted to the end of the content, so that they get
+        # fed into the interface analyzer along with the automatically generated
+        # stage1 interfaces.
+        #
+        # Here the tag "{label}" is automatically replaced by "2par" or "3par"
+        # as appropriate.
+        #
+        user_intfs = ("mgs_{label}_phi.h", "mgs_physfields.h")
+        final_stage1_intf = []
+        for l,f,c in stage1_intf:
+            for filename in (fn.format(label=l) for fn in user_intfs):
+                print("stage2: %s model: reading user stage1 API '%s'" % (l, filename))
+                with open(filename, "rt", encoding="utf-8") as f:
+                    content = f.read()
+                c += content
+            final_stage1_intf.append((l, f, c))
+        stage1_intf = final_stage1_intf
+
         def make_sorted_by(key):
             # Return a sorter that uses key.
             #
@@ -468,6 +488,7 @@ class CodeGenerator:
             #     independent variables are reached). We have the logic here
             #     to generate the public API for any functions in that format.
             #
+
             # - we need  H = -transpose(dphi_dB),  S = dphi_deps  (as in EMSA 2018 paper)
             #   - look at MagnetoStriction.f90 in ELMER; for the solver,
             #     we must supply subroutines mgs_H, mgs_dHdB, mgs_S, mgs_dSde
