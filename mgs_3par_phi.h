@@ -29,3 +29,111 @@ REAL*8, intent(in) :: poisson_nu
 end function
 end interface
 
+interface
+PURE REAL*8 function dphi_du(u, v, w,
+                             young_E, poisson_nu)
+implicit none
+REAL*8, intent(in) :: u
+REAL*8, intent(in) :: v
+REAL*8, intent(in) :: w
+REAL*8, intent(in) :: young_E
+REAL*8, intent(in) :: poisson_nu
+end function
+end interface
+
+interface
+PURE REAL*8 function dphi_dv(u, v, w,
+                             young_E, poisson_nu)
+implicit none
+REAL*8, intent(in) :: u
+REAL*8, intent(in) :: v
+REAL*8, intent(in) :: w
+REAL*8, intent(in) :: young_E
+REAL*8, intent(in) :: poisson_nu
+end function
+end interface
+
+interface
+PURE REAL*8 function dphi_dw(u, v, w,
+                             young_E, poisson_nu)
+implicit none
+REAL*8, intent(in) :: u
+REAL*8, intent(in) :: v
+REAL*8, intent(in) :: w
+REAL*8, intent(in) :: young_E
+REAL*8, intent(in) :: poisson_nu
+end function
+end interface
+
+interface
+PURE REAL*8 function d2phi_du2(u, v, w,
+                               young_E, poisson_nu)
+implicit none
+REAL*8, intent(in) :: u
+REAL*8, intent(in) :: v
+REAL*8, intent(in) :: w
+REAL*8, intent(in) :: young_E
+REAL*8, intent(in) :: poisson_nu
+end function
+end interface
+
+interface
+PURE REAL*8 function d2phi_dv2(u, v, w,
+                               young_E, poisson_nu)
+implicit none
+REAL*8, intent(in) :: u
+REAL*8, intent(in) :: v
+REAL*8, intent(in) :: w
+REAL*8, intent(in) :: young_E
+REAL*8, intent(in) :: poisson_nu
+end function
+end interface
+
+interface
+PURE REAL*8 function d2phi_dw2(u, v, w,
+                               young_E, poisson_nu)
+implicit none
+REAL*8, intent(in) :: u
+REAL*8, intent(in) :: v
+REAL*8, intent(in) :: w
+REAL*8, intent(in) :: young_E
+REAL*8, intent(in) :: poisson_nu
+end function
+end interface
+
+interface
+PURE REAL*8 function d2phi_dudv(u, v, w,
+                                young_E, poisson_nu)
+implicit none
+REAL*8, intent(in) :: u
+REAL*8, intent(in) :: v
+REAL*8, intent(in) :: w
+REAL*8, intent(in) :: young_E
+REAL*8, intent(in) :: poisson_nu
+end function
+end interface
+
+interface
+PURE REAL*8 function d2phi_dvdw(u, v, w,
+                                young_E, poisson_nu)
+implicit none
+REAL*8, intent(in) :: u
+REAL*8, intent(in) :: v
+REAL*8, intent(in) :: w
+REAL*8, intent(in) :: young_E
+REAL*8, intent(in) :: poisson_nu
+end function
+end interface
+
+interface
+PURE REAL*8 function d2phi_dudw(u, v, w,
+                                young_E, poisson_nu)
+implicit none
+REAL*8, intent(in) :: u
+REAL*8, intent(in) :: v
+REAL*8, intent(in) :: w
+REAL*8, intent(in) :: young_E
+REAL*8, intent(in) :: poisson_nu
+end function
+end interface
+
