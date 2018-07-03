@@ -423,28 +423,29 @@ class CodeGenerator:
                 Each item should have (label, filename, content).
                 This is the output format of stage1.CodeGenerator.run().
         """
-        # we need to analyze only the interfaces (headers, ".h")
-        stage1_intf = [(l,f,c) for l,f,c in data if f.endswith(".h")]
-
-        # Add in user-defined interfaces.
+        # Add in user-defined stage1 interfaces.
         #
         # These are just pasted to the end of the content, so that they get
         # fed into the interface analyzer along with the automatically generated
         # stage1 interfaces.
         #
-        # Here the tag "{label}" is automatically replaced by "2par" or "3par"
+        # The tag "{label}" is automatically replaced by "2par" or "3par"
         # as appropriate.
         #
-        user_intfs = ("mgs_{label}_phi.h", "mgs_physfields.h")
-        final_stage1_intf = []
-        for l,f,c in stage1_intf:
-            for filename in (fn.format(label=l) for fn in user_intfs):
-                print("stage2: %s model: reading user stage1 API '%s'" % (l, filename))
-                with open(filename, "rt", encoding="utf-8") as f:
-                    content = f.read()
-                c += content
-            final_stage1_intf.append((l, f, c))
-        stage1_intf = final_stage1_intf
+        def add_user_intfs(old_intf, user_intfs):
+            new_intf = []
+            for l,f,c in old_intf:
+                for filename in (fn.format(label=l) for fn in user_intfs):
+                    print("stage2: %s model: reading user API '%s'" % (l, filename))
+                    with open(filename, "rt", encoding="utf-8") as file:
+                        content = file.read()
+                    c += content
+                new_intf.append((l, f, c))
+            return new_intf
+
+        # we need to analyze only the interfaces (headers, ".h")
+        stage1_intf = [(l,f,c) for l,f,c in data if f.endswith(".h")]
+        stage1_intf = add_user_intfs(stage1_intf, ("mgs_{label}_phi.h", "mgs_physfields.h"))
 
         def make_sorted_by(key):
             # Return a sorter that uses key.
