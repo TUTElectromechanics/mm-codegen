@@ -482,8 +482,15 @@ class CodeGenerator:
             #     defined in terms of dphi_deps**.
             #     - S_ij = dphi_depsij, so just write
             #       subroutine S(dphi_depsxx, ... dphi_depsxy, S_out)
-            #     - again, manually implemented externally (for the tensor packing),
-            #       but uses stage1 functions.
+            #     - again, manually implemented externally (to perform the
+            #       tensor packing), but uses stage1 functions.
+            #     - intent(out) args: copy to args of the public API function,
+            #       with the same name. Tag as intent(out). In the generated
+            #       code, pass through to the implementation.
+            #       - Can use the allargs list captured by analyze_interface()
+            #         to write the arguments in the correct position.
+            #         Map it by the localvar logic, as usual; this replaces
+            #         only intent(in) args.
             #   - similarly, define a subroutine for H, where H_i = dphi_dBi
             #     (TODO: why the transpose in the paper? Because the gradient
             #      of a scalar is represented as a row vector?)
