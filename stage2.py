@@ -476,35 +476,7 @@ class CodeGenerator:
             validate_bound_args = cls.make_validator(lookup_inargs)
 
             # TODO: use data_subroutines
-            #   TODO of TODO: be a bit more explicit here...
-
-            # TODO: analyze more interfaces for additional definitions.
             #
-            # - we need function phi(u,v,w) to generate code for phi_Beps(Bxx, ..., epsxy)
-            #   - so we should analyze an interface that provides this,
-            #     so that our code generator can use it on the RHS.
-            #   - phi(u,v,w) is manually implemented externally, but depends on
-            #     stage1 functions u, v, w (which then depend on... until the
-            #     independent variables are reached). We have the logic here
-            #     to generate the public API for any functions in that format.
-            #
-
-            # - we need  H = -transpose(dphi_dB),  S = dphi_deps  (as in EMSA 2018 paper)
-            #   - look at MagnetoStriction.f90 in ELMER; for the solver,
-            #     we must supply subroutines mgs_H, mgs_dHdB, mgs_S, mgs_dSde
-            #     - in each, the last parameter is the output array
-            #     - they may also have other parameters such as young_e and poisson_nu
-            #   - the current stage2 already generates code to compute the
-            #     individual components
-            #   - but we should re-use dependencies where possible to make the
-            #     solver run (potentially much) faster.
-            #   - so we must define a subroutine sigma, which depends on
-            #     (sxx, syy, szz, syz, szx, sxy), where sxx, ... are in turn
-            #     defined in terms of dphi_deps**.
-            #     - S_ij = dphi_depsij, so just write
-            #       subroutine S(dphi_depsxx, ... dphi_depsxy, S_out)
-            #     - again, manually implemented externally (to perform the
-            #       tensor packing), but uses stage1 functions.
             #     - intent(out) args: copy to args of the public API function,
             #       with the same name. Tag as intent(out). In the generated
             #       code, pass through to the implementation.
@@ -512,9 +484,6 @@ class CodeGenerator:
             #         to write the arguments in the correct position.
             #         Map it by the localvar logic, as usual; this replaces
             #         only intent(in) args.
-            #   - similarly, define a subroutine for H, where H_i = dphi_dBi
-            #     (TODO: why the transpose in the paper? Because the gradient
-            #      of a scalar is represented as a row vector?)
 
             # To write the wrapper for a function f, we need:
             #
