@@ -159,6 +159,9 @@ class Model(ModelBase):
         # degreeking), and the expr on the RHS must refer to the "phi"
         # from ppeval. Hence we name it "ϕ_Bε", which becomes "phi_Beps".
         #
+        # TODO: For naming consistency, maybe use phi on the RHS,
+        # and rename the user-supplied function as phi_user?
+        #
         print("model: %s forming expression for ϕ" % (self.kind))
         sym,expr = self.dϕdq(qs=(), strip=True)
         results[sy.symbols("ϕ_Bε")] = expr
