@@ -26,6 +26,7 @@ Created on Tue Oct 24 14:07:45 2017
 """
 
 import re
+import itertools
 
 from iterutil import uniqify
 from util import fold_fortran_code, TextMultiBuffer
@@ -90,31 +91,32 @@ class CodeGenerator:
         class ReaderState(Enum):
             SCANNING  = 0
             CAPTURING_ARGLIST = 1
-            CAPTURING_INTENTS = 2
+            CAPTURING_META = 2
 
         results = {}
-        for ftype in ("function", "subroutine"):
+        for mode in ("function", "subroutine"):
             def header_ends(line):
                 endparen = re.findall(r"\)", line)
                 return (len(endparen) > 0)
 
             def intents_end(line):  # "end function" or "end subroutine"
-                end = re.findall(r"\bend %s\b" % (ftype), line)
+                end = re.findall(r"\bend %s\b" % (mode), line)
                 return (len(end) > 0)
 
-            def commit(fname, inargs, outargs, allargs):
-                if ftype == 'function' and set(inargs) != set(allargs):
+            # meta is a dict:  argname: (dtype, intent, dimspec)
+            def commit(fname, inargs, outargs, allargs, meta):
+                if mode == 'function' and set(inargs) != set(allargs):
                     invalid_args = sorted(set(allargs).difference(set(inargs)), key=str.lower)
                     raise ValueError("A Fortran 90 function can only have intent(in) arguments, but function '%s' has declared the following as intent(out) or intent(inout) (in alphabetical order): %s" % (fname, invalid_args))
-                result.append( (fname, inargs, outargs, allargs) )
+                result.append( (fname, inargs, outargs, allargs, meta) )
 
             result = []
             state = ReaderState.SCANNING
             for line in code.split("\n"):
                 if state == ReaderState.SCANNING:
-                    # match "function" but not "end function" (see "help re")
-                    # (and similarly for subroutines)
-                    m = re.findall(r"(?<!\bend\b\s)\s*\b%s\b"% (ftype), line)
+                    # match "function" but not "end function" (and similarly for subroutines)
+                    #   - (?<!...) means "match if not preceded by" (see help(re))
+                    m = re.findall(r"(?<!\bend\b\s)\s*\b%s\b"% (mode), line)
 
                     if len(m):  # if found, start capturing
                         # - skip keyword "function" and whitespace
@@ -123,54 +125,74 @@ class CodeGenerator:
                         # - finally capture arguments:
                         #     - up to end of line, 0 or more of anything that is not "&" or ")"
                         #     - *0* or more because some functions might not take any arguments!
-                        matches = re.findall(r"\b%s\b\s+(\S+)\(([^&)]*)" % (ftype), line)
+                        # TODO: could capture the PURE declaration here if we want it.
+                        # TODO: could capture the return dtype here (for functions) if we want it.
+                        #       Currently all functions return REAL*8.
+                        matches = re.findall(r"\b%s\b\s+(\S+)\(([^&)]*)" % (mode), line)
                         assert len(matches) == 1  # should be just one match for the whole regex
                         groups = matches[0]
 
                         fname = groups[0]
                         allargs = groups[1].strip().split(",")
                         allargs = [s.strip() for s in allargs if len(s.strip())]
-                        outargs = []  # for collecting intent(out) args in CAPTURING_INTENTS state
+                        outargs = []  # for collecting intent(out) args in CAPTURING_META state
+                        meta = {}
 
                         # Before we change state, we must check whether the whole
                         # function header was on this line.
                         #
                         # If not, capture the rest of fargs from the following
-                        # lines. Else move on to capturing intents.
+                        # lines. Else move on to capturing metadata.
                         #
                         if not header_ends(line):
                             state = ReaderState.CAPTURING_ARGLIST
                         else:
-                            state = ReaderState.CAPTURING_INTENTS
+                            state = ReaderState.CAPTURING_META
 
                 elif state == ReaderState.CAPTURING_ARGLIST:
                     # capture function arguments from this line
-                    groups = re.findall(r"[^&)]+", line)  # one group only, no wrapper
-                    moreargs = groups[0].strip().split(",")
-                    moreargs = [s.strip() for s in moreargs if len(s.strip())]
+                    matches = re.findall(r"[^&)]+", line)  # all non-overlapping matches of pattern
+                    group = matches[0]                     # group from first match (only one; no container)
+                    rawmoreargs = group.strip().split(",")
+                    moreargs = [arg for arg in (s.strip() for s in rawmoreargs) if len(arg)]
                     allargs.extend(moreargs)
 
-                    # If these were the last fargs, move on to capturing intents.
+                    # If these were the last fargs, move on to capturing metadata.
                     if header_ends(line):
-                        state = ReaderState.CAPTURING_INTENTS
+                        state = ReaderState.CAPTURING_META
 
-                # Parse args also from decls, to ignore any args with intent(out).
-                # This is needed to support subroutines with output args.
-                elif state == ReaderState.CAPTURING_INTENTS:
-                    # TODO: capture array shapes for intent(out) args
-                    matches = re.findall(r"intent\((\w+)\).* :: (.*)", line)
+                # Parse parameter declarations.
+                elif state == ReaderState.CAPTURING_META:
+#                    matches = re.findall(r"intent\((\w+)\).* :: (.*)", line)  # intent, argname
+#                    matches = re.findall(r"\b([^\s]+)\s*,\s*intent\((\w+)\).* :: (.*)", line)  # dtype, intent, argname
+                    # dtype, intent, dimension (optional), argname
+                    #  - dtype is the initial group with non-whitespace, non-comma
+                    #  - which may be followed by a comma and the intent declaration
+                    #    - we use a non-capturing group (?:...) with "?" (zero or one) to make it optional
+                    #    - intent uses literal parentheses \( \)
+                    #    - the text we want to capture is inside the parentheses
+                    #  - which may be followed by a comma and the dimension declaration
+                    #  - which is followed by anything that we don't care about
+                    #  - which is followed by "::" and the argname
+                    matches = re.findall(r"\b([^\s,]+)\s*(?:,\s*intent\((\w+)\))?\s*(?:,\s*dimension\((.*)\))?.*\s*::\s*(.*)", line)
                     if len(matches):
-                        assert len(matches) == 1
-                        groups = matches[0]
+                        assert len(matches) == 1  # all non-overlapping matches of pattern
+                        groups = matches[0]       # groups of first match (since > 1 capturing groups present; see help(re.findall))
 
-                        intent = groups[0]
-                        arg    = groups[1]
+                        # dtype e.g. REAL*8
+                        # intent 'in', 'out' or 'inout'
+                        # dimspec e.g. '1:3, 1:1'
+                        # - The genexpr replaces zero-length items (no match) with None.
+                        dtype, intent, dimspec, argname = (g or None for g in groups)
 
                         if intent not in ("in", "out", "inout"):
-                            raise ValueError("While processing declaration of '%s': invalid intent '%s' for arg '%s'; valid: 'in', 'out' or 'inout'" % (fname, intent, arg))
+                            raise ValueError("While processing declaration of '%s': invalid intent '%s' for arg '%s'; valid: 'in', 'out' or 'inout'" % (fname, intent, argname))
 
                         if intent == "out":
-                            outargs.append(arg)
+                            outargs.append(argname)
+
+                        meta[argname] = (dtype, intent, dimspec)
+
                     # else no decl with intent on this line
 
                     if intents_end(line):
@@ -196,13 +218,13 @@ class CodeGenerator:
                         # intended only to be passed through, to the end user).
                         #
                         inargs = [arg for arg in allargs if arg not in outargs]
-                        commit(fname, inargs, outargs, allargs)
+                        commit(fname, inargs, outargs, allargs, meta)
                         state = ReaderState.SCANNING
 
                 else:
                     assert False, "Unknown reader state"
 
-            results[ftype] = result
+            results[mode] = result
 
         # When we finish, the reader should be in the SCANNING state,
         # as always after a complete function declaration.
@@ -210,19 +232,20 @@ class CodeGenerator:
         if state != ReaderState.SCANNING:
             raise ValueError("End of file while processing declaration of '%s'" % (fname))
 
-        # Validate: no subroutine names must appear in (intent(in)) args of any function.
+        # Validate: no subroutine names may appear in (intent(in)) args of any function.
         #
         # We only support subroutines in the final layer of the "cake",
         # where the intent(out) args are exposed to the user in the public API,
-        # and simply passed through to the underlying routine.
+        # and simply passed through to the underlying routine. This slightly
+        # simplifies the code generator.
         #
-        subroutine_names = {name for name,_,_,_ in results["subroutine"]}
-        for name,inargs,_,_ in results["function"]:
+        subroutine_names = {name for name,_,_,_,_ in results["subroutine"]}
+        for name,inargs,_,_,_ in results["function"]:
             for arg in inargs:
                 if arg in subroutine_names:
                     raise ValueError("Function '%s' depends on subroutine '%s'; this is currently not supported." % (name, arg))
 
-        return [(results[key], {name:inargs for name,inargs,_,_ in results[key]})
+        return [(results[key], {name:inargs for name,inargs,_,_,_ in results[key]})
                 for key in sorted(results.keys())]
 
     @staticmethod
@@ -231,7 +254,7 @@ class CodeGenerator:
 
         (This avoids a dependency on mutable state.)
         """
-        def analyze_args(args, recurse, _level=0):
+        def analyze_args(fname, args, recurse, _level=0):
             """Split args to bound and free sets.
 
             Any arg names that exist as keys in ``lookup[]`` are considered
@@ -240,8 +263,13 @@ class CodeGenerator:
             All other arguments are considered free.
 
             Parameters:
+                fname: str
+                    Name of the stage1 function being analyzed.
+                    This is used to return information about where
+                    each free argument was seen.
+
                 args: tuple of str
-                    Formal argument names of a stage1 generated function.
+                    Formal parameter names of a stage1 function.
                     Each name is, generally:
                       a) the name of another stage1 generated function, or
                       b) a free argument (anything not defined by stage1 code).
@@ -259,11 +287,17 @@ class CodeGenerator:
                     (Just leave this at its default value.)
 
             Returns:
-                set of ``(level,arg)`` pairs
+                tuple (bound, free), where each item is:
+                  set of ``(level,arg,fname)`` tuples:
                     where ``level`` (int) is the recursion depth where
                     ``arg`` (str) was seen.
 
-                    0 means top level.
+                    ``fname`` (str) is the name of the function whose argument
+                    ``arg`` is. This can be used to retrieve metadata
+                    (such as dtype and dimspec) from the results of the
+                    interface analyzer.
+
+                    A ``level`` of 0 means top level.
 
                     ``i > 0`` means "needed by level ``i-1``".
 
@@ -273,20 +307,20 @@ class CodeGenerator:
             # Implemented using mutual recursion:
             #   - analyze_args() injects the level information into a raw args list
             #   - analyze_internal() does the rest of the work
-            return analyze_internal([(_level,arg) for arg in args], recurse)
-        def analyze_internal(args, recurse):
+            return analyze_internal(fname, [(_level,arg) for arg in args], recurse)
+        def analyze_internal(fname, args, recurse):
             bound = set()
             free  = set()
             for item in args:
                 level,arg = item
                 if arg in lookup:  # if we know a stage1 function of this name
-                    bound.add((level,arg))
+                    bound.add((level,arg,fname))
                     if recurse:
-                        b,f = analyze_args(lookup[arg], recurse, level+1)
+                        b,f = analyze_args(arg, lookup[arg], recurse, level+1)
                         bound.update(b)
                         free.update(f)
                 else:
-                    free.add((level,arg))
+                    free.add((level,arg,fname))
             return (bound,free)
         return analyze_args
 
@@ -296,8 +330,8 @@ class CodeGenerator:
 
         Parameters:
             primary: str
-                "level": level first, then name as tie-breaker
-                "name": name first, then level as tie-breaker
+                "level": level first, then argname as tie-breaker
+                "name": argname first, then level as tie-breaker
 
         Returns:
             lambda item: ... that can be used in ``sorted()`` as ``key``.
@@ -311,11 +345,11 @@ class CodeGenerator:
         return lambda item: (sign0*item[indx0], sign1*item[indx1])
 
     @staticmethod
-    def strip_levels(args):
-        """Strip level information from output of analyze_args()."""
-        return [arg for (_,arg) in args]
+    def strip_meta(args):
+        """Strip all except the argument names themselves from the output of analyze_args()."""
+        return [arg for (_,arg,_) in args]  # level, argname, fname
 
-    @classmethod  # we need access to strip_levels()
+    @classmethod  # we need access to strip_meta()
     def make_validator(cls, lookup):
         """Make ``validate_bound_args`` function that uses lookup table ``lookup``.
 
@@ -356,7 +390,7 @@ class CodeGenerator:
 
             # Check top level; we should be given only bound args.
             #
-            args = cls.strip_levels(bound)
+            args = cls.strip_meta(bound)
             for toplevel_arg in args:
                 if toplevel_arg not in lookup:
                     raise ValueError("Got free top-level arg %s; only bound args supported by this checker" % (toplevel_arg))
@@ -483,6 +517,25 @@ class CodeGenerator:
             analyze_args = cls.make_analyzer(funcname_to_inargs)
             validate_bound_args = cls.make_validator(funcname_to_inargs)
 
+            # Build a mapping from function/subroutine names to their
+            # parameter metadata.
+            #
+            # We do this outside the loop because subroutines need access
+            # to the metadata of functions (for processing dependencies).
+            #
+            # TODO: with a fancier storage format, we could avoid this fandango.
+            #
+            def objname_to_meta():
+                fobjs,_ = data_funcs
+                sobjs,_ = data_subroutines
+                out = {}
+                for oname,_,_,_,meta in itertools.chain(fobjs, sobjs):
+                    out[oname] = meta
+                return out
+            meta_by_oname = objname_to_meta()
+
+            # Generate public API for functions, then for subroutines.
+            #
             for mode, data in (("function",   data_funcs),
                                ("subroutine", data_subroutines)):
                 objs,_ = data  # here an "obj" is a function or a subroutine.
@@ -510,11 +563,11 @@ class CodeGenerator:
                 # We must do this recursively; for variables needed directly by f,
                 # and for variables needed by something f calls.
                 #
-                for j, (stage1_oname, stage1_inargs, stage1_outargs, stage1_allargs) in enumerate(objs):
+                for j, (stage1_oname, stage1_inargs, stage1_outargs, stage1_allargs, stage1_meta) in enumerate(objs):
 
                     progress_header_inner = "(%d/%d)" % (j+1, len(objs))
                     progress_header = "%s %s" % (progress_header_outer, progress_header_inner)
-                    print("stage2: %s %s model: public API for %s" % (progress_header, label, stage1_oname))
+                    print("stage2: %s %s model: public API for %s %s" % (progress_header, label, mode, stage1_oname))
 
                     # Check which args of fname match stage1 functions.
                     # This gives us bound and free argument sets for fname.
@@ -528,7 +581,7 @@ class CodeGenerator:
                     #    only for functions, because we do not allow subroutines
                     #    to appear as dependencies.
                     #
-                    bound_set,free_set = analyze_args(stage1_allargs, recurse=True)
+                    bound_set,free_set = analyze_args(stage1_oname, stage1_allargs, recurse=True)
 
                     # Check that the declared interface doesn't try to do
                     # anything silly that is not supported by this stage2
@@ -548,25 +601,37 @@ class CodeGenerator:
                     # Args corresponding to bound variables must be ordered
                     # by level, decreasing, as noted above.
                     #
-                    freevars  = sorted(uniqify(cls.strip_levels(free_set)))
-                    boundvars = tuple(uniqify(cls.strip_levels(sorted_by_level_dsc(bound_set))))
+                    # We need the uniqify() even though we use a set,
+                    # because the same arg may appear at different levels.
+                    #
+                    freevars  = sorted(uniqify(cls.strip_meta(free_set)))
+                    boundvars = tuple(uniqify(cls.strip_meta(sorted_by_level_dsc(bound_set))))
                     # mapping for boundvar: localvar for temp variables
                     # generated for storing values of boundvars at this call site.
                     localvars = {}
 
-                    # TODO: use data_subroutines
+                    # Find in which function (in the call chain) each freevar
+                    # appears; we need this to access its metadata.
                     #
-                    #     - intent(out) args: copy to args of the public API function,
-                    #       with the same name. Tag as intent(out). In the generated
-                    #       code, pass through to the implementation.
-                    #       - Can use the allargs list captured by analyze_interface()
-                    #         to write the arguments in the correct position.
-                    #         Map it by the localvar logic, as usual; this replaces
-                    #         only intent(in) args.
+                    # We assume that all instances of a freevar with
+                    # a given name mean the same thing! This simplifies
+                    # the code generator.
+                    #
+                    # Just to be nice, let's use descending level order,
+                    # so that we always pick the metadata based on the
+                    # innermost occurrence in the call tree.
+                    #
+                    def find_meta_sources():  # just a code block to limit spurious visibility of temporaries
+                        out = {}
+                        for _,arg,fname in sorted_by_level_dsc(free_set):
+                            if arg not in out:
+                                out[arg] = fname
+                        return out
+                    arg_to_metasrc = find_meta_sources()
 
                     # output: function header
                     #
-                    return_decl = "REAL*8 " if mode == "function" else ""
+                    return_decl = "REAL*8 " if mode == "function" else ""  # TODO: the return dtype
 
                     stage2_oname = "%s_public"% (stage1_oname)  # name of public API function/subroutine to write
                     output.append(key_both, "\n")  # blank line before start of item
@@ -575,13 +640,22 @@ class CodeGenerator:
                     output.append(key_both, ", ".join(freevars))
                     output.append(key_both, ")\n")
 
-                    # TODO: declare array shapes for intent(out) args (analyzer needs to capture this data)
-
                     # output: argument declarations for the public API function (free variables only!)
                     output.append(key_both, "implicit none\n")
                     for var in freevars:
-                        intent = "out" if var in stage1_outargs else "in"
-                        output.append(key_both, "REAL*8, intent(%s) :: %s\n" % (intent, var))
+                        meta = meta_by_oname[arg_to_metasrc[var]]
+                        dtype, intent, dimspec = meta[var]
+
+                        # We have already validated that each parameter
+                        # **that has an intent declaration** has a valid intent,
+                        # but we don't yet know if all of them have one.
+                        if intent is None:
+                            raise ValueError("Missing intent declaration in '%s' for (maybe implicit) freevar '%s'" % (stage2_oname, var))
+
+                        if dimspec is not None:
+                            output.append(key_both, "%s, intent(%s), dimension(%s) :: %s\n" % (dtype, intent, dimspec, var))
+                        else:
+                            output.append(key_both, "%s, intent(%s) :: %s\n" % (dtype, intent, var))
 
                     # Declare any needed localvars and populate them by calls to
                     # the stage1 functions represented by boundvars.
