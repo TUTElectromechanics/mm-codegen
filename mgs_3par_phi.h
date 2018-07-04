@@ -18,7 +18,7 @@
 ! The potential ϕ, 3-parameter model.
 
 interface
-PURE REAL*8 function phi(u, v, w,
+pure REAL*8 function phi(u, v, w,
                          young_E, poisson_nu)
 implicit none
 REAL*8, intent(in) :: u
@@ -30,7 +30,7 @@ end function
 end interface
 
 interface
-PURE REAL*8 function dphi_du(u, v, w,
+pure REAL*8 function dphi_du(u, v, w,
                              young_E, poisson_nu)
 implicit none
 REAL*8, intent(in) :: u
@@ -42,7 +42,7 @@ end function
 end interface
 
 interface
-PURE REAL*8 function dphi_dv(u, v, w,
+pure REAL*8 function dphi_dv(u, v, w,
                              young_E, poisson_nu)
 implicit none
 REAL*8, intent(in) :: u
@@ -54,7 +54,7 @@ end function
 end interface
 
 interface
-PURE REAL*8 function dphi_dw(u, v, w,
+pure REAL*8 function dphi_dw(u, v, w,
                              young_E, poisson_nu)
 implicit none
 REAL*8, intent(in) :: u
@@ -66,7 +66,7 @@ end function
 end interface
 
 interface
-PURE REAL*8 function d2phi_du2(u, v, w,
+pure REAL*8 function d2phi_du2(u, v, w,
                                young_E, poisson_nu)
 implicit none
 REAL*8, intent(in) :: u
@@ -78,7 +78,7 @@ end function
 end interface
 
 interface
-PURE REAL*8 function d2phi_dv2(u, v, w,
+pure REAL*8 function d2phi_dv2(u, v, w,
                                young_E, poisson_nu)
 implicit none
 REAL*8, intent(in) :: u
@@ -90,7 +90,7 @@ end function
 end interface
 
 interface
-PURE REAL*8 function d2phi_dw2(u, v, w,
+pure REAL*8 function d2phi_dw2(u, v, w,
                                young_E, poisson_nu)
 implicit none
 REAL*8, intent(in) :: u
@@ -102,7 +102,7 @@ end function
 end interface
 
 interface
-PURE REAL*8 function d2phi_dudv(u, v, w,
+pure REAL*8 function d2phi_dudv(u, v, w,
                                 young_E, poisson_nu)
 implicit none
 REAL*8, intent(in) :: u
@@ -114,7 +114,7 @@ end function
 end interface
 
 interface
-PURE REAL*8 function d2phi_dvdw(u, v, w,
+pure REAL*8 function d2phi_dvdw(u, v, w,
                                 young_E, poisson_nu)
 implicit none
 REAL*8, intent(in) :: u
@@ -126,7 +126,7 @@ end function
 end interface
 
 interface
-PURE REAL*8 function d2phi_dudw(u, v, w,
+pure REAL*8 function d2phi_dudw(u, v, w,
                                 young_E, poisson_nu)
 implicit none
 REAL*8, intent(in) :: u
