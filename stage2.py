@@ -84,6 +84,9 @@ class CodeGenerator:
                     meta: dict
                         argname: (dtype, intent, dimspec)
                           where dimspec is None for non-arrays.
+                        Special case: for argname=fname, contains metadata
+                                      on the return value of the function
+                                      (functions only!).
 
             lookup: dictionary
                 lookup[fname] = (arg1, arg2, ..., argn)  (intent(in) args only)
@@ -135,24 +138,31 @@ class CodeGenerator:
                     if len(matches):  # if found, start capturing
                         assert len(matches) == 1  # should be just one match for the whole regex
 
-                        # TODO: could capture the PURE declaration here if we want it.
-                        # TODO: could capture the return dtype here (for functions) if we want it. (Store in meta under fname itself?)
-                        #       Currently all functions return REAL*8.
+                        # (?:...) makes a non-capturing group
+                        p_puredecl = r"(?:\b(pure)\b)?"  # some functions may have this
+                        p_rettype = r"(?:\b([^\s]+)\s+)?"  # optional; subroutines don't have a return type
                         p_objtype = r"\b{mode}\b".format(mode=mode)
                         p_objname = r"(\S+)"
                         p_arglist = r"([^&)]*)"  # 0 or more, because some functions might not take any args.
-                        pattern = r"{objtype}\s+{objname}\({arglist}".format(objtype=p_objtype,
-                                                                             objname=p_objname,
-                                                                             arglist=p_arglist)
+                        pattern = r"{puredecl}\s*{rettype}\s*{objtype}\s+{objname}\({arglist}".format(puredecl=p_puredecl,
+                                                                                                      rettype=p_rettype,
+                                                                                                      objtype=p_objtype,
+                                                                                                      objname=p_objname,
+                                                                                                      arglist=p_arglist)
                         matches = re.findall(pattern, line)
                         assert len(matches) == 1
                         groups = matches[0]
 
-                        fname, argstuff = groups
+                        puredecl, rettype, fname, argstuff = groups
+                        puredecl = puredecl or None  # TODO:? we don't actually use the puredecl
+                        rettype = rettype or None
                         rawallargs = argstuff.split(",")
                         allargs = [arg for arg in (s.strip() for s in rawallargs) if len(arg)]
                         outargs = []  # for collecting intent(out) and intent(inout) args in CAPTURING_META state
                         meta = {}
+
+                        if mode == "function":
+                            meta[fname] = (rettype, '<return value>', None)
 
                         # Before we change state, we must check whether the whole
                         # function header was on this line.
@@ -180,12 +190,10 @@ class CodeGenerator:
 
                 # Parse parameter declarations.
                 elif state == ReaderState.CAPTURING_META:
-                    # - (?:...) makes a non-capturing group
-                    # - intent uses literal parentheses \( \)
-                    #   - the text we want to capture is inside the parentheses
-                    p_dtype = r"\b([^\s,]+)"
-                    p_intent = r"(?:,\s*intent\((\w+)\))?"
-                    p_dimspec = r"(?:,\s*dimension\((.*)\))?"
+                    # intent uses literal parentheses \( \), capture text inside them
+                    p_dtype = r"\b([^\s,]+)"                  # e.g. 'REAL*8'
+                    p_intent = r"(?:,\s*intent\((\w+)\))?"    # 'in', 'out' or 'inout'
+                    p_dimspec = r"(?:,\s*dimension\((.*)\))?" # e.g. '1:3, 1:1'
                     p_anything = r".*"
                     p_argname = r"::\s*(.*)"
                     pattern = r"{dtype}\s*{intent}\s*{dimspec}\s*{anything}\s*{argname}".format(dtype=p_dtype,
@@ -198,10 +206,7 @@ class CodeGenerator:
                         assert len(matches) == 1  # all non-overlapping matches of pattern
                         groups = matches[0]       # groups of first match (since > 1 capturing groups present; see help(re.findall))
 
-                        # dtype e.g. REAL*8
-                        # intent 'in', 'out' or 'inout'
-                        # dimspec e.g. '1:3, 1:1'
-                        # - The genexpr replaces zero-length items (no match) with None.
+                        # The genexpr replaces zero-length items (no match) with None.
                         dtype, intent, dimspec, argname = (g or None for g in groups)
 
                         if intent not in ("in", "out", "inout"):
@@ -562,6 +567,12 @@ class CodeGenerator:
                 return out
             meta_by_oname = objname_to_meta()
 
+            # Get the type of the return value of a stage1 function.
+            def return_type_of(fname):
+                metarec = meta_by_oname[fname]
+                retval_meta = metarec[fname]  # key = function name itself
+                return retval_meta[0]  # dtype, intent, dimspec
+
             # Generate public API for functions, then for subroutines.
             #
             for mode, data in (("function",   data_funcs),
@@ -613,7 +624,7 @@ class CodeGenerator:
                     #    only for functions, because we do not allow subroutines
                     #    to appear as dependencies.
                     #
-                    bound_set,free_set = analyze_args(stage1_oname, stage1_allargs, recurse=True)
+                    bound_set, free_set = analyze_args(stage1_oname, stage1_allargs, recurse=True)
 
                     # Check that the declared interface doesn't try to do
                     # anything silly that is not supported by this stage2
@@ -663,7 +674,7 @@ class CodeGenerator:
 
                     # output: function header
                     #
-                    return_decl = "REAL*8 " if mode == "function" else ""  # TODO: the return dtype
+                    return_decl = "{rettype} ".format(rettype=return_type_of(stage1_oname)) if mode == "function" else ""
 
                     stage2_oname = "{name}_public".format(name=stage1_oname)  # name of public API function/subroutine to write
                     output.append(key_both, "\n")  # blank line before start of item
@@ -757,8 +768,8 @@ class CodeGenerator:
 
                     # output: declare localvars
                     for bvar in boundvars:  # use same ordering as boundvars, for readability
-                        # TODO: take dtype from return dtype of bvar
-                        output.append(key_impl, "REAL*8 {localvar}\n".format(localvar=localvars[bvar]))
+                        output.append(key_impl, "{rettype} {localvar}\n".format(rettype=return_type_of(bvar),
+                                                                                localvar=localvars[bvar]))
 
                     # end argument and local variable declarations with blank line
                     # (there is always at least the "implicit none"; if there wasn't,
