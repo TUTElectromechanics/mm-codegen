@@ -372,11 +372,11 @@ class CodeGenerator:
         return lambda item: (sign0*item[indx0], sign1*item[indx1])
 
     @staticmethod
-    def strip_meta(args):
+    def strip_argrecs(args):
         """Strip all except the argument names themselves from the output of analyze_args()."""
         return [arg for (_,arg,_) in args]  # level, argname, fname
 
-    @classmethod  # we need access to strip_meta()
+    @classmethod  # we need access to strip_argrecs()
     def make_validator(cls, lookup):
         """Make ``validate_bound_args`` function that uses lookup table ``lookup``.
 
@@ -400,7 +400,7 @@ class CodeGenerator:
             analyzer and code generator are correct.)
 
             Parameters:
-                bound: set of ``(level,arg)`` (int, str) pairs
+                bound: set of ``(level,arg,fname)`` (int, str, str) tuples
                     as output by ``analyze_args()`` with ``recursive=True``.
 
             Returns:
@@ -417,7 +417,7 @@ class CodeGenerator:
 
             # Check top level; we should be given only bound args.
             #
-            args = cls.strip_meta(bound)
+            args = cls.strip_argrecs(bound)
             for toplevel_arg in args:
                 if toplevel_arg not in lookup:
                     raise ValueError("Got free top-level arg '{arg}'; only bound args supported by this checker".format(arg=toplevel_arg))
@@ -484,12 +484,16 @@ class CodeGenerator:
 
     @classmethod
     def run(cls, data):
-        """Generate the stage2 code (i.e. the public API).
+        """Generate the stage2 code (i.e. the public API) based on stage1 code.
 
         Parameters:
-            data: tuple of tuples
+            data: tuple of tuples, stage1 code.
                 Each item should have (label, filename, content).
                 This is the output format of stage1.CodeGenerator.run().
+
+        Returns:
+            tuple of tuples, stage2 code. Each item has the format:
+                (label, output_filename, content)
         """
         # Add in user-defined stage1 interfaces.
         #
@@ -567,11 +571,19 @@ class CodeGenerator:
                 return out
             meta_by_oname = objname_to_meta()
 
-            # Get the type of the return value of a stage1 function.
-            def return_type_of(fname):
-                metarec = meta_by_oname[fname]
-                retval_meta = metarec[fname]  # key = function name itself
-                return retval_meta[0]  # dtype, intent, dimspec
+            # Get the dtype of the return value of a stage1 function.
+            def return_dtype_of(fname):
+                metarec = meta_by_oname[fname]  # metadata record for fname
+                retval_meta = metarec[fname]    # return value metadata: key in metarec = function name itself
+                dtype, _, _ = retval_meta
+                return dtype
+
+            # Key to sort by intent, then lexicographically.
+            def freevar_sortkey(argrec):  # argrec = an item returned by analyze_args()
+                level, argname, fname = argrec
+                metarec = meta_by_oname[fname]  # metadata record for function whose argument this is
+                _, intent, _ = metarec[argname]
+                return (intent, argname)  # "in" sorts before "inout" and "out" so we're good.
 
             # Generate public API for functions, then for subroutines.
             #
@@ -635,30 +647,13 @@ class CodeGenerator:
                     #
                     validate_bound_args(bound_set)
 
-                    # Args corresponding to free variables do not have a particular
-                    # ordering in the API of fname itself, as they are generally
-                    # propagated from the deeper levels of the call tree
-                    # (i.e. needed by something that fname itself calls).
-                    # Just order them lexicographically.
+                    # Find the function (in the call chain) in whose arguments
+                    # each freevar originally appears; we need this to access
+                    # the metadata for the freevar.
                     #
-                    # Args corresponding to bound variables must be ordered
-                    # by level, decreasing, as noted above.
-                    #
-                    # We need the uniqify() even though we use a set,
-                    # because the same arg may appear at different levels.
-                    #
-                    freevars  = sorted(uniqify(cls.strip_meta(free_set)))
-                    boundvars = tuple(uniqify(cls.strip_meta(sorted_by_level_dsc(bound_set))))
-                    # mapping for boundvar: localvar for temp variables
-                    # generated for storing values of boundvars at this call site.
-                    localvars = {}
-
-                    # Find in which function (in the call chain) each freevar
-                    # appears; we need this to access its metadata.
-                    #
-                    # We assume that all instances of a freevar with
-                    # a given name mean the same thing! This simplifies
-                    # the code generator.
+                    # DANGER: slight oversimplification:
+                    #   We assume that all instances of a freevar with
+                    #   a given name mean the same thing!
                     #
                     # Just to be nice, let's use descending level order,
                     # so that we always pick the metadata based on the
@@ -672,9 +667,30 @@ class CodeGenerator:
                         return out
                     arg_to_metasrc = find_meta_sources()
 
+                    # Args corresponding to free variables do not have a particular
+                    # ordering in the API of fname itself, as they are generally
+                    # propagated from the deeper levels of the call tree
+                    # (i.e. needed by something that fname itself calls).
+                    #
+                    # Order them by intent (in first), then lexicographically.
+                    #
+                    # Args corresponding to bound variables must be ordered
+                    # by level, decreasing, as noted above, for dependency
+                    # resolution purposes.
+                    #
+                    # We need the uniqify() even though we use a set,
+                    # because the same arg may appear at different levels.
+                    #
+                    freevars = tuple(uniqify(cls.strip_argrecs(sorted(free_set, key=freevar_sortkey))))
+                    boundvars = tuple(uniqify(cls.strip_argrecs(sorted_by_level_dsc(bound_set))))
+
+                    # mapping for boundvar: localvar for temporary variables
+                    # generated for storing values of boundvars at this call site.
+                    localvars = {}
+
                     # output: function header
                     #
-                    return_decl = "{rettype} ".format(rettype=return_type_of(stage1_oname)) if mode == "function" else ""
+                    return_decl = "{rettype} ".format(rettype=return_dtype_of(stage1_oname)) if mode == "function" else ""
 
                     stage2_oname = "{name}_public".format(name=stage1_oname)  # name of public API function/subroutine to write
                     output.append(key_both, "\n")  # blank line before start of item
@@ -687,26 +703,37 @@ class CodeGenerator:
 
                     # output: argument declarations for the public API function (free variables only!)
                     output.append(key_both, "implicit none\n")
-                    for var in freevars:
-                        meta = meta_by_oname[arg_to_metasrc[var]]
-                        dtype, intent, dimspec = meta[var]
+                    for fvar in freevars:
+                        # Get the metadata record for the function whose
+                        # argument this freevar originally is.
+                        #
+                        # DANGER: slight oversimplification:
+                        #   We assume unique arg names in the call tree,
+                        #   or at least that each unique name always means the
+                        #   same thing, so it doesn't matter even if we get the
+                        #   "wrong" function to read the metadata from, as long
+                        #   as it takes this freevar as an argument (so that the
+                        #   metadata for this freevar is present in its metarec).
+                        #
+                        metarec = meta_by_oname[arg_to_metasrc[fvar]]
+                        dtype, intent, dimspec = metarec[fvar]
 
                         # We have already validated that each parameter
                         # **that has an intent declaration** has a valid intent,
                         # but we don't yet know if all of them have one.
                         if intent is None:
                             raise ValueError("Missing intent declaration in '{name}' for (maybe implicit) freevar '{argname}'".format(name=stage2_oname,
-                                                                                                                                      argname=var))
+                                                                                                                                      argname=fvar))
 
                         if dimspec is not None:
                             output.append(key_both, "{dtype}, intent({intent}), dimension({dimspec}) :: {argname}\n".format(dtype=dtype,
                                                                                                                             intent=intent,
                                                                                                                             dimspec=dimspec,
-                                                                                                                            argname=var))
+                                                                                                                            argname=fvar))
                         else:
                             output.append(key_both, "{dtype}, intent({intent}) :: {argname}\n".format(dtype=dtype,
                                                                                                       intent=intent,
-                                                                                                      argname=var))
+                                                                                                      argname=fvar))
 
                     # Declare any needed localvars and populate them by calls to
                     # the stage1 functions represented by boundvars.
@@ -768,7 +795,7 @@ class CodeGenerator:
 
                     # output: declare localvars
                     for bvar in boundvars:  # use same ordering as boundvars, for readability
-                        output.append(key_impl, "{rettype} {localvar}\n".format(rettype=return_type_of(bvar),
+                        output.append(key_impl, "{rettype} {localvar}\n".format(rettype=return_dtype_of(bvar),
                                                                                 localvar=localvars[bvar]))
 
                     # end argument and local variable declarations with blank line
