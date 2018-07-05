@@ -39,6 +39,8 @@ _fileheader = \
 """!******************************************************************************
 !*              Code generated with mgs-galfenol-codegen stage2               *
 !*                                                                            *
+!* See https://github.com/TUTElectromechanics/mm-codegen for more information *
+!*                                                                            *
 !*                 This file is part of 'elmer-mgs-galfenol'                  *
 !******************************************************************************
 """
