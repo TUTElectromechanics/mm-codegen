@@ -67,16 +67,23 @@ class CodeGenerator:
                 Content of a Fortran interface (".h" file), as a single string.
 
         Return value: list of tuples (funcs, lookup), where
+
             funcs: tuple of tuples
-                Each item has the format (fname, infargs, fargs),
+                Each item has the format (fname, inargs, outargs, allargs, meta),
                 where
                     fname: str
                         Function name.
-                    infargs: tuple
+                    inargs: tuple
                         (arg1, arg2, ..., argn), intent(in) args only;
-                    fargs: tuple
+                    outargs: tuple
+                        (arg1, arg2, ..., argm), intent(out), intent(inout) only;
+                    allargs: tuple
                         (arg1, arg2, ..., argm), all args.
                 Ordering of the args is preserved.
+
+                    meta: dict
+                        argname: (dtype, intent, dimspec)
+                          where dimspec is None for non-arrays.
 
             lookup: dictionary
                 lookup[fname] = (arg1, arg2, ..., argn)  (intent(in) args only)
@@ -84,7 +91,7 @@ class CodeGenerator:
 
             The top-level list has two elements; the first contains the data
             for functions, the second for subroutines.
-"""
+        """
         # HACK: parse by regex matching. (Use a proper Fortran parser?)
         #
         from enum import Enum
@@ -96,46 +103,55 @@ class CodeGenerator:
         results = {}
         for mode in ("function", "subroutine"):
             def header_ends(line):
-                endparen = re.findall(r"\)", line)
-                return (len(endparen) > 0)
+                matches = re.findall(r"\)", line)
+                return (len(matches) > 0)
 
-            def intents_end(line):  # "end function" or "end subroutine"
-                end = re.findall(r"\bend %s\b" % (mode), line)
-                return (len(end) > 0)
+            def meta_ends(line):  # "end function" or "end subroutine"
+                p_end = r"\bend\b\s"
+                p_objtype = r"\b{mode}\b".format(mode=mode)
+                pattern = r"{end}\s*{objtype}".format(end=p_end,
+                                                      objtype=p_objtype)
+                matches = re.findall(pattern, line)
+                return (len(matches) > 0)
 
             # meta is a dict:  argname: (dtype, intent, dimspec)
             def commit(fname, inargs, outargs, allargs, meta):
                 if mode == 'function' and set(inargs) != set(allargs):
                     invalid_args = sorted(set(allargs).difference(set(inargs)), key=str.lower)
-                    raise ValueError("A Fortran 90 function can only have intent(in) arguments, but function '%s' has declared the following as intent(out) or intent(inout) (in alphabetical order): %s" % (fname, invalid_args))
+                    raise ValueError("f90 function '{fname}' declares the following intent(out) or intent(inout) args (in alphabetical order): {invalid_args}".format(fname=fname,
+                                                                                                                                                                      invalid_args=invalid_args))
                 result.append( (fname, inargs, outargs, allargs, meta) )
 
             result = []
             state = ReaderState.SCANNING
             for line in code.split("\n"):
                 if state == ReaderState.SCANNING:
-                    # match "function" but not "end function" (and similarly for subroutines)
-                    #   - (?<!...) means "match if not preceded by" (see help(re))
-                    m = re.findall(r"(?<!\bend\b\s)\s*\b%s\b"% (mode), line)
+                    p_notend = r"(?<!\bend\b\s)"  # (?<!...) means "match if not preceded by" (see help(re))
+                    p_objtype = r"\b{mode}\b".format(mode=mode)
+                    pattern = r"{notend}\s*{objtype}".format(notend=p_notend,
+                                                             objtype=p_objtype)
+                    matches = re.findall(pattern, line)
 
-                    if len(m):  # if found, start capturing
-                        # - skip keyword "function" and whitespace
-                        # - capture function name (non-whitespace, 1 or more)
-                        # - then skip "("
-                        # - finally capture arguments:
-                        #     - up to end of line, 0 or more of anything that is not "&" or ")"
-                        #     - *0* or more because some functions might not take any arguments!
-                        # TODO: could capture the PURE declaration here if we want it.
-                        # TODO: could capture the return dtype here (for functions) if we want it.
-                        #       Currently all functions return REAL*8.
-                        matches = re.findall(r"\b%s\b\s+(\S+)\(([^&)]*)" % (mode), line)
+                    if len(matches):  # if found, start capturing
                         assert len(matches) == 1  # should be just one match for the whole regex
+
+                        # TODO: could capture the PURE declaration here if we want it.
+                        # TODO: could capture the return dtype here (for functions) if we want it. (Store in meta under fname itself?)
+                        #       Currently all functions return REAL*8.
+                        p_objtype = r"\b{mode}\b".format(mode=mode)
+                        p_objname = r"(\S+)"
+                        p_arglist = r"([^&)]*)"  # 0 or more, because some functions might not take any args.
+                        pattern = r"{objtype}\s+{objname}\({arglist}".format(objtype=p_objtype,
+                                                                             objname=p_objname,
+                                                                             arglist=p_arglist)
+                        matches = re.findall(pattern, line)
+                        assert len(matches) == 1
                         groups = matches[0]
 
-                        fname = groups[0]
-                        allargs = groups[1].strip().split(",")
-                        allargs = [s.strip() for s in allargs if len(s.strip())]
-                        outargs = []  # for collecting intent(out) args in CAPTURING_META state
+                        fname, argstuff = groups
+                        rawallargs = argstuff.split(",")
+                        allargs = [arg for arg in (s.strip() for s in rawallargs) if len(arg)]
+                        outargs = []  # for collecting intent(out) and intent(inout) args in CAPTURING_META state
                         meta = {}
 
                         # Before we change state, we must check whether the whole
@@ -152,8 +168,9 @@ class CodeGenerator:
                 elif state == ReaderState.CAPTURING_ARGLIST:
                     # capture function arguments from this line
                     matches = re.findall(r"[^&)]+", line)  # all non-overlapping matches of pattern
-                    group = matches[0]                     # group from first match (only one; no container)
-                    rawmoreargs = group.strip().split(",")
+                    group = matches[0]                     # group from first match (only one; no tuple container)
+
+                    rawmoreargs = group.split(",")
                     moreargs = [arg for arg in (s.strip() for s in rawmoreargs) if len(arg)]
                     allargs.extend(moreargs)
 
@@ -163,18 +180,20 @@ class CodeGenerator:
 
                 # Parse parameter declarations.
                 elif state == ReaderState.CAPTURING_META:
-#                    matches = re.findall(r"intent\((\w+)\).* :: (.*)", line)  # intent, argname
-#                    matches = re.findall(r"\b([^\s]+)\s*,\s*intent\((\w+)\).* :: (.*)", line)  # dtype, intent, argname
-                    # dtype, intent, dimension (optional), argname
-                    #  - dtype is the initial group with non-whitespace, non-comma
-                    #  - which may be followed by a comma and the intent declaration
-                    #    - we use a non-capturing group (?:...) with "?" (zero or one) to make it optional
-                    #    - intent uses literal parentheses \( \)
-                    #    - the text we want to capture is inside the parentheses
-                    #  - which may be followed by a comma and the dimension declaration
-                    #  - which is followed by anything that we don't care about
-                    #  - which is followed by "::" and the argname
-                    matches = re.findall(r"\b([^\s,]+)\s*(?:,\s*intent\((\w+)\))?\s*(?:,\s*dimension\((.*)\))?.*\s*::\s*(.*)", line)
+                    # - (?:...) makes a non-capturing group
+                    # - intent uses literal parentheses \( \)
+                    #   - the text we want to capture is inside the parentheses
+                    p_dtype = r"\b([^\s,]+)"
+                    p_intent = r"(?:,\s*intent\((\w+)\))?"
+                    p_dimspec = r"(?:,\s*dimension\((.*)\))?"
+                    p_anything = r".*"
+                    p_argname = r"::\s*(.*)"
+                    pattern = r"{dtype}\s*{intent}\s*{dimspec}\s*{anything}\s*{argname}".format(dtype=p_dtype,
+                                                                                                intent=p_intent,
+                                                                                                dimspec=p_dimspec,
+                                                                                                anything=p_anything,
+                                                                                                argname=p_argname)
+                    matches = re.findall(pattern, line)
                     if len(matches):
                         assert len(matches) == 1  # all non-overlapping matches of pattern
                         groups = matches[0]       # groups of first match (since > 1 capturing groups present; see help(re.findall))
@@ -186,16 +205,18 @@ class CodeGenerator:
                         dtype, intent, dimspec, argname = (g or None for g in groups)
 
                         if intent not in ("in", "out", "inout"):
-                            raise ValueError("While processing declaration of '%s': invalid intent '%s' for arg '%s'; valid: 'in', 'out' or 'inout'" % (fname, intent, argname))
+                            raise ValueError("In '{fname}': invalid intent '{intent}' for arg '{arg}'; valid: 'in', 'out' or 'inout'".format(fname=fname,
+                                                                                                                                             intent=intent,
+                                                                                                                                             arg=argname))
 
-                        if intent == "out":
+                        if intent in ("out", "inout"):
                             outargs.append(argname)
 
                         meta[argname] = (dtype, intent, dimspec)
 
-                    # else no decl with intent on this line
+                    # if no match, no parameter metadata decl on this line
 
-                    if intents_end(line):
+                    if meta_ends(line):
                         # Separate input and output args when committing.
                         #
                         # We capture three lists:
@@ -230,7 +251,7 @@ class CodeGenerator:
         # as always after a complete function declaration.
         #
         if state != ReaderState.SCANNING:
-            raise ValueError("End of file while processing declaration of '%s'" % (fname))
+            raise ValueError("End of file while processing '{fname}'".format(fname=fname))
 
         # Validate: no subroutine names may appear in (intent(in)) args of any function.
         #
@@ -243,7 +264,8 @@ class CodeGenerator:
         for name,inargs,_,_,_ in results["function"]:
             for arg in inargs:
                 if arg in subroutine_names:
-                    raise ValueError("Function '%s' depends on subroutine '%s'; this is currently not supported." % (name, arg))
+                    raise ValueError("Function '{fname}' depends on subroutine '{sname}'; this is currently not supported.".format(fname=name,
+                                                                                                                                   sname=arg))
 
         return [(results[key], {name:inargs for name,inargs,_,_,_ in results[key]})
                 for key in sorted(results.keys())]
@@ -335,9 +357,9 @@ class CodeGenerator:
 
         Returns:
             lambda item: ... that can be used in ``sorted()`` as ``key``.
-"""
+        """
         if primary not in ("level","name"):
-            raise ValueError("Unknown primary sort criterion '%s'; valid: 'level', 'name'" % (primary))
+            raise ValueError("Unknown primary sort criterion '{pri}'; valid: 'level', 'name'".format(pri=primary))
         indx0 = 0 if primary == "level" else 1
         indx1 = 1 - indx0  # the other one
         sign0 = -1 if reverse_primary else +1
@@ -378,7 +400,7 @@ class CodeGenerator:
 
             Returns:
                 None
-                    ``NotImplementedError`` is raised if the validation fails
+                    ``ValueError`` is raised if the validation fails
                     (as this stage2 code generator cannot currently handle
                      interfaces which do not pass this validation).
             """
@@ -393,7 +415,7 @@ class CodeGenerator:
             args = cls.strip_meta(bound)
             for toplevel_arg in args:
                 if toplevel_arg not in lookup:
-                    raise ValueError("Got free top-level arg %s; only bound args supported by this checker" % (toplevel_arg))
+                    raise ValueError("Got free top-level arg '{arg}'; only bound args supported by this checker".format(arg=toplevel_arg))
 
             # Sets of callers of each bound var, for mutual recursion detection.
             #
@@ -430,7 +452,9 @@ class CodeGenerator:
                 #   current chain of calls.
                 if arg in lookup:  # only validate if arg is bound (free args may occur anywhere along the chain)
                     if arg in callstack:
-                        raise NotImplementedError("top-level arg %s: recursive call to %s detected (current call stack: %s)" % (toplevel_arg,arg,callstack))
+                        raise ValueError("top-level arg '{arg}': recursive call to '{target}' detected (current call stack: {cs})".format(arg=toplevel_arg,
+                                                                                                                                          target=arg,
+                                                                                                                                          cs=callstack))
                     update_callers_of(arg, set(callstack))
                     new_callstack = callstack.copy()
                     new_callstack.append(arg)
@@ -448,7 +472,9 @@ class CodeGenerator:
             for a in callers_of.keys():     # a = the thing being called
                 for b in callers_of[a]:     # b = its callers (i.e. each b is known to call a, at least implicitly)
                     if a in callers_of[b]:  # so if a calls b (even if implicitly), there is mutual recursion
-                        raise NotImplementedError("mutual recursion (possibly implicit) detected between %s and %s (callers of %s: %s; callers of %s: %s)" % (a,b,a,callers_of[a],b,callers_of[b]))
+                        raise ValueError("mutual recursion (possibly implicit) detected between {a} and {b} (callers of {a}: {ca}; callers of {b}: {cb})".format(a=a, b=b,
+                                                                                                                                                                 ca=callers_of[a],
+                                                                                                                                                                 cb=callers_of[b]))
         return validate_bound_args
 
     @classmethod
@@ -473,7 +499,7 @@ class CodeGenerator:
             new_intf = []
             for l,f,c in old_intf:
                 for filename in (fn.format(label=l) for fn in user_intfs):
-                    print("stage2: %s model: reading user API '%s'" % (l, filename))
+                    print("stage2: {label} model: reading user API '{file}'".format(label=l, file=filename))
                     with open(filename, "rt", encoding="utf-8") as file:
                         content = file.read()
                     c += content
@@ -498,8 +524,10 @@ class CodeGenerator:
         key_both = (key_impl, key_intf)
         for i, (label, input_filename, content) in enumerate(stage1_intf):
 
-            progress_header_outer = "(%d/%d)" % (i+1, len(stage1_intf))
-            print("stage2: %s %s model: generating public API based on '%s'" % (progress_header_outer, label, input_filename))
+            progress_header_outer = "({iteration:d}/{total:d})".format(iteration=i+1, total=len(stage1_intf))
+            print("stage2: {outer_progress} {label} model: generating public API based on '{file}'".format(outer_progress=progress_header_outer,
+                                                                                                           label=label,
+                                                                                                           file=input_filename))
 
             # Text of implementation and interface will be added into named
             # buffers. This is convenient because they are mostly identical.
@@ -565,9 +593,13 @@ class CodeGenerator:
                 #
                 for j, (stage1_oname, stage1_inargs, stage1_outargs, stage1_allargs, stage1_meta) in enumerate(objs):
 
-                    progress_header_inner = "(%d/%d)" % (j+1, len(objs))
-                    progress_header = "%s %s" % (progress_header_outer, progress_header_inner)
-                    print("stage2: %s %s model: public API for %s %s" % (progress_header, label, mode, stage1_oname))
+                    progress_header_inner = "({iteration:d}/{total:d})".format(iteration=j+1, total=len(objs))
+                    progress_header = "{outer_progress} {inner_progress}".format(outer_progress=progress_header_outer,
+                                                                                 inner_progress=progress_header_inner)
+                    print("stage2: {header} {label} model: public API for {objtype} {name}".format(header=progress_header,
+                                                                                                   label=label,
+                                                                                                   objtype=mode,
+                                                                                                   name=stage1_oname))
 
                     # Check which args of fname match stage1 functions.
                     # This gives us bound and free argument sets for fname.
@@ -633,10 +665,12 @@ class CodeGenerator:
                     #
                     return_decl = "REAL*8 " if mode == "function" else ""  # TODO: the return dtype
 
-                    stage2_oname = "%s_public"% (stage1_oname)  # name of public API function/subroutine to write
+                    stage2_oname = "{name}_public".format(name=stage1_oname)  # name of public API function/subroutine to write
                     output.append(key_both, "\n")  # blank line before start of item
                     output.append(key_intf, "interface\n")
-                    output.append(key_both, "%s%s %s(" % (return_decl, mode, stage2_oname))
+                    output.append(key_both, "{return_decl}{objtype} {name}(".format(return_decl=return_decl,
+                                                                                    objtype=mode,
+                                                                                    name=stage2_oname))
                     output.append(key_both, ", ".join(freevars))
                     output.append(key_both, ")\n")
 
@@ -650,21 +684,30 @@ class CodeGenerator:
                         # **that has an intent declaration** has a valid intent,
                         # but we don't yet know if all of them have one.
                         if intent is None:
-                            raise ValueError("Missing intent declaration in '%s' for (maybe implicit) freevar '%s'" % (stage2_oname, var))
+                            raise ValueError("Missing intent declaration in '{name}' for (maybe implicit) freevar '{argname}'".format(name=stage2_oname,
+                                                                                                                                      argname=var))
 
                         if dimspec is not None:
-                            output.append(key_both, "%s, intent(%s), dimension(%s) :: %s\n" % (dtype, intent, dimspec, var))
+                            output.append(key_both, "{dtype}, intent({intent}), dimension({dimspec}) :: {argname}\n".format(dtype=dtype,
+                                                                                                                            intent=intent,
+                                                                                                                            dimspec=dimspec,
+                                                                                                                            argname=var))
                         else:
-                            output.append(key_both, "%s, intent(%s) :: %s\n" % (dtype, intent, var))
+                            output.append(key_both, "{dtype}, intent({intent}) :: {argname}\n".format(dtype=dtype,
+                                                                                                      intent=intent,
+                                                                                                      argname=var))
 
                     # Declare any needed localvars and populate them by calls to
                     # the stage1 functions represented by boundvars.
 
-                    # bind bound variables in given inargs to corresponding
+                    # Helper: bind bound variables in given args to corresponding
                     # local variables (if any), preserving ordering.
-                    # Any free variables in inargs are passed through as-is.
-                    def bind_to_lvars(inargs):
-                        result = [(localvars[arg] if arg in boundvars else arg) for arg in inargs]
+                    #
+                    # Any (mathematically) free variables in args are
+                    # passed through as-is.
+                    #
+                    def bind_to_lvars(the_args):
+                        result = [(localvars[arg] if arg in boundvars else arg) for arg in the_args]
                         # sanity check: each bound var in myargs should now be bound,
                         # so the result should have only localvars or freevars
                         for arg in result:
@@ -672,7 +715,7 @@ class CodeGenerator:
                             # localvars.values() = the names of the *local* vars
                             if arg in localvars.values() or arg in freevars:
                                 continue
-                            raise RuntimeError("post-binding check: undefined symbol '%s', neither in localvars nor in freevars" % (arg))
+                            raise RuntimeError("post-binding check: undefined symbol '{invalid}', neither in localvars nor in freevars".format(invalid=arg))
                         return result
 
                     # We need a temp storage buffer: we must first process all
@@ -682,7 +725,7 @@ class CodeGenerator:
                     # (that then populate the localvars).
                     tmpbuffer = ""
                     for bvar in boundvars:  # follow the ordering by level, descending (deepest first)
-                        lvar = "%s_" % (bvar)
+                        lvar = "{boundvar}_".format(boundvar=bvar)
                         # output: call the stage1 function for this boundvar.
                         #
                         # At each iteration, when writing the function call,
@@ -704,7 +747,9 @@ class CodeGenerator:
                         # from funcname_to_inargs[], because it preserves
                         # the original ordering of args (which are positional
                         # in Fortran!).
-                        tmpbuffer += "%s = %s(%s)\n" % (lvar, bvar, ", ".join(bind_to_lvars(funcname_to_inargs[bvar])))
+                        tmpbuffer += "{localvar} = {boundvar}({args})\n".format(localvar=lvar,
+                                                                                boundvar=bvar,
+                                                                                args=", ".join(bind_to_lvars(funcname_to_inargs[bvar])))
                         localvars[bvar] = lvar
                     # end bound vars init section (if any needed) with blank line
                     if len(boundvars):
@@ -712,7 +757,8 @@ class CodeGenerator:
 
                     # output: declare localvars
                     for bvar in boundvars:  # use same ordering as boundvars, for readability
-                        output.append(key_impl, "REAL*8 %s\n" % (localvars[bvar]))
+                        # TODO: take dtype from return dtype of bvar
+                        output.append(key_impl, "REAL*8 {localvar}\n".format(localvar=localvars[bvar]))
 
                     # end argument and local variable declarations with blank line
                     # (there is always at least the "implicit none"; if there wasn't,
@@ -723,31 +769,30 @@ class CodeGenerator:
                     # output: evaluate localvars
                     output.append(key_impl, tmpbuffer)
 
-                    # output: call the stage1 function stage1_fname itself.
+                    # output: call the stage1 function stage1_oname itself.
                     #
                     # Bind any arguments that have a localvar.
                     # Now all boundvars do - any remaining ones are freevars.
+                    #
                     if mode == "function":
-                        # Functions only have inargs.
-                        output.append(key_impl, "%s = %s(%s)\n" % (stage2_oname, stage1_oname, ", ".join(bind_to_lvars(stage1_allargs))))
+                        output.append(key_impl, "{retname} = {stage1_name}({args})\n".format(retname=stage2_oname,
+                                                                                             stage1_name=stage1_oname,
+                                                                                             args=", ".join(bind_to_lvars(stage1_allargs))))
                     else: # mode == "subroutine":
-                        output.append(key_impl, "%s(%s)\n" % (stage1_oname, ", ".join(bind_to_lvars(stage1_allargs))))
+                        output.append(key_impl, "{stage1_name}({args})\n".format(stage1_name=stage1_oname,
+                                                                                 args=", ".join(bind_to_lvars(stage1_allargs))))
 
                     output.append(key_impl, "\n")  # end function body with blank line
-                    output.append(key_both, "end %s\n" % (mode))
+                    output.append(key_both, "end {objtype}\n".format(objtype=mode))
                     output.append(key_intf, "end interface\n")
 
             # Generate the final code for the output files
             #
-            outfile_basename = "mgs_%s" % (label)
-            outfile_implname = "%s.f90" % (outfile_basename)
-            outfile_intfname = "%s.h"   % (outfile_basename)
-
-            output_impl = _fileheader + fold_fortran_code(output[key_impl])
-            output_intf = _fileheader + fold_fortran_code(output[key_intf])
-
-            generated_code_out.append((label, outfile_implname, output_impl))
-            generated_code_out.append((label, outfile_intfname, output_intf))
+            outfile_basename = "mgs_{label}".format(label=label)
+            for file_ext, key in ((".h", key_intf), (".f90", key_impl)):
+                outfile_name = "{basename}{ext}".format(basename=outfile_basename, ext=file_ext)
+                final_code = _fileheader + fold_fortran_code(output[key])
+                generated_code_out.append((label, outfile_name, final_code))
 
         return generated_code_out
 
@@ -781,13 +826,15 @@ def main():
 #    import stage1
 #    s1code = stage1.CodeGenerator.run()
 
-    # But we can just load stage1 files to be able to run s2 standalone.
+    # But we can just load stage1 files to be able to run s2 standalone
+    # (much faster if no need to update the stage1 files; stage1 is slow
+    #  since it needs to do a lot of symbolic math).
     s1code = load_stage1_files()
 
     s2code = CodeGenerator.run(s1code)  # stage2 CodeGenerator
 
     for label, filename, content in s2code:
-        print("stage2: writing %s for %s" % (filename, label))
+        print("stage2: writing {file} for {label}".format(file=filename, label=label))
         with open(filename, "wt", encoding="utf-8") as f:
             f.write(content)
 
