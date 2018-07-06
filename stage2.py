@@ -354,26 +354,6 @@ class CodeGenerator:
         return analyze_args
 
     @staticmethod
-    def make_sortkey(primary="level", reverse_primary=False, reverse_secondary=False):
-        """Sort helper for output of analyze_args().
-
-        Parameters:
-            primary: str
-                "level": level first, then argname as tie-breaker
-                "name": argname first, then level as tie-breaker
-
-        Returns:
-            lambda item: ... that can be used in ``sorted()`` as ``key``.
-        """
-        if primary not in ("level","name"):
-            raise ValueError("Unknown primary sort criterion '{pri}'; valid: 'level', 'name'".format(pri=primary))
-        indx0 = 0 if primary == "level" else 1
-        indx1 = 1 - indx0  # the other one
-        sign0 = -1 if reverse_primary else +1
-        sign1 = -1 if reverse_secondary else +1
-        return lambda item: (sign0*item[indx0], sign1*item[indx1])
-
-    @staticmethod
     def strip_argrecs(args):
         """Strip all except the argument names themselves from the output of analyze_args()."""
         return [arg for (_,arg,_) in args]  # level, argname, fname
@@ -521,14 +501,6 @@ class CodeGenerator:
         stage1_intf = [(l,f,c) for l,f,c in data if f.endswith(".h")]
         stage1_intf = add_user_intfs(stage1_intf, ("mgs_{label}_phi.h", "mgs_physfields.h"))
 
-        def make_sorted_by(key):
-            # Return a sorter that uses key.
-            #
-            # A sorter is a one-argument function that takes in a data iterable
-            # and returns a sorted copy, sorting by the key.
-            return lambda data: sorted(data, key=key)
-        sorted_by_level_dsc = make_sorted_by(cls.make_sortkey(primary="level", reverse_primary=True))
-
         generated_code_out = []
         key_impl = "implementation"
         key_intf = "interface"
@@ -580,8 +552,13 @@ class CodeGenerator:
                 dtype, _, _ = retval_meta
                 return dtype
 
+            # Sort by level, decscending, then by name.
+            def level_sortkey(argrec):
+                level, argname, fname = argrec
+                return (-level, argname)
+
             # Key to sort by intent, then lexicographically.
-            def freevar_sortkey(argrec):  # argrec = an item returned by analyze_args()
+            def intent_sortkey(argrec):  # argrec = an item returned by analyze_args()
                 level, argname, fname = argrec
                 metarec = meta_by_oname[fname]  # metadata record for function whose argument this is
                 _, intent, _ = metarec[argname]
@@ -663,7 +640,7 @@ class CodeGenerator:
                     #
                     def find_meta_sources():  # just a code block to limit spurious visibility of temporaries
                         out = {}
-                        for _,arg,fname in sorted_by_level_dsc(free_set):
+                        for _,arg,fname in sorted(free_set, key=level_sortkey):
                             if arg not in out:
                                 out[arg] = fname
                         return out
@@ -683,8 +660,8 @@ class CodeGenerator:
                     # We need the uniqify() even though we use a set,
                     # because the same arg may appear at different levels.
                     #
-                    freevars = tuple(uniqify(cls.strip_argrecs(sorted(free_set, key=freevar_sortkey))))
-                    boundvars = tuple(uniqify(cls.strip_argrecs(sorted_by_level_dsc(bound_set))))
+                    freevars = tuple(uniqify(cls.strip_argrecs(sorted(free_set, key=intent_sortkey))))
+                    boundvars = tuple(uniqify(cls.strip_argrecs(sorted(bound_set, key=level_sortkey))))
 
                     # mapping for boundvar: localvar for temporary variables
                     # generated for storing values of boundvars at this call site.
