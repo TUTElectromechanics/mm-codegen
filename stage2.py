@@ -146,11 +146,11 @@ class CodeGenerator:
                         p_objtype = r"\b{mode}\b".format(mode=mode)
                         p_objname = r"(\S+)"
                         p_arglist = r"([^&)]*)"  # 0 or more, because some functions might not take any args.
-                        pattern = r"{puredecl}\s*{rettype}\s*{objtype}\s+{objname}\({arglist}".format(puredecl=p_puredecl,
-                                                                                                      rettype=p_rettype,
-                                                                                                      objtype=p_objtype,
-                                                                                                      objname=p_objname,
-                                                                                                      arglist=p_arglist)
+                        pattern = r"{puredecl}\s*{rettype}\s*{objtype}\s+{objname}\s*\(\s*{arglist}".format(puredecl=p_puredecl,
+                                                                                                            rettype=p_rettype,
+                                                                                                            objtype=p_objtype,
+                                                                                                            objname=p_objname,
+                                                                                                            arglist=p_arglist)
                         matches = re.findall(pattern, line)
                         assert len(matches) == 1
                         groups = matches[0]
@@ -164,7 +164,7 @@ class CodeGenerator:
                         meta = {}
 
                         if mode == "function":
-                            meta[fname] = (rettype, '<return value>', None)
+                            meta[fname] = (rettype, '<return value>', None)  # dtype, intent, dimspec
 
                         # Before we change state, we must check whether the whole
                         # function header was on this line.
