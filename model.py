@@ -149,18 +149,20 @@ class Model(ModelBase):
         results = {}
 
         # For the sake of completeness, we also provide a function to evaluate
-        # ϕ itself, in terms of our independent variables. Here we generate
-        # just "ϕ"; the stage2 code generator will do the rest, when it
-        # notices that the interfaces input to it declare Fortran functions
-        # for ϕ, u, v and w.
+        # ϕ itself, in terms of our independent variables (B, ε).
         #
-        # We cannot use the name "ϕ" for the exported symbol, because ppeval
-        # supplies a function "phi" (with which "ϕ" would conflict after
-        # degreeking), and the expr on the RHS must refer to the "phi"
-        # from ppeval. Hence we name it "ϕ_Bε", which becomes "phi_Beps".
+        # For the LHS (function we export), we cannot use the name "ϕ", because
+        # the user-defined interfaces are expected to provide a function "phi",
+        # with which "ϕ" would conflict after degreeking. This is so that we
+        # may consistently operate on expressions involving ϕ just as well as
+        # expressions involving its derivatives.
         #
-        # TODO: For naming consistency, maybe use phi on the RHS,
-        # and rename the user-supplied function as phi_user?
+        # For the RHS, here we generate just "ϕ" - so that the expression refers
+        # to that user-defined function. The stage2 code generator will do the
+        # rest, when it notices that the interfaces input to it declare Fortran
+        # functions phi, u, v and w.
+        #
+        # Hence we export "ϕ_Bε", which degreeking makes into "phi_Beps".
         #
         print("model: %s forming expression for ϕ" % (self.kind))
         sym,expr = self.dϕdq(qs=(), strip=True)
