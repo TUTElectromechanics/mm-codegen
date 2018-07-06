@@ -123,15 +123,23 @@ class CodeGenerator:
             def commit(fname, inargs, outargs, allargs, meta):
                 if mode == 'function' and set(inargs) != set(allargs):
                     invalid_args = sorted(set(allargs).difference(set(inargs)), key=str.lower)
-                    raise ValueError("f90 function '{fname}' declares the following intent(out) or intent(inout) args (in alphabetical order): {invalid_args}".format(fname=fname,
-                                                                                                                                                                      invalid_args=invalid_args))
+                    raise ValueError("'{fname}' declares the following intent(out) or intent(inout) args (in alphabetical order): {invalid_args}".format(fname=fname,
+                                                                                                                                                         invalid_args=invalid_args))
+                # Require metadata for all arguments to keep things explicit.
+                # (Alternatively, we could generate any missing metadata. The
+                #  code generator relies on the metadata always being present.)
+                if not all(arg in meta for arg in allargs):
+                    invalid_args = sorted((arg for arg in allargs if arg not in meta), key=str.lower)
+                    raise ValueError("'{fname}' missing intent declaration for args (in alphabetical order): {invalid_args}".format(fname=fname,
+                                                                                                                                    invalid_args=invalid_args))
+
                 result.append( (fname, inargs, outargs, allargs, meta) )
 
             result = []
             state = ReaderState.SCANNING
             for line in code.split("\n"):
                 if state == ReaderState.SCANNING:
-                    p_notend = r"(?<!\bend\b\s)"  # (?<!...) means "match if not preceded by" (see help(re))
+                    p_notend = r"(?<!\bend\b\s)"  # (?<!...) is "match if not preceded by" (see help(re))
                     p_objtype = r"\b{mode}\b".format(mode=mode)
                     pattern = r"{notend}\s*{objtype}".format(notend=p_notend,
                                                              objtype=p_objtype)
@@ -156,22 +164,30 @@ class CodeGenerator:
                         groups = matches[0]
 
                         puredecl, rettype, fname, argstuff = groups
-                        puredecl = puredecl or None  # TODO:? we don't actually use the puredecl
+
+                        puredecl = puredecl or None  # TODO: we don't actually use the puredecl
                         rettype = rettype or None
                         rawallargs = argstuff.split(",")
+
+                        # We save the captured function arguments into three lists:
+                        #  - inargs: intent(in) args only, so that we can compute
+                        #    any dependent inputs by calling other stage1 API
+                        #    functions (of the same name as an input arg).
+                        #    Will be generated when we commit().
+                        #  - outargs: intent(inout) and intent(out) args,
+                        #    to be passed through (for the final layer of
+                        #    the cake, which may have subroutines)
+                        #  - allargs: all args in their original ordering,
+                        #    to write the call to the stage1 API function
+                        #    when writing the stage2 public API
+                        #    (since arguments are positional in Fortran)
                         allargs = [arg for arg in (s.strip() for s in rawallargs) if len(arg)]
-                        outargs = []  # for collecting intent(out) and intent(inout) args in CAPTURING_META state
+                        outargs = []
                         meta = {}
 
                         if mode == "function":
                             meta[fname] = (rettype, '<return value>', None)  # dtype, intent, dimspec
 
-                        # Before we change state, we must check whether the whole
-                        # function header was on this line.
-                        #
-                        # If not, capture the rest of fargs from the following
-                        # lines. Else move on to capturing metadata.
-                        #
                         if not header_ends(line):
                             state = ReaderState.CAPTURING_ARGLIST
                         else:
@@ -180,21 +196,20 @@ class CodeGenerator:
                 elif state == ReaderState.CAPTURING_ARGLIST:
                     # capture function arguments from this line
                     matches = re.findall(r"[^&)]+", line)  # all non-overlapping matches of pattern
+                    assert len(matches) == 1
                     group = matches[0]                     # group from first match (only one; no tuple container)
 
                     rawmoreargs = group.split(",")
                     moreargs = [arg for arg in (s.strip() for s in rawmoreargs) if len(arg)]
                     allargs.extend(moreargs)
 
-                    # If these were the last fargs, move on to capturing metadata.
                     if header_ends(line):
                         state = ReaderState.CAPTURING_META
 
                 # Parse parameter declarations.
                 elif state == ReaderState.CAPTURING_META:
-                    # intent uses literal parentheses \( \), capture text inside them
                     p_dtype = r"\b([^\s,]+)"                  # e.g. 'REAL*8'
-                    p_intent = r"(?:,\s*intent\((\w+)\))?"    # 'in', 'out' or 'inout'
+                    p_intent = r"(?:,\s*intent\((\w+)\))?"    # e.g. 'intent(in)'
                     p_dimspec = r"(?:,\s*dimension\((.*)\))?" # e.g. '1:3, 1:1'
                     p_anything = r".*"
                     p_argname = r"::\s*(.*)"
@@ -204,11 +219,11 @@ class CodeGenerator:
                                                                                                 anything=p_anything,
                                                                                                 argname=p_argname)
                     matches = re.findall(pattern, line)
-                    if len(matches):
+                    if len(matches):  # we have a parameter metadata decl on this line
                         assert len(matches) == 1  # all non-overlapping matches of pattern
                         groups = matches[0]       # groups of first match (since > 1 capturing groups present; see help(re.findall))
 
-                        # The genexpr replaces zero-length items (no match) with None.
+                        # The genexpr replaces zero-length items (no match for optional item) with None.
                         dtype, intent, dimspec, argname = (g or None for g in groups)
 
                         if intent not in ("in", "out", "inout"):
@@ -221,30 +236,7 @@ class CodeGenerator:
 
                         meta[argname] = (dtype, intent, dimspec)
 
-                    # if no match, no parameter metadata decl on this line
-
                     if meta_ends(line):
-                        # Separate input and output args when committing.
-                        #
-                        # We capture three lists:
-                        #  - input args only, so that we can compute any
-                        #    dependent inputs by calling other stage1
-                        #    API functions (of the same name as an input arg)
-                        #  - output args, to be passed through
-                        #    (for the final layer of the cake,
-                        #     which may have subroutines)
-                        #  - all args in original order, to write the call
-                        #    to the stage1 API function when writing the
-                        #    stage2 public API
-                        #
-                        # TODO: The code generator is a bit simplistic
-                        # in that we do not support using output args to
-                        # generate dependent inputs, but this is sufficient
-                        # for the pure-function interfaces generated by SymPy,
-                        # (as well as the manually written interfaces we will
-                        # feed in in this project, where any output args are
-                        # intended only to be passed through, to the end user).
-                        #
                         inargs = [arg for arg in allargs if arg not in outargs]
                         commit(fname, inargs, outargs, allargs, meta)
                         state = ReaderState.SCANNING
@@ -258,7 +250,7 @@ class CodeGenerator:
         # as always after a complete function declaration.
         #
         if state != ReaderState.SCANNING:
-            raise ValueError("End of file while processing '{fname}'".format(fname=fname))
+            raise ValueError("Unexpected end of file while processing '{fname}'".format(fname=fname))
 
         # Validate: no subroutine names may appear in (intent(in)) args of any function.
         #
@@ -266,6 +258,12 @@ class CodeGenerator:
         # where the intent(out) args are exposed to the user in the public API,
         # and simply passed through to the underlying routine. This slightly
         # simplifies the code generator.
+        #
+        # TODO: (maybe later) support output args to generate dependent inputs?
+        # The existing logic is sufficient for the pure-function interfaces
+        # generated by SymPy, as well as the manually written interfaces
+        # we will need to feed in in this project, where any output args
+        # are intended only to be passed through, to the end user.
         #
         subroutine_names = {name for name,_,_,_,_ in results["subroutine"]}
         for name,inargs,_,_,_ in results["function"]:
@@ -499,7 +497,7 @@ class CodeGenerator:
 
         # we need to analyze only the interfaces (headers, ".h")
         stage1_intf = [(l,f,c) for l,f,c in data if f.endswith(".h")]
-        stage1_intf = add_user_intfs(stage1_intf, ("mgs_{label}_phi.h", "mgs_physfields.h"))
+        stage1_intf = add_user_intfs(stage1_intf, ("mgs_{label}_phi.h", "mgs_physfields.h"))  # FIXME: hardcoded for now
 
         generated_code_out = []
         key_impl = "implementation"
@@ -514,16 +512,13 @@ class CodeGenerator:
 
             # Text of implementation and interface will be added into named
             # buffers. This is convenient because they are mostly identical.
-            #
             output = TextMultiBuffer()
 
             # Parse dependencies between the stage1 generated functions.
-            #
             data_funcs,data_subroutines = cls.analyze_interface(content)
 
             # The bound args lookup table is determined by the functions only,
             # since we do not allow subroutines to appear as a dependency.
-            #
             _,funcname_to_inargs = data_funcs  # lookup[fname] --> intent(in) args
             analyze_args = cls.make_analyzer(funcname_to_inargs)
             validate_bound_args = cls.make_validator(funcname_to_inargs)
@@ -535,7 +530,6 @@ class CodeGenerator:
             # to the metadata of functions (for processing dependencies).
             #
             # TODO: with a fancier storage format, we could avoid this fandango.
-            #
             def objname_to_meta():
                 fobjs,_ = data_funcs
                 sobjs,_ = data_subroutines
@@ -618,8 +612,7 @@ class CodeGenerator:
                     bound_set, free_set = analyze_args(stage1_oname, stage1_allargs, recurse=True)
 
                     # Check that the declared interface doesn't try to do
-                    # anything silly that is not supported by this stage2
-                    # code generator.
+                    # anything silly not supported by this stage2 code generator.
                     #
                     # (concerning dependencies between the bound variables,
                     #  which are defined by the stage1 generated functions)
@@ -650,15 +643,12 @@ class CodeGenerator:
                     # ordering in the API of fname itself, as they are generally
                     # propagated from the deeper levels of the call tree
                     # (i.e. needed by something that fname itself calls).
-                    #
                     # Order them by intent (in first), then lexicographically.
                     #
                     # Args corresponding to bound variables must be ordered
-                    # by level, decreasing, as noted above, for dependency
-                    # resolution purposes.
+                    # by level, decreasing, for dependency resolution purposes.
                     #
-                    # We need the uniqify() even though we use a set,
-                    # because the same arg may appear at different levels.
+                    # uniqify(), as the same arg may appear at different levels.
                     #
                     freevars = tuple(uniqify(cls.strip_argrecs(sorted(free_set, key=intent_sortkey))))
                     boundvars = tuple(uniqify(cls.strip_argrecs(sorted(bound_set, key=level_sortkey))))
@@ -697,13 +687,6 @@ class CodeGenerator:
                         metarec = meta_by_oname[arg_to_metasrc[fvar]]
                         dtype, intent, dimspec = metarec[fvar]
 
-                        # We have already validated that each parameter
-                        # **that has an intent declaration** has a valid intent,
-                        # but we don't yet know if all of them have one.
-                        if intent is None:
-                            raise ValueError("Missing intent declaration in '{name}' for (maybe implicit) freevar '{argname}'".format(name=stage2_oname,
-                                                                                                                                      argname=fvar))
-
                         if dimspec is not None:
                             output.append(key_both, "{dtype}, intent({intent}), dimension({dimspec}) :: {argname}\n".format(dtype=dtype,
                                                                                                                             intent=intent,
@@ -735,11 +718,11 @@ class CodeGenerator:
                             raise RuntimeError("post-binding check: undefined symbol '{invalid}', neither in localvars nor in freevars".format(invalid=arg))
                         return result
 
-                    # We need a temp storage buffer: we must first process all
-                    # boundvars to generate all of localvars, but in the output,
-                    # we must write the declarations of all localvars first,
-                    # before writing the calls to the boundvar functions
-                    # (that then populate the localvars).
+                    # We must first process all boundvars to generate all of
+                    # localvars, but in the output, we must write the declarations
+                    # of all localvars first, before writing the calls to the
+                    # boundvar functions (that then populate the localvars).
+                    # Solution: use a temporary buffer.
                     tmpbuffer = ""
                     for bvar in boundvars:  # follow the ordering by level, descending (deepest first)
                         lvar = "{boundvar}_".format(boundvar=bvar)
@@ -755,15 +738,15 @@ class CodeGenerator:
                         # (which are supplied in the stage2 argument list).
                         # Thus, in each call, no unbound vars remain.
                         #
-                        # TODO later: if no function name matches an input arg,
-                        # we could check if there is a subroutine that provides
-                        # it as one of its output args, and call it.
-                        #
                         # Note that in any argument lists for *calls to* functions
                         # representing the bound variables, we must use data
                         # from funcname_to_inargs[], because it preserves
                         # the original ordering of args (which are positional
                         # in Fortran!).
+                        #
+                        # TODO later: if no function name matches an input arg,
+                        # we could check if there is a subroutine that provides
+                        # it as one of its output args, and call it.
                         tmpbuffer += "{localvar} = {boundvar}({args})\n".format(localvar=lvar,
                                                                                 boundvar=bvar,
                                                                                 args=", ".join(bind_to_lvars(funcname_to_inargs[bvar])))
@@ -778,19 +761,14 @@ class CodeGenerator:
                                                                                 localvar=localvars[bvar]))
 
                     # end argument and local variable declarations with blank line
-                    # (there is always at least the "implicit none"; if there wasn't,
-                    #  we would have to check the combined length of freevars and
-                    #  localvars)
+                    # (always has at least the "implicit none"; if it didn't, we'd
+                    # have to check the combined length of freevars and localvars)
                     output.append(key_impl, "\n")
 
-                    # output: evaluate localvars
+                    # output: code to evaluate localvars
                     output.append(key_impl, tmpbuffer)
 
-                    # output: call the stage1 function stage1_oname itself.
-                    #
-                    # Bind any arguments that have a localvar.
-                    # Now all boundvars do - any remaining ones are freevars.
-                    #
+                    # output: call the stage1 function stage1_oname itself
                     if mode == "function":
                         output.append(key_impl, "{retname} = {stage1_name}({args})\n".format(retname=stage2_oname,
                                                                                              stage1_name=stage1_oname,
