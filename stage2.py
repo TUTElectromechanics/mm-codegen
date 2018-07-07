@@ -428,6 +428,7 @@ class CodeGenerator:
             #
             # As a side effect, this builds the callers_of dictionary.
             #
+            r = []  # for error reporting
             def process(arg, callstack):
                 # - We want to track *each chain of calls* independently.
                 #   (E.g. in dwp_dI6 in the 3par model, both I5 and I6,
@@ -437,10 +438,8 @@ class CodeGenerator:
                 # - This makes "callstack" what it says on the tin, for the
                 #   current chain of calls.
                 if arg in lookup:  # only validate if arg is bound (free args may occur anywhere along the chain)
-                    if arg in callstack:
-                        raise ValueError("top-level arg '{arg}': recursive call to '{target}' detected (current call stack: {cs})".format(arg=toplevel_arg,
-                                                                                                                                          target=arg,
-                                                                                                                                          cs=callstack))
+                    if arg in callstack:  # recursive call, not allowed
+                        r.append((toplevel_arg, arg, callstack))
                     update_callers_of(arg, set(callstack))
                     new_callstack = callstack.copy()
                     new_callstack.append(arg)
@@ -448,6 +447,8 @@ class CodeGenerator:
                         process(a, new_callstack)
             for toplevel_arg in args:
                 process(toplevel_arg, [])
+            if len(r):
+                raise ValueError("recursion detected; (top-level arg, target, callstack) info follows: {invalid}".format(invalid=", ".join(str(item) for item in r)))
 
             # Detect mutual recursion between different call chains.
             #
@@ -455,12 +456,10 @@ class CodeGenerator:
             #   - what information do we need to store to pinpoint the location of the error?
             #   - maybe the state of the call stack at each call site?
             #
-            for a in callers_of.keys():     # a = the thing being called
-                for b in callers_of[a]:     # b = its callers (i.e. each b is known to call a, at least implicitly)
-                    if a in callers_of[b]:  # so if a calls b (even if implicitly), there is mutual recursion
-                        raise ValueError("mutual recursion (possibly implicit) detected between {a} and {b} (callers of {a}: {ca}; callers of {b}: {cb})".format(a=a, b=b,
-                                                                                                                                                                 ca=callers_of[a],
-                                                                                                                                                                 cb=callers_of[b]))
+            # a = the thing being called; b = its callers
+            mr = [(a, b) for a in callers_of.keys() for b in callers_of[a] if a in callers_of[b]]
+            if len(mr):
+                raise ValueError("mutual recursion (possibly implicit) detected, function pair(s): {invalid}".format(invalid=mr))
         return validate_bound_args
 
     @classmethod
