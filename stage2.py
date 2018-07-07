@@ -121,17 +121,18 @@ class CodeGenerator:
 
             # meta is a dict:  argname: (dtype, intent, dimspec)
             def commit(fname, inargs, outargs, allargs, meta):
-                if mode == 'function' and set(inargs) != set(allargs):
+                if mode == 'function':
                     invalid_args = sorted(set(allargs).difference(set(inargs)), key=str.lower)
-                    raise ValueError("'{fname}' declares the following intent(out) or intent(inout) args (in alphabetical order): {invalid_args}".format(fname=fname,
-                                                                                                                                                         invalid_args=invalid_args))
+                    if len(invalid_args):
+                        raise ValueError("'{fname}' declares the following intent(out) or intent(inout) args (in alphabetical order): {invalid}".format(fname=fname,
+                                                                                                                                                        invalid=invalid_args))
                 # Require metadata for all arguments to keep things explicit.
                 # (Alternatively, we could generate any missing metadata. The
                 #  code generator relies on the metadata always being present.)
-                if not all(arg in meta for arg in allargs):
-                    invalid_args = sorted((arg for arg in allargs if arg not in meta), key=str.lower)
-                    raise ValueError("'{fname}' missing intent declaration for args (in alphabetical order): {invalid_args}".format(fname=fname,
-                                                                                                                                    invalid_args=invalid_args))
+                invalid_args = sorted((arg for arg in allargs if arg not in meta), key=str.lower)
+                if len(invalid_args):
+                    raise ValueError("'{fname}' missing intent declaration for args (in alphabetical order): {invalid}".format(fname=fname,
+                                                                                                                               invalid=invalid_args))
 
                 result.append((fname, inargs, outargs, allargs, meta))
 
@@ -398,9 +399,9 @@ class CodeGenerator:
             # Check top level; we should be given only bound args.
             #
             args = cls.strip_argrecs(bound)
-            for toplevel_arg in args:
-                if toplevel_arg not in lookup:
-                    raise ValueError("Got free top-level arg '{arg}'; only bound args supported by this checker".format(arg=toplevel_arg))
+            invalid_args = [arg for arg in args if arg not in lookup]
+            if len(invalid_args):
+                raise ValueError("Got free top-level arg(s) {invalid}; only bound args supported by this checker".format(invalid=invalid_args))
 
             # Sets of callers of each bound var, for mutual recursion detection.
             #
@@ -655,7 +656,7 @@ class CodeGenerator:
 
                     # mapping for boundvar: localvar for temporary variables
                     # generated for storing values of boundvars at this call site.
-                    localvars = {}
+                    bound_to_local = {}
 
                     # output: function header
                     #
@@ -707,14 +708,12 @@ class CodeGenerator:
                     # passed through as-is.
                     #
                     def bind_to_lvars(the_args):
-                        result = [(localvars[arg] if arg in boundvars else arg) for arg in the_args]
+                        result = [(bound_to_local[arg] if arg in boundvars else arg) for arg in the_args]
                         # sanity check: each bound var in myargs should now be bound,
                         # so the result should have only localvars or freevars
-                        #   localvars.keys()   = the names of the *bound* vars
-                        #   localvars.values() = the names of the *local* vars
-                        lvarnames = localvars.values()
-                        if not all(arg in lvarnames or arg in freevars for arg in result):
-                            invalid_args = [arg for arg in result if arg not in lvarnames and arg not in freevars]
+                        localvars = bound_to_local.values()
+                        invalid_args = [arg for arg in result if arg not in localvars and arg not in freevars]
+                        if len(invalid_args):
                             raise RuntimeError("post-binding check: undefined symbol(s) {invalid}, neither in localvars nor in freevars".format(invalid=invalid_args))
                         return result
 
@@ -750,7 +749,7 @@ class CodeGenerator:
                         tmpbuffer += "{localvar} = {boundvar}({args})\n".format(localvar=lvar,
                                                                                 boundvar=bvar,
                                                                                 args=", ".join(bind_to_lvars(funcname_to_inargs[bvar])))
-                        localvars[bvar] = lvar
+                        bound_to_local[bvar] = lvar
                     # end bound vars init section (if any needed) with blank line
                     if len(boundvars):
                         tmpbuffer += "\n"
@@ -758,7 +757,7 @@ class CodeGenerator:
                     # output: declare localvars
                     for bvar in boundvars:  # use same ordering as boundvars, for readability
                         output.append(key_impl, "{rettype} {localvar}\n".format(rettype=return_dtype_of(bvar),
-                                                                                localvar=localvars[bvar]))
+                                                                                localvar=bound_to_local[bvar]))
 
                     # end argument and local variable declarations with blank line
                     # (always has at least the "implicit none"; if it didn't, we'd
