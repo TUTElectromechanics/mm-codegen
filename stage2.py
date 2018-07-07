@@ -133,7 +133,7 @@ class CodeGenerator:
                     raise ValueError("'{fname}' missing intent declaration for args (in alphabetical order): {invalid_args}".format(fname=fname,
                                                                                                                                     invalid_args=invalid_args))
 
-                result.append( (fname, inargs, outargs, allargs, meta) )
+                result.append((fname, inargs, outargs, allargs, meta))
 
             result = []
             state = ReaderState.SCANNING
@@ -710,12 +710,12 @@ class CodeGenerator:
                         result = [(localvars[arg] if arg in boundvars else arg) for arg in the_args]
                         # sanity check: each bound var in myargs should now be bound,
                         # so the result should have only localvars or freevars
-                        for arg in result:
-                            # localvars.keys()   = the names of the *bound* vars
-                            # localvars.values() = the names of the *local* vars
-                            if arg in localvars.values() or arg in freevars:
-                                continue
-                            raise RuntimeError("post-binding check: undefined symbol '{invalid}', neither in localvars nor in freevars".format(invalid=arg))
+                        #   localvars.keys()   = the names of the *bound* vars
+                        #   localvars.values() = the names of the *local* vars
+                        lvarnames = localvars.values()
+                        if not all(arg in lvarnames or arg in freevars for arg in result):
+                            invalid_args = [arg for arg in result if arg not in lvarnames and arg not in freevars]
+                            raise RuntimeError("post-binding check: undefined symbol(s) {invalid}, neither in localvars nor in freevars".format(invalid=invalid_args))
                         return result
 
                     # We must first process all boundvars to generate all of
