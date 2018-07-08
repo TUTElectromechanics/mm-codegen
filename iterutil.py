@@ -8,13 +8,18 @@ Created on Wed Nov  1 14:44:36 2017
 """
 
 # generator version
-def uniqify(iterable):
-    """Remove duplicates from iterable; preserve ordering."""
+def uniqify(iterable, key=None):
+    """Remove duplicates from iterable; preserve ordering.
+
+    If a key is provided, key(elt) is tested instead of elt for whether
+    a given element has already been seen."""
+    key = key or (lambda x: x)
     it = iter(iterable)
     seen = set()
     for e in it:
-        if e not in seen:
-            seen.add(e)
+        k = key(e)
+        if k not in seen:
+            seen.add(k)
             yield e
 
 # list version
@@ -67,7 +72,10 @@ def flatten_if(iterable, condition):
 
 
 def test():
+    from operator import itemgetter
     assert tuple(uniqify((1, 1, 2, 2, 2, 2, 4, 3, 3, 3))) == (1, 2, 4, 3)
+    assert tuple(uniqify((('foo', 1), ('bar', 1), ('foo', 2), ('baz', 2), ('qux', 4), ('foo', 3)), key=itemgetter(0))) == (('foo', 1), ('bar', 1), ('baz', 2), ('qux', 4))
+    assert tuple(uniqify((('foo', 1), ('bar', 1), ('foo', 2), ('baz', 2), ('qux', 4), ('foo', 3)), key=itemgetter(1))) == (('foo', 1), ('foo', 2), ('qux', 4), ('foo', 3))
     assert tuple(flatten(((1, 2), (3, (4, 5), 6), (7, 8, 9)))) == (1, 2, 3, 4, 5, 6, 7, 8, 9)
     assert tuple(flatten1(((1, 2), (3, (4, 5), 6), (7, 8, 9)))) == (1, 2, 3, (4, 5), 6, 7, 8, 9)
     assert tuple(flatten_if((((1, 2), (3, 4)), (5, 6)), lambda e: isinstance(e[0], (tuple, list)))) == ((1, 2), (3, 4), (5, 6))
