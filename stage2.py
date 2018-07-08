@@ -267,11 +267,9 @@ class CodeGenerator:
         # are intended only to be passed through, to the end user.
         #
         subroutine_names = {name for name,_,_,_,_ in results["subroutine"]}
-        for name,inargs,_,_,_ in results["function"]:
-            for arg in inargs:
-                if arg in subroutine_names:
-                    raise ValueError("Function '{fname}' depends on subroutine '{sname}'; this is currently not supported.".format(fname=name,
-                                                                                                                                   sname=arg))
+        invalid = [(fname, arg) for fname,inargs,_,_,_ in results["function"] for arg in inargs if arg in subroutine_names]
+        if len(invalid):
+            raise ValueError("Dependency from function to subroutine not supported; offending (function, subroutine) pairs follow: {invalid}".format(invalid=invalid))
 
         return [(results[key], {name:inargs for name,inargs,_,_,_ in results[key]})
                 for key in sorted(results.keys())]
@@ -627,17 +625,7 @@ class CodeGenerator:
                     #   We assume that all instances of a freevar with
                     #   a given name mean the same thing!
                     #
-                    # Just to be nice, let's use descending level order,
-                    # so that we always pick the metadata based on the
-                    # innermost occurrence in the call tree.
-                    #
-                    def find_meta_sources():  # just a code block to limit spurious visibility of temporaries
-                        out = {}
-                        for _,arg,fname in sorted(free_set, key=level_sortkey):
-                            if arg not in out:
-                                out[arg] = fname
-                        return out
-                    arg_to_metasrc = find_meta_sources()
+                    arg_to_metasrc = {arg: fname for _,arg,fname in free_set}
 
                     # Args corresponding to free variables do not have a particular
                     # ordering in the API of fname itself, as they are generally
