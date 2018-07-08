@@ -26,7 +26,6 @@ Created on Tue Oct 24 14:07:45 2017
 """
 
 import re
-import itertools
 
 from iterutil import uniqify
 from util import fold_fortran_code, TextMultiBuffer
@@ -271,7 +270,15 @@ class CodeGenerator:
         if len(invalid):
             raise ValueError("Dependency from function to subroutine not supported; offending (function, subroutine) pairs follow: {invalid}".format(invalid=invalid))
 
-        return [(results[key], {name:inargs for name,inargs,_,_,_ in results[key]})
+        # [ ( ((f1, f1_allargs), ..., (fn, fn_allargs)),
+        #     {f1: f1_inargs, ..., fn: fn_inargs},
+        #     {f1: f1_meta, ..., fn: fn_meta} ),
+        #   ( ((s1, s1_allargs), ..., (sn, sn_allargs)),
+        #     {s1: s1_inargs, ..., sn: sn_inargs},
+        #     {s1: s1_meta, ..., sn: sn_meta} ) ]
+        return [([(name, allargs) for name,_,_,allargs,_ in results[key]],
+                  {name: inargs for name,inargs,_,_,_ in results[key]},
+                  {name: meta for name,_,_,_,meta in results[key]})
                 for key in sorted(results.keys())]
 
     @staticmethod
@@ -513,11 +520,11 @@ class CodeGenerator:
             output = TextMultiBuffer()
 
             # Parse dependencies between the stage1 generated functions.
-            data_funcs,data_subroutines = cls.analyze_interface(content)
+            data_funcs, data_subroutines = cls.analyze_interface(content)
 
             # The bound args lookup table is determined by the functions only,
             # since we do not allow subroutines to appear as a dependency.
-            _,funcname_to_inargs = data_funcs  # lookup[fname] --> intent(in) args
+            _, funcname_to_inargs, _ = data_funcs
             analyze_args = cls.make_analyzer(funcname_to_inargs)
             validate_bound_args = cls.make_validator(funcname_to_inargs)
 
@@ -527,13 +534,11 @@ class CodeGenerator:
             # We do this outside the loop because subroutines need access
             # to the metadata of functions (for processing dependencies).
             #
-            # TODO: with a fancier storage format, we could avoid this fandango.
             def objname_to_meta():
-                fobjs,_ = data_funcs
-                sobjs,_ = data_subroutines
-                out = {}
-                for oname,_,_,_,meta in itertools.chain(fobjs, sobjs):
-                    out[oname] = meta
+                _, _, fmeta = data_funcs
+                _, _, smeta = data_subroutines
+                out = fmeta.copy()
+                out.update(smeta)
                 return out
             meta_by_oname = objname_to_meta()
 
@@ -558,10 +563,8 @@ class CodeGenerator:
 
             # Generate public API for functions, then for subroutines.
             #
-            for mode, data in (("function",   data_funcs),
-                               ("subroutine", data_subroutines)):
-                objs,_ = data  # here an "obj" is a function or a subroutine.
-
+            for mode, (objs, _, _) in (("function",   data_funcs),
+                                       ("subroutine", data_subroutines)):
                 # To write the wrapper for a function f, we need:
                 #
                 #  - Free symbols (in the mathematical sense):
@@ -585,7 +588,7 @@ class CodeGenerator:
                 # We must do this recursively; for variables needed directly by f,
                 # and for variables needed by something f calls.
                 #
-                for j, (stage1_oname, stage1_inargs, stage1_outargs, stage1_allargs, stage1_meta) in enumerate(objs):
+                for j, (stage1_oname, stage1_args) in enumerate(objs):  # here an "obj" is a function or a subroutine.
 
                     progress_header_inner = "({iteration:d}/{total:d})".format(iteration=j+1, total=len(objs))
                     progress_header = "{outer_progress} {inner_progress}".format(outer_progress=progress_header_outer,
@@ -598,8 +601,8 @@ class CodeGenerator:
                     # Check which args of fname match stage1 functions.
                     # This gives us bound and free argument sets for fname.
                     #
-                    #  - We analyze allargs, because intent(out) args for
-                    #    subroutines are also free. They must be detected
+                    #  - We must analyze all args, because intent(out) args
+                    #    for subroutines are also free. They must be detected
                     #    as such, so that the post-binding check sees them
                     #    as valid.
                     #
@@ -607,7 +610,7 @@ class CodeGenerator:
                     #    only for functions, because we do not allow subroutines
                     #    to appear as dependencies.
                     #
-                    bound_set, free_set = analyze_args(stage1_oname, stage1_allargs, recurse=True)
+                    bound_set, free_set = analyze_args(stage1_oname, stage1_args, recurse=True)
 
                     # Check that the declared interface doesn't try to do
                     # anything silly not supported by this stage2 code generator.
@@ -758,10 +761,10 @@ class CodeGenerator:
                     if mode == "function":
                         output.append(key_impl, "{retname} = {stage1_name}({args})\n".format(retname=stage2_oname,
                                                                                              stage1_name=stage1_oname,
-                                                                                             args=", ".join(bind_to_lvars(stage1_allargs))))
+                                                                                             args=", ".join(bind_to_lvars(stage1_args))))
                     else: # mode == "subroutine":
                         output.append(key_impl, "{stage1_name}({args})\n".format(stage1_name=stage1_oname,
-                                                                                 args=", ".join(bind_to_lvars(stage1_allargs))))
+                                                                                 args=", ".join(bind_to_lvars(stage1_args))))
 
                     output.append(key_impl, "\n")  # end function body with blank line
                     output.append(key_both, "end {objtype}\n".format(objtype=mode))
