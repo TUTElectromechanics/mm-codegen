@@ -67,31 +67,31 @@ class CodeGenerator:
             code: str
                 Content of a Fortran interface (".h" file), as a single string.
 
-        Return value: list of tuples (funcs, lookup), where
+        Return value has this format:
 
-            funcs: tuple of tuples
-                Each item has the format (fname, inargs, outargs, allargs, meta),
-                where
-                    fname: str
+            [ ( ((f1, f1_allargs), ..., (fn, fn_allargs)),
+                {f1: f1_inargs, ..., fn: fn_inargs},
+                {f1: f1_meta, ..., fn: fn_meta} ),
+              ( ((s1, s1_allargs), ..., (sn, sn_allargs)),
+                {s1: s1_inargs, ..., sn: sn_inargs},
+                {s1: s1_meta, ..., sn: sn_meta} ) ]
+
+            where
+                    fj: str
                         Function name.
-                    inargs: tuple
-                        (arg1, arg2, ..., argn), intent(in) args only;
-                    outargs: tuple
-                        (arg1, arg2, ..., argm), intent(out), intent(inout) only;
-                    allargs: tuple
-                        (arg1, arg2, ..., argm), all args.
-                Ordering of the args is preserved.
+                    fj_allargs: (arg1, arg2, ..., argm): tuple(str)
+                        All args of fj regardless of intent. Ordering preserved.
+                    fj_inargs: (arg1, arg2, ..., argm): tuple(str)
+                        intent(in) args of fj. Ordering preserved.
+                    fj_meta: dict
+                        Metadata record for an argument:
+                          argname: (dtype, intent, dimspec)
+                            where dimspec is None for non-arrays.
+                        Special case: for argname=fj itself, contains the
+                                      metadata record for the return value
+                                      of the function (functions only!).
 
-                    meta: dict
-                        argname: (dtype, intent, dimspec)
-                          where dimspec is None for non-arrays.
-                        Special case: for argname=fname, contains metadata
-                                      on the return value of the function
-                                      (functions only!).
-
-            lookup: dictionary
-                lookup[fname] = (arg1, arg2, ..., argn)  (intent(in) args only)
-                This is provided for convenience.
+                Similarly for subroutines (sj, sj_allargs, sj_inargs, sj_meta).
 
             The top-level list has two elements; the first contains the data
             for functions, the second for subroutines.
@@ -270,12 +270,6 @@ class CodeGenerator:
         if len(invalid):
             raise ValueError("Dependency from function to subroutine not supported; offending (function, subroutine) pairs follow: {invalid}".format(invalid=invalid))
 
-        # [ ( ((f1, f1_allargs), ..., (fn, fn_allargs)),
-        #     {f1: f1_inargs, ..., fn: fn_inargs},
-        #     {f1: f1_meta, ..., fn: fn_meta} ),
-        #   ( ((s1, s1_allargs), ..., (sn, sn_allargs)),
-        #     {s1: s1_inargs, ..., sn: sn_inargs},
-        #     {s1: s1_meta, ..., sn: sn_meta} ) ]
         return [([(name, allargs) for name,_,_,allargs,_ in recs],
                   {name: inargs for name,inargs,_,_,_ in recs},
                   {name: meta for name,_,_,_,meta in recs})
