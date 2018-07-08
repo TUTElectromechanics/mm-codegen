@@ -352,9 +352,9 @@ class CodeGenerator:
         return analyze_args
 
     @staticmethod
-    def strip_argrecs(args):
+    def strip_argrecs(argrecs):
         """Strip all except the argument names themselves from the output of analyze_args()."""
-        return [arg for (_,arg,_) in args]  # level, argname, fname
+        return [arg for (_,arg,_) in argrecs]  # level, argname, fname
 
     @classmethod  # we need access to strip_argrecs()
     def make_validator(cls, lookup):
