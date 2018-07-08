@@ -276,10 +276,10 @@ class CodeGenerator:
         #   ( ((s1, s1_allargs), ..., (sn, sn_allargs)),
         #     {s1: s1_inargs, ..., sn: sn_inargs},
         #     {s1: s1_meta, ..., sn: sn_meta} ) ]
-        return [([(name, allargs) for name,_,_,allargs,_ in results[key]],
-                  {name: inargs for name,inargs,_,_,_ in results[key]},
-                  {name: meta for name,_,_,_,meta in results[key]})
-                for key in sorted(results.keys())]
+        return [([(name, allargs) for name,_,_,allargs,_ in recs],
+                  {name: inargs for name,inargs,_,_,_ in recs},
+                  {name: meta for name,_,_,_,meta in recs})
+                for recs in (results[key] for key in sorted(results.keys()))]
 
     @staticmethod
     def make_analyzer(lookup):
