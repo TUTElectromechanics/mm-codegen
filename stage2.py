@@ -544,7 +544,7 @@ class CodeGenerator:
                 dtype, _, _ = retval_meta
                 return dtype
 
-            # Sort by level, decscending, then by name.
+            # Sort by level, descending, then by name.
             def level_sortkey(argrec):
                 level, argname, fname = argrec
                 return (-level, argname)
