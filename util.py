@@ -259,6 +259,18 @@ class TextMultiBuffer:
 """
         return self.data[key]
 
+    def keys(self):
+        """Return the currently defined keys."""
+        return self.data.keys()
+
+    def values(self):
+        """Return just the values for currently defined keys."""
+        return self.data.values()
+
+    def items(self):
+        """Return (key, value) pairs for all currently defined keys."""
+        return self.data.items()
+
     def __getitem__(self, key):
         """self[key], same as self.get(key)."""
         return self.get(key)
