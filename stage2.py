@@ -605,7 +605,7 @@ class CodeGenerator:
         bound_to_local = {}  # populated later
         def bind_to_locals(the_args):
             result = [(bound_to_local[arg] if arg in boundvars else arg) for arg in the_args]
-            # sanity check: each bound arg in myargs should now be bound to
+            # sanity check: each bound arg in the_args should now be bound to
             # something, so the result should have only localvars or freevars.
             localvars = bound_to_local.values()
             invalid_args = [arg for arg in result if arg not in localvars and arg not in freevars]
