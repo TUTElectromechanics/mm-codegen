@@ -105,14 +105,14 @@ class CodeGenerator:
             CAPTURING_META = 2
 
         results = {}
-        for mode in ("function", "subroutine"):
+        for objtype in ("function", "subroutine"):
             def header_ends(line):
                 matches = re.findall(r"\)", line)
                 return (len(matches) > 0)
 
             def meta_ends(line):  # "end function" or "end subroutine"
                 p_end = r"\bend\b\s"
-                p_objtype = r"\b{mode}\b".format(mode=mode)
+                p_objtype = r"\b{objtype}\b".format(objtype=objtype)
                 pattern = r"{end}\s*{objtype}".format(end=p_end,
                                                       objtype=p_objtype)
                 matches = re.findall(pattern, line)
@@ -120,7 +120,7 @@ class CodeGenerator:
 
             # meta is a dict:  argname: (dtype, intent, dimspec)
             def commit(fname, inargs, outargs, allargs, meta):
-                if mode == 'function':
+                if objtype == 'function':
                     invalid_args = sorted(set(allargs).difference(set(inargs)), key=str.lower)
                     if len(invalid_args):
                         raise ValueError("'{fname}' declares the following intent(out) or intent(inout) args (in alphabetical order): {invalid}".format(fname=fname,
@@ -140,7 +140,7 @@ class CodeGenerator:
             for line in code.split("\n"):
                 if state == ReaderState.SCANNING:
                     p_notend = r"(?<!\bend\b\s)"  # (?<!...) is "match if not preceded by" (see help(re))
-                    p_objtype = r"\b{mode}\b".format(mode=mode)
+                    p_objtype = r"\b{objtype}\b".format(objtype=objtype)
                     pattern = r"{notend}\s*{objtype}".format(notend=p_notend,
                                                              objtype=p_objtype)
                     matches = re.findall(pattern, line)
@@ -151,7 +151,7 @@ class CodeGenerator:
                         # (?:...) makes a non-capturing group
                         p_puredecl = r"(?:\b(pure)\b)?"  # some functions may have this
                         p_rettype = r"(?:\b([^\s]+)\s+)?"  # optional; subroutines don't have a return type
-                        p_objtype = r"\b{mode}\b".format(mode=mode)
+                        p_objtype = r"\b{objtype}\b".format(objtype=objtype)
                         p_objname = r"(\S+)"
                         p_arglist = r"([^&)]*)"  # 0 or more, because some functions might not take any args.
                         pattern = r"{puredecl}\s*{rettype}\s*{objtype}\s+{objname}\s*\(\s*{arglist}".format(puredecl=p_puredecl,
@@ -185,7 +185,7 @@ class CodeGenerator:
                         outargs = []
                         meta = {}
 
-                        if mode == "function":
+                        if objtype == "function":
                             meta[fname] = (rettype, '<return value>', None)  # dtype, intent, dimspec
 
                         if not header_ends(line):
@@ -244,7 +244,7 @@ class CodeGenerator:
                 else:
                     assert False, "Unknown reader state"
 
-            results[mode] = result
+            results[objtype] = result
 
         # When we finish, the reader should be in the SCANNING state,
         # as always after a complete function declaration.
@@ -270,14 +270,16 @@ class CodeGenerator:
         if len(invalid):
             raise ValueError("Dependency from function to subroutine not supported; offending (function, subroutine) pairs follow: {invalid}".format(invalid=invalid))
 
-        return [([(name, allargs) for name,_,_,allargs,_ in recs],
-                  {name: inargs for name,inargs,_,_,_ in recs},
-                  {name: meta for name,_,_,_,meta in recs})
+        return [([(name, allargs) for name,_,_,allargs,_ in recs],  # for write_stage2_object()
+                  {name: inargs for name,inargs,_,_,_ in recs},     # lookup
+                  {name: meta for name,_,_,_,meta in recs})         # metas
                 for recs in (results[key] for key in sorted(results.keys()))]
 
     @staticmethod
     def make_analyzer(lookup):
         """Make ``analyze_args`` function that uses lookup table ``lookup``.
+
+        lookup: dict(str -> list(str)), function name to list of its inargs.
 
         (This avoids a dependency on mutable state.)
         """
@@ -360,6 +362,8 @@ class CodeGenerator:
     def make_validator(cls, lookup):
         """Make ``validate_bound_args`` function that uses lookup table ``lookup``.
 
+        lookup: dict(str -> list(str)), function name to list of its inargs.
+
         (This avoids a dependency on mutable state.)
         """
         def validate_bound_args(bound):
@@ -429,19 +433,14 @@ class CodeGenerator:
             #
             r = []  # for error reporting
             def process(arg, callstack):
-                # - We want to track *each chain of calls* independently.
-                #   (E.g. in dwp_dI6 in the 3par model, both I5 and I6,
-                #    at the same level, depend on exx.)
-                # - Python is call-by-sharing (call-by-object).
-                # - Hence, to avoid munging caller's "callstack" object, we copy.
-                # - This makes "callstack" what it says on the tin, for the
-                #   current chain of calls.
+                # We track *each chain of calls* independently.
+                # (E.g. in dwp_dI6 in the 3par model, both I5 and I6,
+                #  at the same level, depend on exx.)
                 if arg in lookup:  # only validate if arg is bound (free args may occur anywhere along the chain)
                     if arg in callstack:  # recursive call, not allowed
                         r.append((toplevel_arg, arg, callstack))
                     update_callers_of(arg, set(callstack))
-                    new_callstack = callstack.copy()
-                    new_callstack.append(arg)
+                    new_callstack = callstack + [arg]
                     for a in lookup[arg]:  # recurse into the call tree
                         process(a, new_callstack)
             for toplevel_arg in args:
@@ -450,10 +449,6 @@ class CodeGenerator:
                 raise ValueError("recursion detected; (top-level arg, target, callstack) info follows: {invalid}".format(invalid=", ".join(str(item) for item in r)))
 
             # Detect mutual recursion between different call chains.
-            #
-            # TODO: improve error message?
-            #   - what information do we need to store to pinpoint the location of the error?
-            #   - maybe the state of the call stack at each call site?
             #
             # a = the thing being called; b = its callers
             mr = [(a, b) for a in callers_of.keys() for b in callers_of[a] if a in callers_of[b]]
@@ -481,18 +476,15 @@ class CodeGenerator:
     #             during the computation of our output, is always the
     #             same (for the same values of the free vars).
     #
-    # We must do this recursively; for variables needed directly by f,
+    # We do this recursively; for variables needed directly by f,
     # and for variables needed by something f calls.
     #
-    # Below "object" means either "function" or "subroutine", as chosen by
-    # the `mode` argument.
-    #
     @classmethod
-    def write_stage2_object(cls, mode, stage1_oname, stage1_args, metas, lookup_inargs, outbuf):
+    def write_stage2_object(cls, objtype, stage1_oname, stage1_args, metas, lookup_inargs, outbuf):
         """Make public API wrapper (stage2 function/subroutine) for a stage1 function/subroutine.
 
         Parameters:
-            mode: str, one of:
+            objtype: str, one of:
                 "function", "subroutine"
             stage1_oname: str
                 Name of the stage1 function/subroutine.
@@ -519,7 +511,7 @@ class CodeGenerator:
         validate_bound_args = cls.make_validator(lookup_inargs)
 
         # Get the dtype of the return value of a stage1 function.
-        def return_dtype_of(fname):
+        def rettype_of(fname):
             metarec = metas[fname]  # metadata record for fname
             retval_meta = metarec[fname]    # return value metadata: key in metarec = function name itself
             dtype, _, _ = retval_meta
@@ -559,13 +551,12 @@ class CodeGenerator:
         #
         arg_to_metasrc = {arg: fname for _,arg,fname in free_set}
 
-        # Args corresponding to free variables do not have a particular ordering
-        # in the API of fname itself, as they are generally propagated from the
-        # deeper levels of the call tree (i.e. needed by something that fname
-        # itself calls). Order them by intent (in first), then lexicographically.
+        # Free args do not have a particular ordering, as they are generally
+        # propagated from the deeper levels of the call tree (i.e. needed by
+        # something that this function itself needs). Order them by intent
+        # (in first), then lexicographically.
         #
-        # Args corresponding to bound variables must be ordered by level,
-        # descending, for dependency resolution purposes.
+        # Order bound args by level, descending, for dependency resolution.
         #
         # uniqify(), as the same arg may appear at different levels.
         #
@@ -573,13 +564,13 @@ class CodeGenerator:
         boundvars = tuple(uniqify(cls.strip_argrecs(sorted(bound_set, key=level_sortkey))))
 
         # output: function header
-        return_decl = "{rettype} ".format(rettype=return_dtype_of(stage1_oname)) if mode == "function" else ""
+        return_decl = "{rettype} ".format(rettype=rettype_of(stage1_oname)) if objtype == "function" else ""
 
         stage2_oname = "{name}_public".format(name=stage1_oname)  # name of public API function/subroutine to write
         outbuf.append(key_both, "\n")
         outbuf.append(key_intf, "interface\n")
         outbuf.append(key_both, "{return_decl}{objtype} {name}(".format(return_decl=return_decl,
-                                                                        objtype=mode,
+                                                                        objtype=objtype,
                                                                         name=stage2_oname))
         outbuf.append(key_both, ", ".join(freevars))
         outbuf.append(key_both, ")\n")
@@ -591,12 +582,9 @@ class CodeGenerator:
             # argument this freevar originally is.
             #
             # DANGER: slight oversimplification:
-            #   We assume unique arg names in the call tree,
-            #   or at least that each unique name always means the
-            #   same thing, so it doesn't matter even if we get the
-            #   "wrong" function to read the metadata from, as long
-            #   as it takes this freevar as an argument (so that the
-            #   metadata for this freevar is present in its metarec).
+            #   We assume all instances of a freevar with the same name mean the same thing!
+            #   (So it doesn't matter even if we get the "wrong" metasrc, as long as
+            #    it takes this freevar as an argument.)
             #
             metarec = metas[arg_to_metasrc[fvar]]
             dtype, intent, dimspec = metarec[fvar]
@@ -614,13 +602,8 @@ class CodeGenerator:
         # Declare any needed localvars and populate them by calls to
         # the stage1 functions represented by boundvars.
 
-        # Helper: bind bound args in given arglist to corresponding
-        # local variables (if any), preserving ordering.
-        #
-        # Any free args are passed through as-is.
-        #
         bound_to_local = {}  # populated later
-        def bind_to_lvars(the_args):
+        def bind_to_locals(the_args):
             result = [(bound_to_local[arg] if arg in boundvars else arg) for arg in the_args]
             # sanity check: each bound arg in myargs should now be bound to
             # something, so the result should have only localvars or freevars.
@@ -631,56 +614,54 @@ class CodeGenerator:
             return result
 
         # We must first process all boundvars to generate all of localvars,
-        # but in the output, we must write the declarations of all localvars
-        # first, before writing the calls to the boundvar functions (that then
+        # but we must output the declarations of all localvars first,
+        # before writing the calls to the boundvar functions (that then
         # populate the localvars). Solution: use a temporary buffer.
-        tmpbuffer = ""
+        lvar_code = ""
         for bvar in boundvars:  # follow the ordering by level, descending (deepest first)
             lvar = "{boundvar}_".format(boundvar=bvar)
-            # output: call the stage1 function for this boundvar.
+            # Write code to call the stage1 function for this boundvar.
             #
-            # We bind to localvars any arguments that already have a localvar.
-            #
-            # The descending level ordering makes sure that the each generated
-            # call will, in its arguments, contain only vars that already have
+            # The descending level ordering makes sure that the arguments of
+            # each generated call will contain only vars that already have
             # a localvar, or free vars (which are supplied in the stage2 args).
             # Thus, in each call, no unbound vars remain.
             #
-            # In any argument lists for *calls to* functions representing the
-            # bound variables, we use data from lookup_inargs[], because it
-            # preserves the ordering of args (which are positional in Fortran).
+            # Take the argument list from lookup_inargs[], because it preserves
+            # the ordering of the args (which are positional in Fortran).
             #
             # TODO later: if no function name matches an input arg,
             # we could check if there is a subroutine that provides
             # it as one of its output args, and call it.
-            tmpbuffer += "{localvar} = {boundvar}({args})\n".format(localvar=lvar,
+            bvar_args = ", ".join(bind_to_locals(lookup_inargs[bvar]))
+            lvar_code += "{localvar} = {boundvar}({args})\n".format(localvar=lvar,
                                                                     boundvar=bvar,
-                                                                    args=", ".join(bind_to_lvars(lookup_inargs[bvar])))
-            bound_to_local[bvar] = lvar
-        # end bound vars init section (if any needed) with blank line
+                                                                    args=bvar_args)
+            bound_to_local[bvar] = lvar  # later calls can bind to this result
         if len(boundvars):
-            tmpbuffer += "\n"
+            lvar_code += "\n"
 
         # output: declare localvars
         for bvar in boundvars:  # use same ordering as boundvars, for readability
-            outbuf.append(key_impl, "{rettype} {localvar}\n".format(rettype=return_dtype_of(bvar),
+            outbuf.append(key_impl, "{rettype} {localvar}\n".format(rettype=rettype_of(bvar),
                                                                     localvar=bound_to_local[bvar]))
 
-        # output: code to evaluate localvars
+        # output: evaluate localvars
         outbuf.append(key_impl, "\n")
-        outbuf.append(key_impl, tmpbuffer)
+        outbuf.append(key_impl, lvar_code)
 
-        # output: call the stage1 function stage1_oname itself
-        if mode == "function":
+        # output: call the wrapped stage1 function
+        final_args = ", ".join(bind_to_locals(stage1_args))
+        if objtype == "function":
             outbuf.append(key_impl, "{retname} = {stage1_name}({args})\n".format(retname=stage2_oname,
                                                                                  stage1_name=stage1_oname,
-                                                                                 args=", ".join(bind_to_lvars(stage1_args))))
-        else: # mode == "subroutine":
+                                                                                 args=final_args))
+        else: # objtype == "subroutine":
             outbuf.append(key_impl, "{stage1_name}({args})\n".format(stage1_name=stage1_oname,
-                                                                     args=", ".join(bind_to_lvars(stage1_args))))
+                                                                     args=final_args))
 
-        outbuf.append(key_impl, "\n")  # end function body with blank line
-        outbuf.append(key_both, "end {objtype}\n".format(objtype=mode))
+        outbuf.append(key_impl, "\n")
+        outbuf.append(key_both, "end {objtype}\n".format(objtype=objtype))
         outbuf.append(key_intf, "end interface\n")
 
     @classmethod
@@ -698,12 +679,10 @@ class CodeGenerator:
         """
         # Add in user-defined stage1 interfaces.
         #
-        # These are just pasted to the end of the content, so that they get
-        # fed into the interface analyzer along with the automatically generated
-        # stage1 interfaces.
+        # We just paste them to the end, so they get fed into the interface analyzer
+        # along with the automatically generated stage1 interfaces.
         #
-        # The tag "{label}" is automatically replaced by "2par" or "3par"
-        # as appropriate.
+        # The tag "{label}" is automatically replaced by "2par" or "3par" as appropriate.
         #
         def add_user_intfs(old_intf, user_intfs):
             new_intf = []
@@ -728,19 +707,16 @@ class CodeGenerator:
                                                                                                            label=label,
                                                                                                            file=input_filename))
 
-            # Parse dependencies between the stage1 generated functions.
             data_funcs, data_subroutines = cls.analyze_interface(content)
 
             # The bound args lookup table is determined by the functions only,
             # since we do not allow subroutines to appear as a dependency.
             _, lookup_inargs, _ = data_funcs
 
-            # Build a mapping from function/subroutine names to their
-            # parameter metadata.
+            # Map function/subroutine names to their parameter metadata.
             #
-            # We do this outside the loop because subroutines need access
-            # to the metadata of functions (for processing dependencies).
-            #
+            # Both functions and subroutines need access to the metadata
+            # of functions (for processing dependencies).
             def objname_to_meta():
                 _, _, fmeta = data_funcs
                 _, _, smeta = data_subroutines
@@ -754,25 +730,22 @@ class CodeGenerator:
             outbuf = TextMultiBuffer()
 
             # Generate public API for functions, then for subroutines.
-            #
-            for mode, (objs, _, _) in (("function",   data_funcs),
-                                       ("subroutine", data_subroutines)):
-                for j, (stage1_oname, stage1_args) in enumerate(objs):  # here an "obj" is a function or a subroutine.
+            for objtype, (objs, _, _) in (("function",   data_funcs),
+                                          ("subroutine", data_subroutines)):
+                for j, (stage1_oname, stage1_args) in enumerate(objs):
 
                     progress_header_inner = "({iteration:d}/{total:d})".format(iteration=j+1, total=len(objs))
                     progress_header = "{outer_progress} {inner_progress}".format(outer_progress=progress_header_outer,
                                                                                  inner_progress=progress_header_inner)
                     print("stage2: {header} {label} model: public API for {objtype} {name}".format(header=progress_header,
                                                                                                    label=label,
-                                                                                                   objtype=mode,
+                                                                                                   objtype=objtype,
                                                                                                    name=stage1_oname))
 
-                    cls.write_stage2_object(mode, stage1_oname, stage1_args,
-                                            metas, lookup_inargs,
-                                            outbuf=outbuf)  # mutates outbuf
+                    cls.write_stage2_object(objtype, stage1_oname, stage1_args,
+                                            metas, lookup_inargs, outbuf)  # mutates outbuf!
 
-            # Generate the final code for the output files
-            #
+            # Generate the final code for the output files.
             outfile_basename = "mgs_{label}".format(label=label)
             for key in sorted(outbuf.keys()):
                 outfile_name = "{basename}{file_ext}".format(basename=outfile_basename, file_ext=key)
