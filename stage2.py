@@ -67,7 +67,7 @@ class CodeGenerator:
             code: str
                 Content of a Fortran interface (".h" file), as a single string.
 
-        Return value has this format:
+        Returns:
 
             [ ( ((f1, f1_allargs), ..., (fn, fn_allargs)),
                 {f1: f1_inargs, ..., fn: fn_inargs},
@@ -461,6 +461,228 @@ class CodeGenerator:
                 raise ValueError("mutual recursion (possibly implicit) detected, function pair(s): {invalid}".format(invalid=mr))
         return validate_bound_args
 
+    # To write the public API wrapper for a stage1 function f, we need:
+    #
+    #  - Free symbols (in the mathematical sense):
+    #      - Must be supplied by caller; add to arg list of wrapper
+    #  - Bound symbols:
+    #      - Call the corresponding stage1 generated functions in the
+    #        body of the wrapper, then use the obtained values.
+    #      - If we do this in reverse order of call tree depth
+    #        of the deepest instance seen of each bound arg,
+    #        we already have available any bound inputs for that call.
+    #      - This follows from the facts that:
+    #          1) No recursion or mutual recursion in the call tree
+    #             (as checked by validate_bound_args())
+    #          2) The "leaf" calls in the call tree only depend
+    #             on free args (at most)
+    #          3) The stage1 generated code consists of pure functions;
+    #             each computed value, even if needed several times
+    #             during the computation of our output, is always the
+    #             same (for the same values of the free vars).
+    #
+    # We must do this recursively; for variables needed directly by f,
+    # and for variables needed by something f calls.
+    #
+    # Below "object" means either "function" or "subroutine", as chosen by
+    # the `mode` argument.
+    #
+    @classmethod
+    def write_stage2_object(cls, mode, stage1_oname, stage1_args, metas, lookup_inargs, outbuf):
+        """Make public API wrapper (stage2 function/subroutine) for a stage1 function/subroutine.
+
+        Parameters:
+            mode: str, one of:
+                "function", "subroutine"
+            stage1_oname: str
+                Name of the stage1 function/subroutine.
+            stage1_args: list(str)
+                Arguments of the stage1 function/subroutine, in original order.
+            metas: dict(str -> metarec)
+                Lookup table of metadata records of all objects. key = function name,
+                value = corresponding metarec as output by analyze_interface().
+            lookup_inargs: dict(str -> list(str))
+                Lookup table of intent(in) args of all functions.
+            outbuf: util.TextMultiBuffer
+                Where to write the output. Keyed under ".f90" and ".h".
+
+        Returns:
+            None. Mutates outbuf instead!
+        """
+        key_impl = ".f90"
+        key_intf = ".h"
+        key_both = (key_impl, key_intf)
+
+        # The lookup table contains keys only for functions, because
+        # we do not allow subroutines to appear as dependencies.
+        analyze_args = cls.make_analyzer(lookup_inargs)
+        validate_bound_args = cls.make_validator(lookup_inargs)
+
+        # Get the dtype of the return value of a stage1 function.
+        def return_dtype_of(fname):
+            metarec = metas[fname]  # metadata record for fname
+            retval_meta = metarec[fname]    # return value metadata: key in metarec = function name itself
+            dtype, _, _ = retval_meta
+            return dtype
+
+        # Sort by level, descending, then by name.
+        def level_sortkey(argrec):
+            level, argname, fname = argrec
+            return (-level, argname)
+
+        # Sort by intent, then lexicographically.
+        def intent_sortkey(argrec):  # argrec = an item returned by analyze_args()
+            level, argname, fname = argrec
+            metarec = metas[fname]  # metadata record for function whose argument this is
+            _, intent, _ = metarec[argname]
+            return (intent, argname)  # "in" sorts before "inout" and "out" so we're good.
+
+        # Check which args of fname match stage1 functions, to obtain bound and
+        # free argument sets for fname.
+        #
+        # We must analyze all args, because intent(out) args for subroutines are
+        # also free. They must be detected as such for the post-binding check to pass.
+        #
+        bound_set, free_set = analyze_args(stage1_oname, stage1_args, recurse=True)
+
+        # Check that the declared interface doesn't try to do anything silly
+        # not supported by this stage2 code generator (concerning dependencies
+        # between the bound variables, which are defined by the stage1 functions).
+        #
+        validate_bound_args(bound_set)
+
+        # Find the function (in the call chain) in whose arguments each freevar
+        # originally appears; we need this to access the metadata for the freevar.
+        #
+        # DANGER: slight oversimplification:
+        #   We assume all instances of a freevar with the same name mean the same thing!
+        #
+        arg_to_metasrc = {arg: fname for _,arg,fname in free_set}
+
+        # Args corresponding to free variables do not have a particular ordering
+        # in the API of fname itself, as they are generally propagated from the
+        # deeper levels of the call tree (i.e. needed by something that fname
+        # itself calls). Order them by intent (in first), then lexicographically.
+        #
+        # Args corresponding to bound variables must be ordered by level,
+        # descending, for dependency resolution purposes.
+        #
+        # uniqify(), as the same arg may appear at different levels.
+        #
+        freevars = tuple(uniqify(cls.strip_argrecs(sorted(free_set, key=intent_sortkey))))
+        boundvars = tuple(uniqify(cls.strip_argrecs(sorted(bound_set, key=level_sortkey))))
+
+        # output: function header
+        return_decl = "{rettype} ".format(rettype=return_dtype_of(stage1_oname)) if mode == "function" else ""
+
+        stage2_oname = "{name}_public".format(name=stage1_oname)  # name of public API function/subroutine to write
+        outbuf.append(key_both, "\n")
+        outbuf.append(key_intf, "interface\n")
+        outbuf.append(key_both, "{return_decl}{objtype} {name}(".format(return_decl=return_decl,
+                                                                        objtype=mode,
+                                                                        name=stage2_oname))
+        outbuf.append(key_both, ", ".join(freevars))
+        outbuf.append(key_both, ")\n")
+
+        # output: argument declarations for the public API function (free variables only!)
+        outbuf.append(key_both, "implicit none\n")
+        for fvar in freevars:
+            # Get the metadata record for the function whose
+            # argument this freevar originally is.
+            #
+            # DANGER: slight oversimplification:
+            #   We assume unique arg names in the call tree,
+            #   or at least that each unique name always means the
+            #   same thing, so it doesn't matter even if we get the
+            #   "wrong" function to read the metadata from, as long
+            #   as it takes this freevar as an argument (so that the
+            #   metadata for this freevar is present in its metarec).
+            #
+            metarec = metas[arg_to_metasrc[fvar]]
+            dtype, intent, dimspec = metarec[fvar]
+
+            if dimspec is not None:
+                outbuf.append(key_both, "{dtype}, intent({intent}), dimension({dimspec}) :: {argname}\n".format(dtype=dtype,
+                                                                                                                intent=intent,
+                                                                                                                dimspec=dimspec,
+                                                                                                                argname=fvar))
+            else:
+                outbuf.append(key_both, "{dtype}, intent({intent}) :: {argname}\n".format(dtype=dtype,
+                                                                                          intent=intent,
+                                                                                          argname=fvar))
+
+        # Declare any needed localvars and populate them by calls to
+        # the stage1 functions represented by boundvars.
+
+        # Helper: bind bound args in given arglist to corresponding
+        # local variables (if any), preserving ordering.
+        #
+        # Any free args are passed through as-is.
+        #
+        bound_to_local = {}  # populated later
+        def bind_to_lvars(the_args):
+            result = [(bound_to_local[arg] if arg in boundvars else arg) for arg in the_args]
+            # sanity check: each bound arg in myargs should now be bound to
+            # something, so the result should have only localvars or freevars.
+            localvars = bound_to_local.values()
+            invalid_args = [arg for arg in result if arg not in localvars and arg not in freevars]
+            if len(invalid_args):
+                raise RuntimeError("post-binding check: undefined symbol(s) {invalid}, neither in localvars nor in freevars".format(invalid=invalid_args))
+            return result
+
+        # We must first process all boundvars to generate all of localvars,
+        # but in the output, we must write the declarations of all localvars
+        # first, before writing the calls to the boundvar functions (that then
+        # populate the localvars). Solution: use a temporary buffer.
+        tmpbuffer = ""
+        for bvar in boundvars:  # follow the ordering by level, descending (deepest first)
+            lvar = "{boundvar}_".format(boundvar=bvar)
+            # output: call the stage1 function for this boundvar.
+            #
+            # We bind to localvars any arguments that already have a localvar.
+            #
+            # The descending level ordering makes sure that the each generated
+            # call will, in its arguments, contain only vars that already have
+            # a localvar, or free vars (which are supplied in the stage2 args).
+            # Thus, in each call, no unbound vars remain.
+            #
+            # In any argument lists for *calls to* functions representing the
+            # bound variables, we use data from lookup_inargs[], because it
+            # preserves the ordering of args (which are positional in Fortran).
+            #
+            # TODO later: if no function name matches an input arg,
+            # we could check if there is a subroutine that provides
+            # it as one of its output args, and call it.
+            tmpbuffer += "{localvar} = {boundvar}({args})\n".format(localvar=lvar,
+                                                                    boundvar=bvar,
+                                                                    args=", ".join(bind_to_lvars(lookup_inargs[bvar])))
+            bound_to_local[bvar] = lvar
+        # end bound vars init section (if any needed) with blank line
+        if len(boundvars):
+            tmpbuffer += "\n"
+
+        # output: declare localvars
+        for bvar in boundvars:  # use same ordering as boundvars, for readability
+            outbuf.append(key_impl, "{rettype} {localvar}\n".format(rettype=return_dtype_of(bvar),
+                                                                    localvar=bound_to_local[bvar]))
+
+        # output: code to evaluate localvars
+        outbuf.append(key_impl, "\n")
+        outbuf.append(key_impl, tmpbuffer)
+
+        # output: call the stage1 function stage1_oname itself
+        if mode == "function":
+            outbuf.append(key_impl, "{retname} = {stage1_name}({args})\n".format(retname=stage2_oname,
+                                                                                 stage1_name=stage1_oname,
+                                                                                 args=", ".join(bind_to_lvars(stage1_args))))
+        else: # mode == "subroutine":
+            outbuf.append(key_impl, "{stage1_name}({args})\n".format(stage1_name=stage1_oname,
+                                                                     args=", ".join(bind_to_lvars(stage1_args))))
+
+        outbuf.append(key_impl, "\n")  # end function body with blank line
+        outbuf.append(key_both, "end {objtype}\n".format(objtype=mode))
+        outbuf.append(key_intf, "end interface\n")
+
     @classmethod
     def run(cls, data):
         """Generate the stage2 code (i.e. the public API) based on stage1 code.
@@ -499,9 +721,6 @@ class CodeGenerator:
         stage1_intf = add_user_intfs(stage1_intf, ("mgs_{label}_phi.h", "mgs_physfields.h"))  # FIXME: hardcoded for now
 
         generated_code_out = []
-        key_impl = "implementation"
-        key_intf = "interface"
-        key_both = (key_impl, key_intf)
         for i, (label, input_filename, content) in enumerate(stage1_intf):
 
             progress_header_outer = "({iteration:d}/{total:d})".format(iteration=i+1, total=len(stage1_intf))
@@ -509,18 +728,12 @@ class CodeGenerator:
                                                                                                            label=label,
                                                                                                            file=input_filename))
 
-            # Text of implementation and interface will be added into named
-            # buffers. This is convenient because they are mostly identical.
-            output = TextMultiBuffer()
-
             # Parse dependencies between the stage1 generated functions.
             data_funcs, data_subroutines = cls.analyze_interface(content)
 
             # The bound args lookup table is determined by the functions only,
             # since we do not allow subroutines to appear as a dependency.
-            _, funcname_to_inargs, _ = data_funcs
-            analyze_args = cls.make_analyzer(funcname_to_inargs)
-            validate_bound_args = cls.make_validator(funcname_to_inargs)
+            _, lookup_inargs, _ = data_funcs
 
             # Build a mapping from function/subroutine names to their
             # parameter metadata.
@@ -534,54 +747,16 @@ class CodeGenerator:
                 out = fmeta.copy()
                 out.update(smeta)
                 return out
-            meta_by_oname = objname_to_meta()
+            metas = objname_to_meta()
 
-            # Get the dtype of the return value of a stage1 function.
-            def return_dtype_of(fname):
-                metarec = meta_by_oname[fname]  # metadata record for fname
-                retval_meta = metarec[fname]    # return value metadata: key in metarec = function name itself
-                dtype, _, _ = retval_meta
-                return dtype
-
-            # Sort by level, descending, then by name.
-            def level_sortkey(argrec):
-                level, argname, fname = argrec
-                return (-level, argname)
-
-            # Key to sort by intent, then lexicographically.
-            def intent_sortkey(argrec):  # argrec = an item returned by analyze_args()
-                level, argname, fname = argrec
-                metarec = meta_by_oname[fname]  # metadata record for function whose argument this is
-                _, intent, _ = metarec[argname]
-                return (intent, argname)  # "in" sorts before "inout" and "out" so we're good.
+            # Text of implementation and interface will be added into named
+            # buffers. This is convenient because they are mostly identical.
+            outbuf = TextMultiBuffer()
 
             # Generate public API for functions, then for subroutines.
             #
             for mode, (objs, _, _) in (("function",   data_funcs),
                                        ("subroutine", data_subroutines)):
-                # To write the wrapper for a function f, we need:
-                #
-                #  - Free symbols (in the mathematical sense):
-                #      - Must be supplied by caller; add to arg list of wrapper
-                #  - Bound symbols:
-                #      - Call the corresponding stage1 generated functions in the
-                #        body of the wrapper, then use the obtained values.
-                #      - If we do this in reverse order of call tree depth
-                #        of the deepest instance seen of each bound arg,
-                #        we already have available any bound inputs for that call.
-                #      - This follows from the facts that:
-                #          1) No recursion or mutual recursion in the call tree
-                #             (as checked by validate_bound_args())
-                #          2) The "leaf" calls in the call tree only depend
-                #             on free args (at most)
-                #          3) The stage1 generated code consists of pure functions;
-                #             each computed value, even if needed several times
-                #             during the computation of our output, is always the
-                #             same (for the same values of the free vars).
-                #
-                # We must do this recursively; for variables needed directly by f,
-                # and for variables needed by something f calls.
-                #
                 for j, (stage1_oname, stage1_args) in enumerate(objs):  # here an "obj" is a function or a subroutine.
 
                     progress_header_inner = "({iteration:d}/{total:d})".format(iteration=j+1, total=len(objs))
@@ -592,184 +767,16 @@ class CodeGenerator:
                                                                                                    objtype=mode,
                                                                                                    name=stage1_oname))
 
-                    # Check which args of fname match stage1 functions.
-                    # This gives us bound and free argument sets for fname.
-                    #
-                    #  - We must analyze all args, because intent(out) args
-                    #    for subroutines are also free. They must be detected
-                    #    as such, so that the post-binding check sees them
-                    #    as valid.
-                    #
-                    #  - The lookup table used by the analyzer contains keys
-                    #    only for functions, because we do not allow subroutines
-                    #    to appear as dependencies.
-                    #
-                    bound_set, free_set = analyze_args(stage1_oname, stage1_args, recurse=True)
-
-                    # Check that the declared interface doesn't try to do
-                    # anything silly not supported by this stage2 code generator.
-                    #
-                    # (concerning dependencies between the bound variables,
-                    #  which are defined by the stage1 generated functions)
-                    #
-                    validate_bound_args(bound_set)
-
-                    # Find the function (in the call chain) in whose arguments
-                    # each freevar originally appears; we need this to access
-                    # the metadata for the freevar.
-                    #
-                    # DANGER: slight oversimplification:
-                    #   We assume that all instances of a freevar with
-                    #   a given name mean the same thing!
-                    #
-                    arg_to_metasrc = {arg: fname for _,arg,fname in free_set}
-
-                    # Args corresponding to free variables do not have a particular
-                    # ordering in the API of fname itself, as they are generally
-                    # propagated from the deeper levels of the call tree
-                    # (i.e. needed by something that fname itself calls).
-                    # Order them by intent (in first), then lexicographically.
-                    #
-                    # Args corresponding to bound variables must be ordered
-                    # by level, decreasing, for dependency resolution purposes.
-                    #
-                    # uniqify(), as the same arg may appear at different levels.
-                    #
-                    freevars = tuple(uniqify(cls.strip_argrecs(sorted(free_set, key=intent_sortkey))))
-                    boundvars = tuple(uniqify(cls.strip_argrecs(sorted(bound_set, key=level_sortkey))))
-
-                    # mapping for boundvar: localvar for temporary variables
-                    # generated for storing values of boundvars at this call site.
-                    bound_to_local = {}
-
-                    # output: function header
-                    #
-                    return_decl = "{rettype} ".format(rettype=return_dtype_of(stage1_oname)) if mode == "function" else ""
-
-                    stage2_oname = "{name}_public".format(name=stage1_oname)  # name of public API function/subroutine to write
-                    output.append(key_both, "\n")  # blank line before start of item
-                    output.append(key_intf, "interface\n")
-                    output.append(key_both, "{return_decl}{objtype} {name}(".format(return_decl=return_decl,
-                                                                                    objtype=mode,
-                                                                                    name=stage2_oname))
-                    output.append(key_both, ", ".join(freevars))
-                    output.append(key_both, ")\n")
-
-                    # output: argument declarations for the public API function (free variables only!)
-                    output.append(key_both, "implicit none\n")
-                    for fvar in freevars:
-                        # Get the metadata record for the function whose
-                        # argument this freevar originally is.
-                        #
-                        # DANGER: slight oversimplification:
-                        #   We assume unique arg names in the call tree,
-                        #   or at least that each unique name always means the
-                        #   same thing, so it doesn't matter even if we get the
-                        #   "wrong" function to read the metadata from, as long
-                        #   as it takes this freevar as an argument (so that the
-                        #   metadata for this freevar is present in its metarec).
-                        #
-                        metarec = meta_by_oname[arg_to_metasrc[fvar]]
-                        dtype, intent, dimspec = metarec[fvar]
-
-                        if dimspec is not None:
-                            output.append(key_both, "{dtype}, intent({intent}), dimension({dimspec}) :: {argname}\n".format(dtype=dtype,
-                                                                                                                            intent=intent,
-                                                                                                                            dimspec=dimspec,
-                                                                                                                            argname=fvar))
-                        else:
-                            output.append(key_both, "{dtype}, intent({intent}) :: {argname}\n".format(dtype=dtype,
-                                                                                                      intent=intent,
-                                                                                                      argname=fvar))
-
-                    # Declare any needed localvars and populate them by calls to
-                    # the stage1 functions represented by boundvars.
-
-                    # Helper: bind bound variables in given args to corresponding
-                    # local variables (if any), preserving ordering.
-                    #
-                    # Any (mathematically) free variables in args are
-                    # passed through as-is.
-                    #
-                    def bind_to_lvars(the_args):
-                        result = [(bound_to_local[arg] if arg in boundvars else arg) for arg in the_args]
-                        # sanity check: each bound var in myargs should now be bound,
-                        # so the result should have only localvars or freevars
-                        localvars = bound_to_local.values()
-                        invalid_args = [arg for arg in result if arg not in localvars and arg not in freevars]
-                        if len(invalid_args):
-                            raise RuntimeError("post-binding check: undefined symbol(s) {invalid}, neither in localvars nor in freevars".format(invalid=invalid_args))
-                        return result
-
-                    # We must first process all boundvars to generate all of
-                    # localvars, but in the output, we must write the declarations
-                    # of all localvars first, before writing the calls to the
-                    # boundvar functions (that then populate the localvars).
-                    # Solution: use a temporary buffer.
-                    tmpbuffer = ""
-                    for bvar in boundvars:  # follow the ordering by level, descending (deepest first)
-                        lvar = "{boundvar}_".format(boundvar=bvar)
-                        # output: call the stage1 function for this boundvar.
-                        #
-                        # At each iteration, when writing the function call,
-                        # we bind to localvars any arguments that already
-                        # have a corresponding localvar.
-                        #
-                        # The descending level ordering makes sure that the each
-                        # call generated here will, in its arguments, contain
-                        # only vars that already have a localvar, or free vars
-                        # (which are supplied in the stage2 argument list).
-                        # Thus, in each call, no unbound vars remain.
-                        #
-                        # Note that in any argument lists for *calls to* functions
-                        # representing the bound variables, we must use data
-                        # from funcname_to_inargs[], because it preserves
-                        # the original ordering of args (which are positional
-                        # in Fortran!).
-                        #
-                        # TODO later: if no function name matches an input arg,
-                        # we could check if there is a subroutine that provides
-                        # it as one of its output args, and call it.
-                        tmpbuffer += "{localvar} = {boundvar}({args})\n".format(localvar=lvar,
-                                                                                boundvar=bvar,
-                                                                                args=", ".join(bind_to_lvars(funcname_to_inargs[bvar])))
-                        bound_to_local[bvar] = lvar
-                    # end bound vars init section (if any needed) with blank line
-                    if len(boundvars):
-                        tmpbuffer += "\n"
-
-                    # output: declare localvars
-                    for bvar in boundvars:  # use same ordering as boundvars, for readability
-                        output.append(key_impl, "{rettype} {localvar}\n".format(rettype=return_dtype_of(bvar),
-                                                                                localvar=bound_to_local[bvar]))
-
-                    # end argument and local variable declarations with blank line
-                    # (always has at least the "implicit none"; if it didn't, we'd
-                    # have to check the combined length of freevars and localvars)
-                    output.append(key_impl, "\n")
-
-                    # output: code to evaluate localvars
-                    output.append(key_impl, tmpbuffer)
-
-                    # output: call the stage1 function stage1_oname itself
-                    if mode == "function":
-                        output.append(key_impl, "{retname} = {stage1_name}({args})\n".format(retname=stage2_oname,
-                                                                                             stage1_name=stage1_oname,
-                                                                                             args=", ".join(bind_to_lvars(stage1_args))))
-                    else: # mode == "subroutine":
-                        output.append(key_impl, "{stage1_name}({args})\n".format(stage1_name=stage1_oname,
-                                                                                 args=", ".join(bind_to_lvars(stage1_args))))
-
-                    output.append(key_impl, "\n")  # end function body with blank line
-                    output.append(key_both, "end {objtype}\n".format(objtype=mode))
-                    output.append(key_intf, "end interface\n")
+                    cls.write_stage2_object(mode, stage1_oname, stage1_args,
+                                            metas, lookup_inargs,
+                                            outbuf=outbuf)  # mutates outbuf
 
             # Generate the final code for the output files
             #
             outfile_basename = "mgs_{label}".format(label=label)
-            for file_ext, key in ((".h", key_intf), (".f90", key_impl)):
-                outfile_name = "{basename}{ext}".format(basename=outfile_basename, ext=file_ext)
-                final_code = _fileheader + fold_fortran_code(output[key])
+            for key in sorted(outbuf.keys()):
+                outfile_name = "{basename}{file_ext}".format(basename=outfile_basename, file_ext=key)
+                final_code = _fileheader + fold_fortran_code(outbuf[key])
                 generated_code_out.append((label, outfile_name, final_code))
 
         return generated_code_out
