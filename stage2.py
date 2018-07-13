@@ -265,10 +265,10 @@ class CodeGenerator:
 
     @staticmethod
     def analyze_args(fname, args, lookup, recurse):
-        """Split args to bound and free sets.
+        """Split args of stage1 function ``fname`` into bound and free sets.
 
-        Any arg names that exist as keys in ``lookup`` are considered
-        to be bound to those functions.
+        Any arg that exists as a key in ``lookup`` is considered to be bound
+        to that function.
 
         All other arguments are considered free.
 
@@ -304,7 +304,8 @@ class CodeGenerator:
                   and dimspec) from the results of the interface analyzer.
 
                 The same arg may appear at multiple levels; in this case,
-                each level has its own instance in the results.
+                each level has its own instance in the results. If you need
+                just the names, see ``strip_argrecs()``.
         """
         def analyze(fname, args, level):
             bound = set()
@@ -323,16 +324,16 @@ class CodeGenerator:
 
     @staticmethod
     def strip_argrecs(argrecs):
-        """Strip all except the argument names themselves from the output of analyze_args()."""
-        return [arg for (_, arg, _) in argrecs]  # level, argname, fname
+        """Strip all except the argument names from an output set of analyze_args()."""
+        return tuple(uniqify([arg for (_, arg, _) in argrecs]))  # level, arg, fname
 
-    @classmethod  # we need access to strip_argrecs()
+    @classmethod
     def validate_bound_args(cls, bound, lookup):
         """Validate bound args.
 
-        If validation passes, it proves that the dependencies (as declared by
-        the formal parameter names) between the functions declared in the
-        stage1 Fortran interface are NOT:
+        If validation passes, it proves that the dependencies (as declared
+        by the formal parameter names) between the functions in the stage1
+        Fortran interface are NOT:
           - recursive (calling itself or any parent on its call stack)
           - mutually recursive (a calling b and b calling a; detected even if
                                 the calls are in different call chains)
@@ -349,7 +350,7 @@ class CodeGenerator:
             None. ``ValueError`` is raised if the validation fails.
         """
         # Check top level; we should be given only bound args.
-        fnames = tuple(uniqify(cls.strip_argrecs(bound)))
+        fnames = cls.strip_argrecs(bound)  # the **args** are the fnames to validate.
         invalid_args = [fname for fname in fnames if fname not in lookup]
         if len(invalid_args):
             raise ValueError("Got free top-level fname(s) {invalid}; validator checks only bound args".format(invalid=invalid_args))
@@ -379,7 +380,7 @@ class CodeGenerator:
         def process(fname, callstack):
             # Track *each chain of calls* independently. (E.g. in dwp_dI6 in
             # the 3par model, both I5 and I6, at the same level, depend on exx.)
-            if fname in lookup:  # only validate if fname is bound (free args may occur anywhere along the chain)
+            if fname in lookup:  # check bound only; may have free args at deeper levels
                 if fname in callstack:  # recursive call, not allowed
                     r.append((toplevel_fname, fname, callstack))
                 update_callers_of(fname, set(callstack))
@@ -453,21 +454,18 @@ class CodeGenerator:
             return (-level, argname)
 
         # Sort by intent, then lexicographically.
-        def intent_sortkey(argrec):  # argrec = an item returned by analyze_args()
+        def intent_sortkey(argrec):
             level, argname, fname = argrec
             metarec = metas[fname]  # metadata record for function whose argument this is
             _, intent, _ = metarec[argname]
             return (intent, argname)  # "in" sorts before "inout" and "out" so we're good.
 
-        # Check which args of fname match stage1 functions, to obtain bound and
-        # free argument sets for fname.
-        #
-        # We analyze all args, because intent(out) args for subroutines are
+        # Analyze all args, because intent(out) args for subroutines are
         # also free; must be detected as such for the post-binding validation.
         bound_set, free_set = cls.analyze_args(stage1_oname, stage1_args,
                                                lookup, recurse=True)
 
-        # Check that we are able to handle the declared interface.
+        # Check that we can handle the declared dependencies between the bound args.
         cls.validate_bound_args(bound_set, lookup)
 
         # Find the function (in the call chain) in whose arguments each freevar
@@ -478,15 +476,11 @@ class CodeGenerator:
         #
         arg_to_metasrc = {arg: fname for _,arg,fname in free_set}
 
-        # Free args do not have a particular ordering, as they are generally
-        # propagated from the deeper levels of the call tree. Order them
-        # by intent ("in" first), then lexicographically.
-        #
+        # Order free args by intent ("in" first), then lexicographically.
         # Order bound args by level, descending, for dependency resolution.
-        #
         # uniqify(), as the same arg may appear at different levels.
-        freevars = tuple(uniqify(cls.strip_argrecs(sorted(free_set, key=intent_sortkey))))
-        boundvars = tuple(uniqify(cls.strip_argrecs(sorted(bound_set, key=level_sortkey))))
+        freevars = cls.strip_argrecs(sorted(free_set, key=intent_sortkey))
+        boundvars = cls.strip_argrecs(sorted(bound_set, key=level_sortkey))
 
         # output: function header
         return_decl = "{rettype} ".format(rettype=rettype_of(stage1_oname)) if objtype == "function" else ""
@@ -500,7 +494,7 @@ class CodeGenerator:
         outbuf.append(key_both, ", ".join(freevars))
         outbuf.append(key_both, ")\n")
 
-        # output: argument declarations for the public API function (free variables only!)
+        # output: argument declarations for the public API function (free args only!)
         outbuf.append(key_both, "implicit none\n")
         for fvar in freevars:
             # Get the metadata record for the function whose argument
@@ -528,12 +522,12 @@ class CodeGenerator:
         # the stage1 functions represented by boundvars.
 
         bound_to_local = {}  # populated later
-        def bind_to_locals(the_args):
-            result = [(bound_to_local[arg] if arg in boundvars else arg) for arg in the_args]
-            # sanity check: each bound arg in the_args should now be bound to
+        def bind_to_locals(names):
+            result = [(bound_to_local[name] if name in boundvars else name) for name in names]
+            # sanity check: each bound arg in names should now be bound to
             # something, so the result should have only localvars or freevars.
             localvars = bound_to_local.values()
-            invalid_args = [arg for arg in result if arg not in localvars and arg not in freevars]
+            invalid_args = [name for name in result if name not in localvars and name not in freevars]
             if len(invalid_args):
                 raise RuntimeError("post-binding check: undefined symbol(s) {invalid}, neither in localvars nor in freevars".format(invalid=invalid_args))
             return result
