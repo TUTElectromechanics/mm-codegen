@@ -131,14 +131,14 @@ class Model(ModelBase):
         #
         # We want to keep that one as "phi", so that on the RHS, ϕ = ϕ(u, v, w),
         # consistently with how build_ϕ() defines ϕ. Hence we name our export
-        # as "ϕ_Bε", which degreeks into "phi_Beps".
+        # as "ϕp", which stands for "phi prime".
         #
-        # On the RHS, we put just "ϕ", thus telling stage2 that ϕ_Bε depends
+        # On the RHS, we put just "ϕ", thus telling stage2 that ϕ' depends
         # on the user-defined function ϕ(u, v, w). Then stage2 does the rest,
-        # so that the public API for ϕ_Bε indeed takes B and ε as its args.
+        # so that the public API for ϕ' indeed takes B and ε as its args.
         print("model: {kind} forming expression for ϕ".format(kind=self.kind))
         sym,expr = self.dϕdq(qs=(), strip=True)
-        results[sy.symbols("ϕ_Bε")] = expr
+        results[sy.symbols("ϕp")] = expr
 
         # All 1st and 2nd derivatives of ϕ.
         #
