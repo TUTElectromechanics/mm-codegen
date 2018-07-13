@@ -138,10 +138,6 @@ class CodeGenerator:
 
         return generated_code_out
 
-##############################################################################
-# Main program (stage1 only)
-##############################################################################
-
 def main():
     code = CodeGenerator.run()  # stage1 CodeGenerator
 
