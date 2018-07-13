@@ -48,7 +48,7 @@ class ModelBase:
 
         Must return:
             dictionary of ``sy.Symbol`` -> ``sy.Expr``
-"""
+        """
         raise NotImplementedError("Abstract method; must be overridden in a derived class")
 
     @abstractmethod
@@ -76,7 +76,7 @@ class ModelBase:
 
         Must return:
             dictionary of ``sy.Symbol`` -> ``sy.Expr``
-"""
+        """
         raise NotImplementedError("Abstract method; must be overridden in a derived class")
 
     def simplify(self, expr):
@@ -87,5 +87,5 @@ class ModelBase:
         particular expressions.
 
         This base class provides a generic fallback.
-"""
+        """
         return sy.simplify(expr)
