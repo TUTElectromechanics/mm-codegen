@@ -64,15 +64,14 @@ class CodeGenerator:
                         continue
                     k = sy.Derivative(f, *vars, evaluate=False)  # this is present in expr; also a label
                     v = sy.diff(helpers[f], *vars)  # differentiate the actual definition
-                    v = model.simplify(v)  # ask the model to simplify the resulting expr
-                    # func and var themselves are sy.Symbols;
-                    # we need strings for the Fortran routine name
+                    v = model.simplify(v)
+                    # func and var are sy.Symbols; need str for Fortran names
                     fname = str(f)
                     vnames = [str(var) for var in vars]
                     derivatives[k] = (v, fname, vnames)
 
-                # From expr, delete any derivatives that are identically zero
-                # due to the structure of the functional dependencies.
+                # Optimize: in expr, delete any derivatives that are identically
+                # zero due to the structure of the functional dependencies.
                 zero = sy.S.Zero
                 def kill_zero(expr):
                     if expr in derivatives:  # ...which we collected above
@@ -82,8 +81,7 @@ class CodeGenerator:
                     return expr
                 out = symutil.map_instancesof_in(kill_zero, sy.Derivative, expr)
 
-                # Only save derivatives that are not identically zero,
-                # since the identically zero ones are never called.
+                # Only keep derivatives that are not identically zero.
                 final_derivatives = { k:v for k,v in derivatives.items() if v[0] != zero }
 
                 # We may overwrite, since e.g. dI4/dBx always has the same expression if it is present.
