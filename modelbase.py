@@ -6,7 +6,7 @@ See model.py for a real-world usage example.
 
 Created on Thu Nov  9 10:39:51 2017
 
-@author: jje
+@author: Juha Jeronen <juha.jeronen@tut.fi>
 """
 
 from abc import ABCMeta, abstractmethod

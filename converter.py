@@ -3,8 +3,11 @@
 """Convert B-spline basis functions to cubic-spline interpolated data in Elmer format.
 
 The same approach works with very little modification for any set of basis functions.
+
+Created on Wed Oct 18 00:00:00 2017
+
+@author: Juha Jeronen <juha.jeronen@tut.fi>
 """
-# -JJ 2017-10-18
 
 import numpy as np
 

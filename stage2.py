@@ -19,7 +19,7 @@ of the function being generated, so they are bound names.
 
 Created on Tue Oct 24 14:07:45 2017
 
-@author: jje
+@author: Juha Jeronen <juha.jeronen@tut.fi>
 """
 
 import re

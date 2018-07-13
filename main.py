@@ -33,7 +33,7 @@ dependencies on e.g. u0, I4, and εxx.
 
 Created on Mon Nov  6 13:32:31 2017
 
-@author: jje
+@author: Juha Jeronen <juha.jeronen@tut.fi>
 """
 
 # code generators

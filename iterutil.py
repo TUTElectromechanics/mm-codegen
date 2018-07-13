@@ -4,7 +4,7 @@
 
 Created on Wed Nov  1 14:44:36 2017
 
-@author: jje
+@author: Juha Jeronen <juha.jeronen@tut.fi>
 """
 
 # generator version

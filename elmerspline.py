@@ -22,8 +22,11 @@ routines can be used for testing on the Python side to see how the spline
 fit looks.
 
 See main() for a usage example.
+
+Created on Sun Oct 15 00:00:00 2017
+
+@author: Juha Jeronen <juha.jeronen@tut.fi>
 """
-# -JJ 2017-10-15
 
 import numpy as np
 import matplotlib.pyplot as plt

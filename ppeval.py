@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Evaluate 2D functions specified on a meshgrid in MATLAB ppform."""
+"""Evaluate 2D functions specified on a meshgrid in MATLAB ppform.
+
+@author: Juha Jeronen <juha.jeronen@tut.fi>
+"""
 
 import numpy as np
 

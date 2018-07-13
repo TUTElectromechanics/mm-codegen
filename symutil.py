@@ -4,7 +4,7 @@
 
 Created on Wed Nov  1 14:46:34 2017
 
-@author: jje
+@author: Juha Jeronen <juha.jeronen@tut.fi>
 """
 
 import sympy as sy

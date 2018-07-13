@@ -4,7 +4,7 @@
 
 Created on Thu Nov  2 00:12:57 2017
 
-@author: jje
+@author: Juha Jeronen <juha.jeronen@tut.fi>
 """
 
 import re
