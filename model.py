@@ -58,14 +58,10 @@ class Model(ModelBase):
         # All independent variables
         self.indepvars = {s.name:s for s in self.Bs + self.εs}
 
-        # Deviatoric strain.
+        # Deviatoric strain. Tell SymPy e = e(ε), without an explicit expression.
         #
-        # Essentially, the code here tells SymPy that e = e(ε),
-        # without defining what its expression is.
-        #
-        # We use the component form, because sy.diff() cannot differentiate
-        # with regard to a sy.MatrixSymbol. The component form also readily
-        # lends itself to a Fortran conversion.
+        # Use the component form, because sy.diff() cannot differentiate w.r.t.
+        # a sy.MatrixSymbol. The component form is also good for Fortran conversion.
         λexx,λeyy,λezz,λeyz,λezx,λexy = sy.symbols("exx, eyy, ezz, eyz, ezx, exy", cls=sy.Function)
         exx = λexx(*self.εs)
         eyy = λeyy(*self.εs)
@@ -80,23 +76,19 @@ class Model(ModelBase):
     @memoize
     def build_ϕ(self):
         """Build and return ϕ as a SymPy applied function."""
-        # Undefined functions.
+        # Set up undefined functions. An "undefined function" is a symbol for a
+        # generic unknown function having the given name. Here e.g. up = "u prime".
         #
-        # An "undefined function" is a symbol for a generic unknown function
-        # having the given name. Here e.g. up = "u prime".
-        #
-        # Each function must have a unique symbol name, since SymPy
-        # distinguishes between different symbols by symbol name, flags
-        # and Python object type (e.g. sy.Symbol vs. sy.Function).
+        # Each function must have a unique symbol name. SymPy distinguishes between
+        # symbols by symbol name, flags and Python object type (e.g. sy.Symbol vs. sy.Function).
         λI4,λI5,λI6 = sy.symbols("I4, I5, I6", cls=sy.Function)
         λup,λvp,λwp = sy.symbols("up, vp, wp", cls=sy.Function)
         λu,λv,λw = sy.symbols("u, v, w", cls=sy.Function)
         λϕ = sy.symbols("ϕ", cls=sy.Function)
 
-        # Applied functions (of symbols).
-        #
-        # In SymPy, calling an undefined function instance, with symbols as parameters,
-        # returns an unknown function that formally depends on the given symbols.
+        # Applied functions (of symbols). Calling an undefined function instance,
+        # with symbols as parameters, returns an unknown function that formally
+        # depends on the given symbols.
         #
         # SymPy creates a new Python type (class) for each function name,
         # using the symbol name of the undefined function instance as the
@@ -106,63 +98,57 @@ class Model(ModelBase):
         I6 = λI6(*(self.Bs + self.es))
 
         # Create applied functions of other applied functions; they are also symbols.
-        #
-        # u',v',w' are the raw unscaled u,v,w.
+        # u', v', w' are the raw unscaled u, v, w.
         up = λup(I4)
         vp = λvp(I4, I5)
         wp = λwp(I4, I5, I6)
 
-        # The final u,v,w are normalized (by scaling by a constant), as follows:
-        #
-        #  u ∈ [ 0,1]
-        #  v ∈ [-1,1]
-        #  w ∈ [-1,1]
-        u = λu(up)  # ...but here we only declare an arbitrary formal dependency.
+        # The final u, v, w are normalized (by scaling by a constant):
+        # u ∈ [ 0,1], v ∈ [-1,1], w ∈ [-1,1]
+        u = λu(up)  # ...but here we only declare a general formal dependency.
         v = λv(vp)
         w = λw(wp)
 
-        # Finally, the normalized u,v,w are the formal arguments of ϕ.
-        #
-        # The object instance ϕ carries with it all the information about
-        # the (nested) dependencies, so we don't need to return anything else.
+        # Finally, the normalized u, v, w are the formal arguments of ϕ.
         if self.kind == "2par":
             ϕ = λϕ(u,v)
         else: # self.kind == "3par":
             ϕ = λϕ(u,v,w)
 
+        # ϕ carries with it all the information about the (nested) dependencies.
         return ϕ
 
     def define_api(self):
         """See docstring for ``ModelBase.define_api()``."""
         results = {}
 
-        # For the sake of completeness, provide a function to evaluate ϕ itself,
-        # in terms of our independent variables (B, ε).
+        # For completeness, provide a function to evaluate ϕ(B, ε). We would
+        # like to say ϕ'(B, ε) = ϕ(u, v, w), and then drop the prime.
         #
-        # For the LHS (function we export), we cannot use the name "ϕ", because
-        # the user-defined interfaces are expected to provide a function "phi",
-        # with which "ϕ" would conflict after degreeking.
+        # But the LHS (function we export) cannot be named "ϕ", because the
+        # user-defined (additional stage1) interfaces are expected to provide
+        # phi(u, v, w), with which "ϕ" would conflict after degreeking.
         #
-        # This is so that we may consistently operate on expressions involving
-        # ϕ on the RHS just as well as expressions involving its derivatives.
+        # We want to keep that one as "phi", so that on the RHS, ϕ = ϕ(u, v, w),
+        # consistently with how build_ϕ() defines ϕ. Hence we name our export
+        # as "ϕ_Bε", which degreeks into "phi_Beps".
         #
-        # For the RHS, here we generate just "ϕ" - so that the expression refers
-        # to that user-defined function. The stage2 code generator does the rest,
-        # when it notices that the interfaces input to it declare Fortran
-        # functions phi, u, v and w.
-        #
-        # Hence we export "ϕ_Bε", which degreeking makes into "phi_Beps".
+        # On the RHS, we put just "ϕ", thus telling stage2 that ϕ_Bε depends
+        # on the user-defined function ϕ(u, v, w). Then stage2 does the rest,
+        # so that the public API for ϕ_Bε indeed takes B and ε as its args.
         print("model: {kind} forming expression for ϕ".format(kind=self.kind))
         sym,expr = self.dϕdq(qs=(), strip=True)
         results[sy.symbols("ϕ_Bε")] = expr
 
         # All 1st and 2nd derivatives of ϕ.
+        #
+        # No danger of confusion in naming; e.g. dϕ_du vs. dϕ_dBx.
+        # For humans, it's obvious which ϕ is meant in each case.
         independent_vars = sorted(self.indepvars.keys())
         secondder_varlists = combinations_with_replacement(independent_vars, 2)
 
         allqs = [(var,) for var in independent_vars]
         allqs.extend(secondder_varlists)
-
 #        allqs = (("Bx",), ("Bx","Bx"),)  # DEBUG
         for i,qs in enumerate(allqs):
             print("model: {kind} ({iteration:d}/{total:d}) forming expression for {name}".format(kind=self.kind,
@@ -183,7 +169,7 @@ class Model(ModelBase):
         Parameters:
             qs: tuple of str
                 Names of independent variables to differentiate with regard to.
-                Use an empty tuple to get just ϕ itself.
+                Use an empty tuple to skip differentiation and get just ϕ itself.
 
             strip: bool
                 If True, pass the generated expr through symutil.strip_function_arguments()
@@ -207,25 +193,23 @@ class Model(ModelBase):
         # For the Symbol representing the function name, we can't use a
         # bare Symbol (i.e. a variable, not a function), because even with
         # evaluate=False, SymPy thinks that sy.diff(Derivative(ϕ, Bx), By) = 0,
-        # if ϕ is a bare Symbol.
+        # if ϕ is a bare Symbol. (Strictly speaking this is correct;
+        # for symbols, ∂x/∂x = 1, and ∂y/∂x = 0 for all y ≠ x.)
         #
         # Since all possible qs are in self.indepvars, we can use the following
         # strategy to generate a bare Symbol that represents the name:
         #
-        # We first make an unknown function ϕ; then convert it to an applied
-        # function that depends on all indepvars; then perform any requested
-        # differentiations on that; and finally strip the argument lists from
-        # the result, producing a bare Symbol.
+        #   Make an unknown function ϕ; then convert it to an applied function
+        #   that depends on all indepvars; then perform differentiations (if any);
+        #   finally, strip the argument lists from the result.
         λϕ = sy.symbols("ϕ", cls=sy.Function)
         sym = λϕ(*self.indepvars.values())  # **Symbols** of the indepvars
 
         # For the expression part (RHS of the API function being generated),
-        # we use the layer cake version of ϕ, which depends on u, v, w;
-        # which then depend on... and so on, until the independent variables
-        # are reached.
+        # we use ϕ(u, v, w), where u, v, w then depend on... and so on,
+        # until the independent variables are reached.
         #
-        # When we differentiate this, SymPy will apply the chain rule
-        # automatically.
+        # Differentiating this, SymPy will automatically apply the chain rule.
         expr = self.build_ϕ()
 
         # In SymPy, differentiating an unknown function gives an unapplied
@@ -243,8 +227,9 @@ class Model(ModelBase):
         #   d/dξ1( ϕ(ξ1,v,w) )|ξ1=u  -->  d/du( ϕ(u,v,w) )
         #
         # The first expression is what the second one, strictly speaking, means:
-        # first, differentiate ϕ w.r.t. the formal argument "u"; and then,
-        # in the result, set its value to the given value of u.
+        # first, differentiate ϕ w.r.t. the formal argument "u"; then, in the
+        # result, set its value to the given value of u.
+        #
         # The second expression is the standard human-readable notation.
         #
         # In SymPy, applying the Subs object returned by diff() converts
@@ -267,7 +252,7 @@ class Model(ModelBase):
         Bx,By,Bz = self.Bs
         εxx,εyy,εzz,εyz,εzx,εxy = self.εs
 
-        # Voigt notation ordering:
+        # Voigt notation:
         #   ε = [[ε1, ε6, ε5],
         #        [ε6, ε2, ε4],
         #        [ε5, ε4, ε3]]
@@ -279,13 +264,12 @@ class Model(ModelBase):
         # Deviatoric strain.
         #
         # Here we ignore that e = e(ε); the es are just arbitrary symbols.
-        #
-        # Due to how stage1.run() works, the dependencies must be declared
-        # in define_api(); the helpers should be flat.
+        # In stage1.run(), any dependencies are declared in define_api();
+        # the helpers are expected to be flat.
         exx,eyy,ezz,eyz,ezx,exy = sy.symbols("exx, eyy, ezz, eyz, ezx, exy")
-        e = sy.Matrix( [[exx, exy, ezx],
-                        [exy, eyy, eyz],
-                        [ezx, eyz, ezz]] )
+        e = sy.Matrix([[exx, exy, ezx],
+                       [exy, eyy, eyz],
+                       [ezx, eyz, ezz]])
 
         εM_expr = sy.factor(sy.S("1/3") * ε.trace())  # mean volumetric strain
         e_expr  = ε - εM_expr * sy.eye(3)
