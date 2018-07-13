@@ -264,8 +264,8 @@ class Model(ModelBase):
         # Deviatoric strain.
         #
         # Here we ignore that e = e(ε); the es are just arbitrary symbols.
-        # In stage1.run(), any dependencies are declared in define_api();
-        # the helpers are expected to be flat.
+        # In stage1.run(), any dependencies are expected to be declared in
+        # define_api(); the helpers should be flat expressions of symbols.
         exx,eyy,ezz,eyz,ezx,exy = sy.symbols("exx, eyy, ezz, eyz, ezx, exy")
         e = sy.Matrix([[exx, exy, ezx],
                        [exy, eyy, eyz],
@@ -288,21 +288,19 @@ class Model(ModelBase):
         for k, v, kind in (("I4", B.T * B, None),
                            ("I5", B.T * e * B, None),
                            ("I6", B.T * e * e * B, "3par")): # only in 3par model
-            if kind and self.kind != kind:
-                continue
-            assert v.shape == (1,1)  # result should be scalar
-            expr = v[0,0]  # extract scalar from matrix wrapper
-            expr = self.simplify(expr)
-            results[sy.symbols(k)] = expr
+            if kind is None or kind == self.kind:
+                assert v.shape == (1,1)  # result should be scalar
+                expr = v[0,0]  # extract scalar from matrix wrapper
+                expr = self.simplify(expr)
+                results[sy.symbols(k)] = expr
 
         # u', v', w' in terms of (I4, I5, I6)
         I4, I5, I6 = sy.symbols("I4, I5, I6")
         for k, v, kind in (("up", sy.sqrt(I4), None),
                            ("vp", sy.S("3/2") * I5 / I4, None),
                            ("wp", sy.sqrt(I6*I4 - I5**2) / I4, "3par")):
-            if kind and self.kind != kind:
-                continue
-            results[sy.symbols(k)] = v  # no simplification possible; just save.
+            if kind is None or kind == self.kind:
+                results[sy.symbols(k)] = v  # no simplification possible; just save.
 
         # u, v, w in terms of (u', v', w')
         u, v, w = sy.symbols("u, v, w")
@@ -310,37 +308,28 @@ class Model(ModelBase):
         for k, v, kind in (("u", "up / u0", None),
                            ("v", "vp / v0", None),
                            ("w", "wp / w0", "3par")):
-            if kind and self.kind != kind:
-                continue
-            results[sy.symbols(k)] = v
+            if kind is None or kind == self.kind:
+                results[sy.symbols(k)] = v
 
         return results
 
     def simplify(self, expr):
         """Simplify expr.
 
-        This particular sequence of operations specifically targeted toward
-        the expressions treated by this class.
+        Specifically geared to optimize expressions treated by this class.
         """
-        #   - expand() first to expand all parentheses; get a form that can
-        #     then be grouped back differently (i.e. optimized)
+        #   - expand() first to expand all parentheses (to be able to re-group)
         #   - together() to combine rationals
-        #   - recursive_collect() automatically detects symbols in expr
-        #     and collect()s in all of them, recursively.
-        #     Typically reduces the operation count.
-        #   - But may leave "leftovers" in some parts of expr;
-        #     e.g. for dI6/dBx, reccollect.analyze() gives
-        #     [exy, ezx, By, Bx, Bz, exx, eyz, ezz, eyy]
-        #     because that is overall more optimal (by the metric used
-        #     by reccollect.analyze()) than going "B first".
-        #   - This causes some duplication of Bx in terms that have been
-        #     collected on [exy, ezx], in parts of expr where "B first"
-        #     would have been a better ordering.
-        #   - To fix this specifically for the kind of expressions
-        #     we work with here, we then collect again, explicitly on self.Bs
-        #     (disabling the automatic detection, which would still give the wrong symbols).
-        #   - Finally, collect_const_in() extracts each constant factor to the
-        #     topmost possible level in the expression.
+        #   - recursive_collect() to collect() on all symbols in expr, recursively.
+        #   - May leave "leftovers" in some parts of expr; e.g. for dI6/dBx,
+        #     reccollect.analyze() gives [exy, ezx, By, Bx, Bz, exx, eyz, ezz, eyy]
+        #     because overall more optimal (by the metric in analyze()) than
+        #     going "B first".
+        #   - Hence Bx will be duplicated in terms that have been collected on
+        #     [exy, ezx], in parts of expr where "B first" would have been better.
+        #   - Hence in the result, collect again, now on self.Bs (no autodetect).
+        #   - Finally, collect_const_in() to extract each constant factor
+        #     to the topmost possible level in the expression.
         expr = recursive_collect(sy.together(sy.expand(expr)))
         expr = recursive_collect(expr, syms=self.Bs)
         expr = symutil.collect_const_in(expr)
@@ -351,11 +340,9 @@ def test():
     for kind in ("2par", "3par"):
         m = Model(kind)
         print(m.kind)
-
         api = m.define_api()
         api_humanreadable = {scrub(k): scrub(v) for k, v in api.items()}
         print(api_humanreadable)
-
         print(m.define_helpers())
 
 if __name__ == '__main__':
