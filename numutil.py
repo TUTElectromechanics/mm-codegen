@@ -53,7 +53,7 @@ def round_sig(x, sig=2, method='round'):
     # with 1 digit before the point and round that, then convert it back to its original integer size.
     #
     # To do this we need to know the largest power of 10 less than the integer. We can use floor of
-    # the log 10 function for this. 
+    # the log 10 function for this.
     #
     #from math import log10, floor
     #def round_int(i,places):

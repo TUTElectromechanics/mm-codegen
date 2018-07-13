@@ -45,7 +45,7 @@ def my_plot_3d(X,Y,Z, figno):
     x0y0wh = [ 0.02, 0.02, 0.96, 0.96 ]  # left, bottom, width, height      (here as fraction of subplot area)
 
     ax = Axes3D(fig, rect=x0y0wh)
-    
+
     # use linewidth=0 to remove the wireframe if desired.
     ax.plot_wireframe(X,Y,Z, rstride=plot_stride_y, cstride=plot_stride_x, color='k', linewidth=0.5, linestyle='solid')
 
@@ -240,7 +240,7 @@ def ppeval(pp):
     order_y   = pp.order[1]
     dim       = pp.dim
     print( [a.shape for a in (breaks_x, breaks_y, coefs)] )
-    print(npieces_x, npieces_y, order_x, order_y, dim)    
+    print(npieces_x, npieces_y, order_x, order_y, dim)
 
     # Find correct piecewise interval along an axis
     #
@@ -252,7 +252,7 @@ def ppeval(pp):
 
         if (t < pp.breaks[i][0]).any() or (t > pp.breaks[i][-1]).any():
             raise ValueError("dimension %d: at least one value is out of the allowed range (%g, %g)" % (i, pp.breaks[i][0], pp.breaks[i][-1]))
-    
+
         I = np.empty_like(t, dtype=int)  # index of the piece along dimension i
         s = np.empty_like(t)             # t in ppform piece-local coordinates
 
@@ -452,12 +452,12 @@ def ppeval(pp):
         x = np.atleast_1d(x)
         y = np.atleast_1d(y)
         assert x.shape == y.shape
-    
+
         z = np.zeros_like(x)
         for xexp in range(order_x):
             for yexp in range(order_y):
                 z += x**(order_x-1 - xexp) * y**(order_y-1 - yexp) * c[xexp,yexp]
-    
+
         return np.squeeze(z)
 
     # which piece to visualize
