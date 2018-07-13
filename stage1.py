@@ -100,8 +100,10 @@ class CodeGenerator:
             # easier to generate an API function for ϕ, because we will have
             # u, v, w, even though they don't appear in any RHS in the model.
             #
-            # (These are needed for phi, which is provided by ppeval. The model
-            # and stage1 don't even know that a "ppeval" exists!)
+            # (These are needed for phi, which is externally provided by
+            #  the additional user-defined stage1 interfaces. An alternative
+            #  solution would be to define u_Bε, v_Bε, w_Bε, and make them
+            #  depend on u, v, w, like Model currently does for ϕ.)
             #
             # Alphabetize helpers for readability of generated code.
             name_expr_pairs = [ (k,helpers[k]) for k in sorted(helpers.keys(), key=symutil.sortkey) ]
