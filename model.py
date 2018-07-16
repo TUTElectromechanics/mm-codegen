@@ -110,16 +110,19 @@ class Model(ModelBase):
         I4 = fsym("I4", *self.Bs)  # i.e. in math notation, I4 = I4(Bx, By, Bz)
         I5 = fsym("I5", *(self.Bs + self.es))  # deviatoric strain!
         I6 = fsym("I6", *(self.Bs + self.es))
+        self.Is = I4, I5, I6
 
         # u', v', w' are the raw u, v, w before normalization.
         up = fsym("up", I4)  # applied function is a symbol; ok as dependency.
         vp = fsym("vp", I4, I5)
         wp = fsym("wp", I4, I5, I6)
+        self.ups = up, vp, wp
 
         # The final u, v, w are normalized: u ∈ [0,1], v ∈ [-1,1], w ∈ [-1,1]
         u = fsym("u", up)  # ...but here we only declare a formal dependency.
         v = fsym("v", vp)
         w = fsym("w", wp)
+        self.us = u, v, w
 
         # Finally, the normalized u, v, w are the formal parameters of ϕ.
         if self.kind == "2par":
@@ -194,9 +197,7 @@ class Model(ModelBase):
 
         # Deviatoric strain.
         #
-        # The es are just LHS names (bare symbols). **RHS** exprs depend on ε.
-        # To get the names, we could strip self.es, but this works just as well.
-        exx,eyy,ezz,eyz,ezx,exy = sy.symbols("exx, eyy, ezz, eyz, ezx, exy")
+        exx,eyy,ezz,eyz,ezx,exy = self.es
         e = sy.Matrix([[exx, exy, ezx],
                        [exy, eyy, eyz],
                        [ezx, eyz, ezz]])
@@ -207,12 +208,13 @@ class Model(ModelBase):
         assert e_expr[2,0] == e_expr[0,2]  # ezx
         assert e_expr[1,2] == e_expr[2,1]  # eyz
         defs[sy.symbols("εM")] = εM_expr  # already inserted to e_expr; just a convenience
-        defs[exx] = e_expr[0,0]
-        defs[eyy] = e_expr[1,1]
-        defs[ezz] = e_expr[2,2]
-        defs[eyz] = e_expr[1,2]
-        defs[ezx] = e_expr[0,2]
-        defs[exy] = e_expr[0,1]
+        strip = symutil.strip_function_arguments
+        defs[strip(exx)] = e_expr[0,0]
+        defs[strip(eyy)] = e_expr[1,1]
+        defs[strip(ezz)] = e_expr[2,2]
+        defs[strip(eyz)] = e_expr[1,2]
+        defs[strip(ezx)] = e_expr[0,2]
+        defs[strip(exy)] = e_expr[0,1]
 
         # I4, I5, I6 in terms of (B, e)
         I4, I5, I6 = sy.symbols("I4, I5, I6")
@@ -226,6 +228,7 @@ class Model(ModelBase):
 
         # u', v', w' in terms of (I4, I5, I6)
         up, vp, wp = sy.symbols("up, vp, wp")
+        I4, I5, I6 = self.Is
         for key, val, kind in ((up, sy.sqrt(I4), None),
                                (vp, sy.S("3/2") * I5 / I4, None),
                                (wp, sy.sqrt(I6*I4 - I5**2) / I4, "3par")):
@@ -234,6 +237,7 @@ class Model(ModelBase):
 
         # u, v, w in terms of (u', v', w')
         u, v, w = sy.symbols("u, v, w")
+        up, vp, wp = self.ups
         u0, v0, w0 = sy.symbols("u0, v0, w0")
         for key, val, kind in ((u, up / u0, None),
                                (v, vp / v0, None),
