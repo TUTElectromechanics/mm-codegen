@@ -132,7 +132,7 @@ class Model(ModelBase):
 
     def define_api(self):
         """See docstring for ``ModelBase.define_api()``."""
-        results = {}
+        defs = {}
 
         # Define the derivatives of ϕ(u, v, w) in terms of B and ε, while
         # leaving ϕ itself unspecified (except its dependencies).
@@ -154,7 +154,7 @@ class Model(ModelBase):
         # so that the public API for ϕ' indeed takes B and ε as its args.
         print("model: {kind} forming expression for ϕ".format(kind=self.kind))
         sym, expr = self.dϕdq(qs=(), strip=False)
-        results[sy.symbols("ϕp")] = expr
+        defs[sy.symbols("ϕp")] = expr
 
         # All 1st and 2nd derivatives of ϕ.
         #
@@ -172,7 +172,7 @@ class Model(ModelBase):
                                                                                                  total=len(allqs),
                                                                                                  name=util.name_derivative("ϕ", qs)))
             sym, expr = self.dϕdq(qs, strip=False)
-            results[sym] = expr
+            defs[sym] = expr
 
         # Define the quantities appearing at the various layers of the ϕ cake.
         #
@@ -206,13 +206,13 @@ class Model(ModelBase):
         assert e_expr[1,0] == e_expr[0,1]  # exy
         assert e_expr[2,0] == e_expr[0,2]  # ezx
         assert e_expr[1,2] == e_expr[2,1]  # eyz
-        results[sy.symbols("εM")] = εM_expr  # already inserted to e_expr; just a convenience
-        results[exx] = e_expr[0,0]
-        results[eyy] = e_expr[1,1]
-        results[ezz] = e_expr[2,2]
-        results[eyz] = e_expr[1,2]
-        results[ezx] = e_expr[0,2]
-        results[exy] = e_expr[0,1]
+        defs[sy.symbols("εM")] = εM_expr  # already inserted to e_expr; just a convenience
+        defs[exx] = e_expr[0,0]
+        defs[eyy] = e_expr[1,1]
+        defs[ezz] = e_expr[2,2]
+        defs[eyz] = e_expr[1,2]
+        defs[ezx] = e_expr[0,2]
+        defs[exy] = e_expr[0,1]
 
         # I4, I5, I6 in terms of (B, e)
         I4, I5, I6 = sy.symbols("I4, I5, I6")
@@ -222,7 +222,7 @@ class Model(ModelBase):
             if kind is None or kind == self.kind:
                 assert val.shape == (1,1)  # result should be scalar
                 expr = val[0,0]  # extract scalar from matrix wrapper
-                results[key] = self.simplify(expr)
+                defs[key] = self.simplify(expr)
 
         # u', v', w' in terms of (I4, I5, I6)
         up, vp, wp = sy.symbols("up, vp, wp")
@@ -230,7 +230,7 @@ class Model(ModelBase):
                                (vp, sy.S("3/2") * I5 / I4, None),
                                (wp, sy.sqrt(I6*I4 - I5**2) / I4, "3par")):
             if kind is None or kind == self.kind:
-                results[key] = val  # no simplification possible; just save.
+                defs[key] = val  # no simplification possible; just save.
 
         # u, v, w in terms of (u', v', w')
         u, v, w = sy.symbols("u, v, w")
@@ -239,10 +239,10 @@ class Model(ModelBase):
                                (v, vp / v0, None),
                                (w, wp / w0, "3par")):
             if kind is None or kind == self.kind:
-                results[key] = val
+                defs[key] = val
 
-        assert all(isinstance(key, (sy.Symbol, sy.Derivative)) for key in results)
-        return results
+        assert all(isinstance(key, (sy.Symbol, sy.Derivative)) for key in defs)
+        return defs
 
     def dϕdq(self, qs, strip):
         """Differentiate ϕ w.r.t. given independent variables, applying the chain rule.
