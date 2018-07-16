@@ -23,14 +23,6 @@ def uniqify(iterable, key=None):
             seen.add(k)
             yield e
 
-# list version
-#def uniqify(iterable):
-#    """Remove duplicates from iterable; preserve ordering."""
-#    # set.add() returns None, which is conveniently falsey,
-#    # so we "or x" to make the expression also evaluate to x.
-#    seen = set()
-#    return [seen.add(x) or x for x in iterable if x not in seen]
-
 def flatten(iterable):
     """Remove nested structure from iterable.
 
