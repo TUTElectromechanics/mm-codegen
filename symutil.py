@@ -17,7 +17,7 @@ def sortkey(sym):
 
     Returns:
         The string representation of ``sym``, lowercased.
-"""
+    """
     return str(sym).lower()
 
 def nameof_as_symbol(sym):
@@ -35,7 +35,7 @@ def nameof_as_symbol(sym):
     Obviously, a ``Symbol`` cannot represent an ``UndefinedFunction``
     completely faithfully, as these datatypes are *intended* to have
     different behavior.
-"""
+    """
     if hasattr(sym, "name"):
         return sy.symbols(sym.name, **sym.assumptions0)
     else:  # e.g. an undefined function has no name, but its *class* has a __name__.
@@ -53,7 +53,7 @@ def strip_function_arguments(expr):
     and one takes partial derivatives utilizing the chain rule. This often
     leads to kilometer-long argument lists that make an unstripped printout
     of ``expr`` unreadable for humans.
-"""
+    """
     # We cannot use apply_to_instancesof_in() to implement this, since each
     # undefined function is an instance of its own Python type, and *this type*
     # is an instance of UndefinedFunction.
@@ -82,7 +82,7 @@ def derivatives_needed_by(expr):
             x1, x2, ..., xn: variables with respect to which f is differentiated.
                              Higher derivatives are represented by repeating
                              the same symbol, e.g. ∂²f(x)/∂x² -> (f,x,x).
-"""
+    """
     derivatives = set()
     def process(e):
         if isinstance(e, sy.Derivative):
@@ -119,7 +119,7 @@ def map_instancesof_in(func, cls, expr):
     Returns:
         Processed ``Expr``, where ``func`` has been applied to each instance
         of ``cls`` in ``expr``.
-"""
+    """
     # Atoms do not have args, but their constructors have positional arguments
     # depending on the specific type, so we must process them separately.
     if expr.is_Atom:
@@ -164,7 +164,7 @@ def derivatives_to_names_in(expr, as_fortran_identifier=False):
     Returns:
         sy.Expr:
             The processed expression.
-"""
+    """
     def rename(expr):
         fname  = str(expr.args[0])
         vnames = [str(arg) for arg in expr.args[1:]]
