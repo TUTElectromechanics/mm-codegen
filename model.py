@@ -153,7 +153,7 @@ class Model(ModelBase):
         # on the user-defined function ϕ(u, v, w). Then stage2 does the rest,
         # so that the public API for ϕ' indeed takes B and ε as its args.
         print("model: {kind} forming expression for ϕ".format(kind=self.kind))
-        sym,expr = self.dϕdq(qs=(), strip=True)
+        sym, expr = self.dϕdq(qs=(), strip=False)
         results[sy.symbols("ϕp")] = expr
 
         # All 1st and 2nd derivatives of ϕ.
@@ -166,14 +166,14 @@ class Model(ModelBase):
         allqs = [(var,) for var in independent_vars]
         allqs.extend(secondder_varlists)
 #        allqs = (("Bx",), ("Bx","Bx"),)  # DEBUG
-        for i,qs in enumerate(allqs):
+        for i, qs in enumerate(allqs):
             print("model: {kind} ({iteration:d}/{total:d}) forming expression for {name}".format(kind=self.kind,
                                                                                                  iteration=i+1,
                                                                                                  total=len(allqs),
                                                                                                  name=util.name_derivative("ϕ", qs)))
             # strip kilometer-long nested arg lists: replace applied functions with bare symbols
             # (any Derivative objects still remain, also in the name!)
-            sym, expr = self.dϕdq(qs, strip=True)
+            sym, expr = self.dϕdq(qs, strip=False)
             results[sym] = expr
 
         # Define the quantities appearing at the various layers of the ϕ cake.

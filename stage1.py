@@ -29,7 +29,7 @@ class CodeGenerator:
 
     @staticmethod
     def process(expr, defs, simplify):
-        """Detect and generate derivatives needed by expr.
+        """Detect and generate derivatives needed by expr, recursively.
 
         Also optimize expr by omitting any derivatives that the definitions
         show to be identically zero.
@@ -45,37 +45,61 @@ class CodeGenerator:
                 Simplifier, used for optimizing the derivative expressions.
 
         Returns:
-            (optimized_expr, derivatives)
+            (optimized_expr, more_defs)
               where
                 optimized_expr: sy.Expr
                   Like input, but any identically zero derivatives omitted.
-                derivatives: dict(sy.symbol -> sy.Expr)
-                  key: LHS: Derivative(f, *xs)
-                  val: RHS
+                more_defs: dict(sy.symbol -> sy.Expr)
+                  Generated definitions, same format as ``defs``.
+                    key: LHS: Derivative(f, *xs)
+                    val: RHS
+                  Key is stripped using ``symutil.strip_function_arguments()``,
+                  value is not stripped.
         """
-        # TODO: recurse, detect circular definitions
-        ds = {}
-        for f, *vs in symutil.derivatives_needed_by(expr):
-            if f in defs:  # only process if bound by model
-                k = sy.Derivative(f, *vs, evaluate=False)  # appears in expr; also a label
-                v = simplify(sy.diff(defs[f], *vs))  # differentiate the RHS
-                ds[k] = v
-
-        # Optimize: in expr, delete any derivatives that are now known
-        # to be identically zero.
+        D = partial(sy.Derivative, evaluate=False)
+        strip = symutil.strip_function_arguments
         zero = sy.S.Zero
-        def kill_zero(expr):
-            if expr in ds:
-                value = ds[expr]
-                if value == 0:
-                    return zero  # we must return an Expr, so return symbolic zero
-            return expr
-        out = symutil.map_instancesof_in(kill_zero, sy.Derivative, expr)
 
-        # Only keep derivatives that are not identically zero.
-        final_ds = { k: v for k, v in ds.items() if v != zero }
+        def process_one(expr, mydefs):
+            # Compute any needed derivatives for which we have the def.
+            ds = {}
+            for f, *vs in symutil.derivatives_needed_by(expr):
+                fkey = strip(f)
+                dkey = strip(D(f, *vs))
+                if dkey not in mydefs and fkey in mydefs:
+                    ds[dkey] = simplify(sy.diff(mydefs[fkey], *vs))
 
-        return out, final_ds
+            # Optimize: in expr and ds, delete any identically zero derivatives.
+            if len(ds):
+                def kill_zero(term):
+                    return zero if term in ds and ds[term] == 0 else term
+                final_expr = symutil.map_instancesof_in(kill_zero, sy.Derivative, expr)
+                final_ds = {k: v for k, v in ds.items() if v != zero}
+                return final_expr, final_ds
+            return expr, ds
+
+        alldefs = defs.copy()  # all definitions
+        newdefs = {}           # all new definitions not in original input
+        def recurse(expr, seen):
+            newexpr, moredefs = process_one(expr, alldefs)
+
+            invalid = seen.intersection(moredefs.keys())
+            if len(invalid):
+                raise ValueError("Circular definition between {}".format(invalid))
+            newseen = seen.copy()  # track seen items separately in each call tree
+            newseen.update(moredefs.keys())
+
+            # cheeky side effects
+            alldefs.update(moredefs)  # must do before loop...
+            newdefs.update(moredefs)
+
+            for k in moredefs:
+                newv = recurse(moredefs[k], newseen)
+                alldefs[k] = newdefs[k] = newv  # ...but also update here
+
+            return newexpr
+
+        return recurse(expr, set()), newdefs
 
     @staticmethod
     def make_name_expr_pairs(defs):
@@ -85,7 +109,8 @@ class CodeGenerator:
 
         Parameters:
             defs: dict(sy.symbol -> sy.Expr)
-                Definitions as output by ``ModelBase.define_api()``.
+                Definitions as output by ``ModelBase.define_api()``
+                (and by ``stage1.CodeGenerator.process()``).
 
         Returns:
             [(k, v), ...]
@@ -93,7 +118,9 @@ class CodeGenerator:
                 k = LHS, sanitized for SymPy's codegen
                 v = RHS, sanitized for SymPy's codegen
         """
-        sanitize = partial(symutil.derivatives_to_names_in, as_fortran_identifier=True)
+        def sanitize(expr):
+            stripped = symutil.strip_function_arguments(expr)
+            return symutil.derivatives_to_names_in(stripped, as_fortran_identifier=True)
         return [(sanitize(k), sanitize(defs[k]))
                   for k in sorted(defs.keys(), key=symutil.sortkey)]
 
@@ -136,7 +163,6 @@ class CodeGenerator:
                 api[key] = expr_out
 
             # Generate the Fortran code.
-
             print("stage1: %s %s model: generating code" % (progress_header_outer, label))
 
             basename = "mgs_%s_impl" % (label)  # filename without extension

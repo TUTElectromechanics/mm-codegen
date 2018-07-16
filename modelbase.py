@@ -21,17 +21,20 @@ class ModelBase:
     def define_api(self):
         """Define stage1 functions.
 
-        For example:
+        What to define in stage1? For example:
 
-          - Define quantities which have analytical expressions. These can be
-            differentiated symbolically, and code generated also for the
-            derivatives.
+          - Quantities which have analytical expressions.
 
-          - Define quantities that depend on other quantities, in a treelike
-            fashion. Useful for building a layer cake of auxiliary variables,
-            while keeping the definitions at each level as simple as possible.
+          - Quantities that depend on other quantities, in a treelike fashion.
+            Useful for building a layer cake of auxiliary variables, while
+            keeping the definitions at each level as simple as possible.
 
-          - Define chain rule based expressions for the derivatives of a potential,
+          - Quantities that depend on derivatives of other quantities. E.g. if
+            "∂f/∂x" appears on the RHS of some other quantity, and an LHS "f"
+            has been defined, then stage1 will automatically derive ∂f/∂x by
+            differentiating the RHS of "f", and add it to the definitions.
+
+          - Chain rule based expressions for the derivatives of a potential,
             represented as a SymPy applied function (i.e. unspecified function,
             but with specified dependencies), in terms of other SymPy applied
             functions, and at the final layer, in terms of independent variables.
@@ -39,36 +42,35 @@ class ModelBase:
             So we can have a potential ϕ(u, v, w), where the auxiliary variables
             u, v, w depend on some other auxiliary variables, and so on, until
             (several layers later) the independent variables are reached.
-            The stage1 functions can then be declared as the derivatives of
-            this ϕ w.r.t. the **independent** variables. SymPy automatically
-            applies the chain rule.
+
+            We can then declare the stage1 functions as the derivatives of
+            this ϕ w.r.t. the **independent** variables. Given the layer cake
+            definition of ϕ as an applied function, SymPy automatically applies
+            the chain rule.
 
             The potential ϕ itself can, but does not need to, be declared here.
             If you have a custom Fortran code to compute ϕ, ∂ϕ/∂u, ∂ϕ/∂v, etc.,
             just tell stage2 about its interface, and those functions will be
-            considered as stage1 (on equal footing with any code generated here).
+            considered as stage1 (on equal footing with any generated code).
 
-        Bare SymPy symbols are used to represent everything.
-
-        To declare an LHS or RHS that uses applied functions, then as the
-        final step, discard the dependency information by calling
-        symutil.strip_function_arguments(); this produces bare symbols
-        that are suitable for stage1.
-
-        LHS is a symbol, which becomes the name of the API function.
+        LHS is a symbol, which is used to generate the name of the API function.
         stage1 automatically invokes ``symutil.derivatives_to_names_in()``
         and ``util.degreek()`` to make a Fortran-compatible name.
 
-        On the LHS, to represent a derivative, use an unevaluated Derivative
-        instance. Example: sy.Derivative(ϕ, u, evaluate=False) means ∂ϕ/∂u.
-        Then, if a definition for ϕ has been declared, stage1 will automatically
-        differentiate it symbolically to produce an expression for ∂ϕ/∂u.
+        The LHS names are also used for lookup when generating the derivatives.
 
-        DANGER:
+        On the LHS, bare SymPy symbols are used (even if a function).
+
+        On the LHS, to represent a derivative, use an unevaluated Derivative
+        instance. Example: sy.Derivative(ϕ, Bx, evaluate=False) means ∂ϕ/∂Bx.
+
+        RHS is a SymPy expression; applied functions can be used here if needed.
+
+        CAUTION:
             To reliably produce these unevaluated derivatives, first use an
             applied function (with the desired dependencies), differentiate
-            that, and finally strip the result. Required, because strictly
-            speaking, for symbols ∂x/∂x = 1 and ∂y/∂x = 0 for all y ≠ x.
+            that, and finally strip the result. This is required, since strictly
+            speaking, for bare symbols ∂x/∂x = 1 and ∂y/∂x = 0 for all y ≠ x.
 
             Example. Given:
 
@@ -76,18 +78,19 @@ class ModelBase:
                 import sympy as sy
                 D = partial(sy.Derivative, evaluate=False)
 
-            Even with evaluate=False, this happens:
+            Even with evaluate=False, we get:
 
                 f, x, y = sy.symbols("f, x, y")
                 d2fdxdy = D(D(f, x), y)  # --> 0
 
             Do this instead:
 
+                import symutil
                 x, y = sy.symbols("x, y")
                 λf = sy.symbols("f", cls=sy.Function)  # undefined function
                 f = λf(x, y)                           # applied function
                 d2fdxdy = D(D(f, x), y)  # --> ok  (just D(f, x, y) also ok)
-                stripped = symutil.strip_function_arguments(d2fdxdy)  # --> "D(D(f, x), y)"
+                LHSname = symutil.strip_function_arguments(d2fdxdy)  # --> "Derivative(f, x, y)"
 
         Abstract method, must be overridden in a derived class.
 
