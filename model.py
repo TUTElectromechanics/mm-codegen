@@ -286,31 +286,32 @@ class Model(ModelBase):
         results[sy.symbols("exy")] = e_expr[0,1]
 
         # I4, I5, I6 in terms of (B, e)
-        for k, v, kind in (("I4", B.T * B, None),
-                           ("I5", B.T * e * B, None),
-                           ("I6", B.T * e * e * B, "3par")): # only in 3par model
+        I4, I5, I6 = sy.symbols("I4, I5, I6")
+        for key, val, kind in ((I4, B.T * B, None),
+                               (I5, B.T * e * B, None),
+                               (I6, B.T * e * e * B, "3par")): # only in 3par model
             if kind is None or kind == self.kind:
-                assert v.shape == (1,1)  # result should be scalar
-                expr = v[0,0]  # extract scalar from matrix wrapper
+                assert val.shape == (1,1)  # result should be scalar
+                expr = val[0,0]  # extract scalar from matrix wrapper
                 expr = self.simplify(expr)
-                results[sy.symbols(k)] = expr
+                results[key] = expr
 
         # u', v', w' in terms of (I4, I5, I6)
-        I4, I5, I6 = sy.symbols("I4, I5, I6")
-        for k, v, kind in (("up", sy.sqrt(I4), None),
-                           ("vp", sy.S("3/2") * I5 / I4, None),
-                           ("wp", sy.sqrt(I6*I4 - I5**2) / I4, "3par")):
+        up, vp, wp = sy.symbols("up, vp, wp")
+        for key, val, kind in ((up, sy.sqrt(I4), None),
+                               (vp, sy.S("3/2") * I5 / I4, None),
+                               (wp, sy.sqrt(I6*I4 - I5**2) / I4, "3par")):
             if kind is None or kind == self.kind:
-                results[sy.symbols(k)] = v  # no simplification possible; just save.
+                results[key] = val  # no simplification possible; just save.
 
         # u, v, w in terms of (u', v', w')
         u, v, w = sy.symbols("u, v, w")
         u0, v0, w0 = sy.symbols("u0, v0, w0")
-        for k, v, kind in (("u", "up / u0", None),
-                           ("v", "vp / v0", None),
-                           ("w", "wp / w0", "3par")):
+        for key, val, kind in ((u, up / u0, None),
+                               (v, vp / v0, None),
+                               (w, wp / w0, "3par")):
             if kind is None or kind == self.kind:
-                results[sy.symbols(k)] = v
+                results[key] = val
 
         return results
 
