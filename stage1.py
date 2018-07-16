@@ -12,6 +12,8 @@ Created on Tue Oct 24 14:07:45 2017
 @author: Juha Jeronen <juha.jeronen@tut.fi>
 """
 
+from functools import partial  # partial application, not ∂!
+
 import sympy as sy
 from sympy.utilities.codegen import codegen  # not imported by default
 
@@ -47,11 +49,9 @@ class CodeGenerator:
               where
                 optimized_expr: sy.Expr
                   Like input, but any identically zero derivatives omitted.
-                derivatives: dict(sy.symbol -> (sy.Expr, str, list(str)))
+                derivatives: dict(sy.symbol -> sy.Expr)
                   key: LHS: Derivative(f, *xs)
-                  val: (RHS, f as str, xs as strs)
-                    The str parts can be used with ``util.name_derivative()``
-                    to make a human-readable label in math notation.
+                  val: RHS
         """
         # TODO: recurse, detect circular definitions
         ds = {}
@@ -59,44 +59,43 @@ class CodeGenerator:
             if f in defs:  # only process if bound by model
                 k = sy.Derivative(f, *vs, evaluate=False)  # appears in expr; also a label
                 v = simplify(sy.diff(defs[f], *vs))  # differentiate the RHS
-                # f and variables are sy.Symbols; need str for Fortran names
-                ds[k] = (v, str(f), [str(var) for var in vs])
+                ds[k] = v
 
         # Optimize: in expr, delete any derivatives that are now known
         # to be identically zero.
         zero = sy.S.Zero
         def kill_zero(expr):
             if expr in ds:
-                value, *_ = ds[expr]
+                value = ds[expr]
                 if value == 0:
                     return zero  # we must return an Expr, so return symbolic zero
             return expr
         out = symutil.map_instancesof_in(kill_zero, sy.Derivative, expr)
 
         # Only keep derivatives that are not identically zero.
-        final_ds = { k: v for k, v in ds.items() if v[0] != zero }
+        final_ds = { k: v for k, v in ds.items() if v != zero }
 
         return out, final_ds
 
-    @classmethod
-    def make_name_expr_pairs(cls, funcs, ds):
-        # Generated derivatives (only the ones we actually need)
-        name_expr_pairs = []
-        for v, fname, vnames in (ds[k] for k in sorted(ds.keys(), key=symutil.sortkey)):
-            routine_name = util.name_derivative(fname, vnames, as_fortran_identifier=True)  # e.g. dI4_dBx
-            name_expr_pairs.append((routine_name, v))
-        name_expr_pairs.sort()
-        name_expr_pairs.extend(name_expr_pairs)
+    @staticmethod
+    def make_name_expr_pairs(defs):
+        """Convert definitions into input for SymPy's codegen.
 
-        # The API functions. Reverse, inserting at the beginning.
-        def sanitize(expr):
-            return symutil.derivatives_to_names_in(expr, as_fortran_identifier=True)
-        for key in reversed(sorted(funcs.keys(), key=symutil.sortkey)):
-            final_name = sanitize(key)
-            final_expr = sanitize(funcs[key])
-            name_expr_pairs.insert(0, (final_name, final_expr))
+        The output is alphabetized by LHS.
 
-        return name_expr_pairs
+        Parameters:
+            defs: dict(sy.symbol -> sy.Expr)
+                Definitions as output by ``ModelBase.define_api()``.
+
+        Returns:
+            [(k, v), ...]
+              where
+                k = LHS, sanitized for SymPy's codegen
+                v = RHS, sanitized for SymPy's codegen
+        """
+        sanitize = partial(symutil.derivatives_to_names_in, as_fortran_identifier=True)
+        return [(sanitize(k), sanitize(defs[k]))
+                  for k in sorted(defs.keys(), key=symutil.sortkey)]
 
     @classmethod
     def run(cls):
@@ -136,13 +135,13 @@ class CodeGenerator:
                 derivatives.update(ds)
                 api[key] = expr_out
 
-            # Generate the Fortran code. Alphabetize.
+            # Generate the Fortran code.
 
             print("stage1: %s %s model: generating code" % (progress_header_outer, label))
 
-            name_expr_pairs = cls.make_name_expr_pairs(api, derivatives)
-
             basename = "mgs_%s_impl" % (label)  # filename without extension
+            name_expr_pairs = cls.make_name_expr_pairs(api) \
+                            + cls.make_name_expr_pairs(derivatives)
             generated_code = codegen(name_expr_pairs,
                                      language="f95",
                                      project="elmer-mgs-galfenol",
