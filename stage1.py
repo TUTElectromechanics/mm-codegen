@@ -70,7 +70,8 @@ class CodeGenerator:
             # Optimize: in expr and ds, delete any identically zero derivatives.
             if len(ds):
                 def kill_zero(term):
-                    return zero if term in ds and ds[term] == 0 else term
+                    key = strip(term)
+                    return zero if key in ds and ds[key] == 0 else term
                 final_expr = symutil.map_instancesof_in(kill_zero, sy.Derivative, expr)
                 final_ds = {k: v for k, v in ds.items() if v != zero}
                 return final_expr, final_ds
