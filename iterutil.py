@@ -12,7 +12,8 @@ def uniqify(iterable, key=None):
     """Remove duplicates from iterable; preserve ordering.
 
     If a key is provided, key(elt) is tested instead of elt for whether
-    a given element has already been seen."""
+    a given element has already been seen.
+    """
     key = key or (lambda x: x)
     it = iter(iterable)
     seen = set()
@@ -35,7 +36,7 @@ def flatten(iterable):
 
     http://rightfootin.blogspot.fi/2006/09/more-on-python-flatten.html
     This version by Danny Yoo.
-"""
+    """
     it = iter(iterable)
     for e in it:
         if isinstance(e, (list, tuple)):
@@ -61,7 +62,7 @@ def flatten_if(iterable, condition):
     use something like:
 
         condition = lambda item: isinstance(item[0], (tuple, list))
-"""
+    """
     it = iter(iterable)
     for e in it:
         if isinstance(e, (list, tuple)) and condition(e):
