@@ -166,6 +166,7 @@ def derivatives_to_names_in(expr, as_fortran_identifier=False):
             The processed expression.
     """
     def rename(expr):
+        expr = strip_function_arguments(expr)
         fname  = str(expr.args[0])
         vnames = [str(arg) for arg in expr.args[1:]]
         # we must return an Expr, so wrap the identifier in a Symbol
