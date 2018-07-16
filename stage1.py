@@ -98,7 +98,8 @@ class CodeGenerator:
     def make_name_expr_pairs(defs):
         """Convert definitions into input for SymPy's codegen.
 
-        The output is alphabetized by LHS.
+        The output is sorted by LHS. Sort order is determined by
+        ``symutil.sortkey()``.
 
         Parameters:
             defs: dict(sy.symbol -> sy.Expr)
@@ -159,8 +160,7 @@ class CodeGenerator:
                                      prefix=basename)
 
             for filename, content in generated_code:
-                # sanitize identifiers for non-Unicode systems
-                content = util.degreek(content, short=True)
+                content = util.degreek(content, short=True)  # remove Unicode
                 generated_code_out.append((label, filename, content))
 
         return generated_code_out
