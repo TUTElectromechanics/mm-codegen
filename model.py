@@ -76,44 +76,57 @@ class Model(ModelBase):
     @memoize
     def build_ϕ(self):
         """Build and return ϕ as a SymPy applied function."""
-        # Set up undefined functions. An "undefined function" is a symbol for a
-        # generic unknown function having the given name. Here e.g. up = "u prime".
+        # In SymPy, an unspecified function with known dependencies
+        # is set up in two steps:
         #
-        # Each function must have a unique symbol name. SymPy distinguishes between
-        # symbols by symbol name, flags and Python object type (e.g. sy.Symbol vs. sy.Function).
-        λI4,λI5,λI6 = sy.symbols("I4, I5, I6", cls=sy.Function)
-        λup,λvp,λwp = sy.symbols("up, vp, wp", cls=sy.Function)
-        λu,λv,λw = sy.symbols("u, v, w", cls=sy.Function)
-        λϕ = sy.symbols("ϕ", cls=sy.Function)
-
-        # Applied functions (of symbols). Calling an undefined function instance,
-        # with symbols as parameters, returns an unknown function that formally
-        # depends on the given symbols.
+        # 1) An "undefined function": a symbol for a generic unknown function
+        #    having the given symbol name.
         #
-        # SymPy creates a new Python type (class) for each function name,
-        # using the symbol name of the undefined function instance as the
-        # name of the new Python type. E.g. type(λI4(Bx,By,Bz)) = I4.
-        I4 = λI4(*self.Bs)  # i.e. in mathematical notation, I4 = I4(Bx, By, Bz)
-        I5 = λI5(*(self.Bs + self.es))
-        I6 = λI6(*(self.Bs + self.es))
+        #    Each function must have a unique symbol name. SymPy distinguishes
+        #    between symbols by symbol name, flags and Python object type
+        #    (e.g. sy.Symbol vs. sy.Function).
+        #
+        # 2) An "applied function" (of symbols). Calling an UndefinedFunction
+        #    instance, with symbols as parameters, returns an otherwise
+        #    unspecified function that formally depends on the given symbols.
+        #    Importantly, these dependencies are recognized in symbolic
+        #    differentiation.
+        #
+        #    SymPy creates a new Python type (class) for each function name,
+        #    using the symbol name of the undefined function instance (that
+        #    was used to create the applied-function instance) as the name
+        #    of the new Python type.
+        #
+        # Example:
+        #
+        #     x, y = sy.symbols("x, y")              # independent variables
+        #     λf = sy.symbols("f", cls=sy.Function)  # undefined function
+        #     f = λf(x, y)                           # applied function
+        #     type(f)  # --> f
+        #
+        def fsym(name, *deps):
+            λf = sy.symbols(name, cls=sy.Function)
+            return λf(*deps)
 
-        # Create applied functions of other applied functions; they are also symbols.
-        # u', v', w' are the raw unscaled u, v, w.
-        up = λup(I4)
-        vp = λvp(I4, I5)
-        wp = λwp(I4, I5, I6)
+        I4 = fsym("I4", *self.Bs)  # i.e. in math notation, I4 = I4(Bx, By, Bz)
+        I5 = fsym("I5", *(self.Bs + self.es))
+        I6 = fsym("I6", *(self.Bs + self.es))
 
-        # The final u, v, w are normalized (by scaling by a constant):
-        # u ∈ [ 0,1], v ∈ [-1,1], w ∈ [-1,1]
-        u = λu(up)  # ...but here we only declare a general formal dependency.
-        v = λv(vp)
-        w = λw(wp)
+        # u', v', w' are the raw u, v, w before normalization.
+        up = fsym("up", I4)  # applied function is a symbol; ok as dependency.
+        vp = fsym("vp", I4, I5)
+        wp = fsym("wp", I4, I5, I6)
 
-        # Finally, the normalized u, v, w are the formal arguments of ϕ.
+        # The final u, v, w are normalized: u ∈ [0,1], v ∈ [-1,1], w ∈ [-1,1]
+        u = fsym("u", up)  # ...but here we only declare a formal dependency.
+        v = fsym("v", vp)
+        w = fsym("w", wp)
+
+        # Finally, the normalized u, v, w are the formal parameters of ϕ.
         if self.kind == "2par":
-            ϕ = λϕ(u,v)
+            ϕ = fsym("ϕ", u, v)
         else: # self.kind == "3par":
-            ϕ = λϕ(u,v,w)
+            ϕ = fsym("ϕ", u, v, w)
 
         # ϕ carries with it all the information about the (nested) dependencies.
         return ϕ
