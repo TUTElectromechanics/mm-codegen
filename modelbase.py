@@ -19,34 +19,75 @@ class ModelBase:
 
     @abstractmethod
     def define_api(self):
-        """Define stage1 functions meant for the end user.
+        """Define stage1 functions.
 
-        For example, can be used to define chain rule based expressions for
-        the derivatives of a SymPy applied function (i.e. unspecified function,
-        but with specified dependencies), in terms of other SymPy applied
-        functions, and at the final layer, in terms of independent variables.
+        For example:
 
-        This makes it easy to define a potential ϕ(u, v, w), where the auxiliary
-        variables u, v, w depend on some other auxiliary variables, and so on,
-        until (several layers later) the independent variables are reached.
+          - Define quantities which have analytical expressions. These can be
+            differentiated symbolically, and code generated also for the
+            derivatives.
 
-        The API functions can then be the derivatives of this ϕ w.r.t. the
-        **independent** variables, via the chain rule.
+          - Define quantities that depend on other quantities, in a treelike
+            fashion. Useful for building a layer cake of auxiliary variables,
+            while keeping the definitions at each level as simple as possible.
+
+          - Define chain rule based expressions for the derivatives of a potential,
+            represented as a SymPy applied function (i.e. unspecified function,
+            but with specified dependencies), in terms of other SymPy applied
+            functions, and at the final layer, in terms of independent variables.
+
+            So we can have a potential ϕ(u, v, w), where the auxiliary variables
+            u, v, w depend on some other auxiliary variables, and so on, until
+            (several layers later) the independent variables are reached.
+            The stage1 functions can then be declared as the derivatives of
+            this ϕ w.r.t. the **independent** variables. SymPy automatically
+            applies the chain rule.
+
+            The potential ϕ itself can, but does not need to, be declared here.
+            If you have a custom Fortran code to compute ϕ, ∂ϕ/∂u, ∂ϕ/∂v, etc.,
+            just tell stage2 about its interface, and those functions will be
+            considered as stage1 (on equal footing with any code generated here).
 
         Bare SymPy symbols are used to represent everything.
 
-        LHS is a symbol, which becomes the name of the API function
-        (see ``symutil.derivatives_to_names_in()`` and ``util.degreek()``,
-         automatically used by stage1).
+        To declare an LHS or RHS that uses applied functions, then as the
+        final step, discard the dependency information by calling
+        symutil.strip_function_arguments(); this produces bare symbols
+        that are suitable for stage1.
 
-        In the RHSs, as the final step, the dependency information should be
-        discarded by calling symutil.strip_function_arguments(); this produces
-        bare symbols that are suitable for stage1.
+        LHS is a symbol, which becomes the name of the API function.
+        stage1 automatically invokes ``symutil.derivatives_to_names_in()``
+        and ``util.degreek()`` to make a Fortran-compatible name.
 
-        For providing SymPy expressions for the quantities that appear on the
-        RHSs of the API functions, see ``define_helpers()``. Only the base
-        expression for each helper needs to be defined; its derivatives
-        (if needed) are derived symbolically by stage1.
+        On the LHS, to represent a derivative, use an unevaluated Derivative
+        instance. Example: sy.Derivative(ϕ, u, evaluate=False) means ∂ϕ/∂u.
+        Then, if a definition for ϕ has been declared, stage1 will automatically
+        differentiate it symbolically to produce an expression for ∂ϕ/∂u.
+
+        DANGER:
+            To reliably produce these unevaluated derivatives, first use an
+            applied function (with the desired dependencies), differentiate
+            that, and finally strip the result. Required, because strictly
+            speaking, for symbols ∂x/∂x = 1 and ∂y/∂x = 0 for all y ≠ x.
+
+            Example. Given:
+
+                from functools import partial  # (partial application, not ∂!)
+                import sympy as sy
+                D = partial(sy.Derivative, evaluate=False)
+
+            Even with evaluate=False, this happens:
+
+                f, x, y = sy.symbols("f, x, y")
+                d2fdxdy = D(D(f, x), y)  # --> 0
+
+            Do this instead:
+
+                x, y = sy.symbols("x, y")
+                λf = sy.symbols("f", cls=sy.Function)  # undefined function
+                f = λf(x, y)                           # applied function
+                d2fdxdy = D(D(f, x), y)  # --> ok  (just D(f, x, y) also ok)
+                stripped = symutil.strip_function_arguments(d2fdxdy)  # --> "D(D(f, x), y)"
 
         Abstract method, must be overridden in a derived class.
 
@@ -56,65 +97,6 @@ class ModelBase:
         """
         raise NotImplementedError("Abstract method; must be overridden in a derived class")
 
-    @abstractmethod
-    def define_helpers(self):
-        """Define stage1 bound symbols.
-
-        The LHSs are symbols appearing on the RHSs of the API functions
-        (see ``define_api()``), as bare SymPy symbols.
-
-        The RHSs of the helpers are flat expressions of symbols (i.e. no
-        undefined functions or applied functions; SymPy built-ins like sin()
-        are allowed).
-
-        stage1 emits Fortran code for all helpers defined here.
-
-        Additionally, stage1 detects derivatives of these helpers in the RHS
-        of the API functions. It automatically performs symbolic differentiation,
-        and emits Fortran code for any derivatives of these helpers that are
-        needed by any of the API functions.
-
-        Only needed derivatives are generated; the helpers are considered
-        internal to the mathematical model, and of no interest to the end user,
-        so we do not generate the full set of derivatives.
-
-        Derivatives that can be symbolically shown to be identically zero are
-        omitted; stage1 optimizes away any parts of expressions that are
-        identically zero.
-
-        (Implication: only derivatives w.r.t. quantities directly appearing
-         on the RHS of any given helper are supported; otherwise, the derivative
-         appears to be zero and will be omitted. If you have several layers
-         of helpers, then in ``define_api()``, use the chain rule to make the
-         correct derivatives appear for each layer.)
-
-        Only references that directly appear in the RHS expressions of the API
-        functions are detected by stage1. Nested dependencies are handled in
-        stage2, when it generates the public API (from the output of stage1).
-
-        !! It must be manually enforced that the applied function definitions
-        used inside ``define_api()`` and the helper RHSs use the same symbols;
-        otherwise some derivatives might not be generated. E.g. if in the definition
-        of the helper "u", the RHS is some expression containing I4, then in
-        ``define_api()``, we must declare u = u(I4) so that the chain rule
-        picks up this dependency. !!
-
-        (Continuing the example, the flatness of the RHSs means that if
-        ``define_api()`` declares I4 = I4(B, ε), the RHS for the helper "I4"
-        is an expression of B and ε. The higher-layer helper u = u(I4)
-        does not need to know what its argument I4 in turn depends on.)
-
-        Constants such as model parameters may freely appear on any RHSs.
-        Anything not defined by stage1 is treated by stage2 as an input to
-        the model, and is passed through to the top-level public API, to be
-        supplied by the end user.
-
-        Abstract method, must be overridden in a derived class.
-
-        Must return:
-            dictionary of ``sy.Symbol`` -> ``sy.Expr``
-        """
-        raise NotImplementedError("Abstract method; must be overridden in a derived class")
 
     def simplify(self, expr):
         """Simplify expressions used by this model. Generic fallback.

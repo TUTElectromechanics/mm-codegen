@@ -21,8 +21,7 @@ import sympy as sy
 
 from memoize import memoize
 
-# fares better in some cases than sy.rcollect (maybe due to autosyms).
-from reccollect import recursive_collect
+from reccollect import recursive_collect # sometimes better than sy.rcollect (maybe due to autosyms).
 import symutil
 import util
 
@@ -109,7 +108,7 @@ class Model(ModelBase):
             return λf(*deps)
 
         I4 = fsym("I4", *self.Bs)  # i.e. in math notation, I4 = I4(Bx, By, Bz)
-        I5 = fsym("I5", *(self.Bs + self.es))
+        I5 = fsym("I5", *(self.Bs + self.es))  # deviatoric strain!
         I6 = fsym("I6", *(self.Bs + self.es))
 
         # u', v', w' are the raw u, v, w before normalization.
@@ -135,12 +134,16 @@ class Model(ModelBase):
         """See docstring for ``ModelBase.define_api()``."""
         results = {}
 
+        # Define the derivatives of ϕ(u, v, w) in terms of B and ε, while
+        # leaving ϕ itself unspecified (except its dependencies).
+
         # For completeness, provide a function to evaluate ϕ(B, ε). We would
         # like to say ϕ'(B, ε) = ϕ(u, v, w), and then drop the prime.
         #
-        # But the LHS (function we export) cannot be named "ϕ", because the
-        # user-defined (additional stage1) interfaces are expected to provide
-        # phi(u, v, w), with which "ϕ" would conflict after degreeking.
+        # But the LHS (function we export) cannot be named "ϕ", because in the
+        # spline model, the user-defined (additional stage1) interfaces are
+        # expected to provide phi(u, v, w), with which "ϕ" would conflict
+        # after degreeking.
         #
         # We want to keep that one as "phi", so that on the RHS, ϕ = ϕ(u, v, w),
         # consistently with how build_ϕ() defines ϕ. Hence we name our export
@@ -173,6 +176,74 @@ class Model(ModelBase):
             sym, expr = self.dϕdq(qs, strip=True)
             results[sym] = expr
 
+        # Define the quantities appearing at the various layers of the ϕ cake.
+        #
+        print("model: {kind} defining auxiliary expressions".format(kind=self.kind))
+
+        Bx,By,Bz = self.Bs
+        εxx,εyy,εzz,εyz,εzx,εxy = self.εs
+
+        # Magnetic flux density.
+        B = sy.Matrix( [Bx, By, Bz] )
+
+        # Cauchy strain. Voigt notation:
+        #   ε = [[ε1, ε6, ε5],
+        #        [ε6, ε2, ε4],
+        #        [ε5, ε4, ε3]]
+        ε = sy.Matrix( [[εxx, εxy, εzx],
+                        [εxy, εyy, εyz],
+                        [εzx, εyz, εzz]] )
+
+        # Deviatoric strain.
+        #
+        # The es are just LHS names (bare symbols). **RHS** exprs depend on ε.
+        # To get the names, we could strip self.es, but this works just as well.
+        exx,eyy,ezz,eyz,ezx,exy = sy.symbols("exx, eyy, ezz, eyz, ezx, exy")
+        e = sy.Matrix([[exx, exy, ezx],
+                       [exy, eyy, eyz],
+                       [ezx, eyz, ezz]])
+
+        εM_expr = sy.factor(sy.S("1/3") * ε.trace())  # mean volumetric strain
+        e_expr  = ε - εM_expr * sy.eye(3)
+        assert e_expr[1,0] == e_expr[0,1]  # exy
+        assert e_expr[2,0] == e_expr[0,2]  # ezx
+        assert e_expr[1,2] == e_expr[2,1]  # eyz
+        results[sy.symbols("εM")] = εM_expr  # already inserted to e_expr; just a convenience
+        results[exx] = e_expr[0,0]
+        results[eyy] = e_expr[1,1]
+        results[ezz] = e_expr[2,2]
+        results[eyz] = e_expr[1,2]
+        results[ezx] = e_expr[0,2]
+        results[exy] = e_expr[0,1]
+
+        # I4, I5, I6 in terms of (B, e)
+        I4, I5, I6 = sy.symbols("I4, I5, I6")
+        for key, val, kind in ((I4, B.T * B, None),
+                               (I5, B.T * e * B, None),
+                               (I6, B.T * e * e * B, "3par")): # only in 3par model
+            if kind is None or kind == self.kind:
+                assert val.shape == (1,1)  # result should be scalar
+                expr = val[0,0]  # extract scalar from matrix wrapper
+                results[key] = self.simplify(expr)
+
+        # u', v', w' in terms of (I4, I5, I6)
+        up, vp, wp = sy.symbols("up, vp, wp")
+        for key, val, kind in ((up, sy.sqrt(I4), None),
+                               (vp, sy.S("3/2") * I5 / I4, None),
+                               (wp, sy.sqrt(I6*I4 - I5**2) / I4, "3par")):
+            if kind is None or kind == self.kind:
+                results[key] = val  # no simplification possible; just save.
+
+        # u, v, w in terms of (u', v', w')
+        u, v, w = sy.symbols("u, v, w")
+        u0, v0, w0 = sy.symbols("u0, v0, w0")
+        for key, val, kind in ((u, up / u0, None),
+                               (v, vp / v0, None),
+                               (w, wp / w0, "3par")):
+            if kind is None or kind == self.kind:
+                results[key] = val
+
+        assert all(isinstance(key, (sy.Symbol, sy.Derivative)) for key in results)
         return results
 
     def dϕdq(self, qs, strip):
@@ -241,7 +312,7 @@ class Model(ModelBase):
         #   d/dξ1( ϕ(ξ1,v,w) )|ξ1=u  -->  d/du( ϕ(u,v,w) )
         #
         # The first expression is what the second one, strictly speaking, means:
-        # first, differentiate ϕ w.r.t. the formal argument "u"; then, in the
+        # first, differentiate ϕ w.r.t. the formal parameter "u"; then, in the
         # result, set its value to the given value of u.
         #
         # The second expression is the standard human-readable notation.
@@ -254,79 +325,11 @@ class Model(ModelBase):
         if strip:
             expr = symutil.strip_function_arguments(expr)
 
+        # Don't try to simplify() expr; the grouping caused by the chain rule
+        # is already good.
+
         assert sym != 0, "BUG in dϕdq(): symbol for function name is 0"
         return (sym, expr)
-
-    def define_helpers(self):
-        """See docstring for ``ModelBase.define_helpers()``."""
-        results = {}
-
-        print("model: {kind} defining auxiliary expressions".format(kind=self.kind))
-
-        Bx,By,Bz = self.Bs
-        εxx,εyy,εzz,εyz,εzx,εxy = self.εs
-
-        # Voigt notation:
-        #   ε = [[ε1, ε6, ε5],
-        #        [ε6, ε2, ε4],
-        #        [ε5, ε4, ε3]]
-        B = sy.Matrix( [Bx, By, Bz] )
-        ε = sy.Matrix( [[εxx, εxy, εzx],  # Cauchy strain
-                        [εxy, εyy, εyz],
-                        [εzx, εyz, εzz]] )
-
-        # Deviatoric strain.
-        #
-        # Here we ignore that e = e(ε); the es are just arbitrary symbols.
-        # In stage1.run(), any dependencies are expected to be declared in
-        # define_api(); the helpers should be flat expressions of symbols.
-        exx,eyy,ezz,eyz,ezx,exy = sy.symbols("exx, eyy, ezz, eyz, ezx, exy")
-        e = sy.Matrix([[exx, exy, ezx],
-                       [exy, eyy, eyz],
-                       [ezx, eyz, ezz]])
-
-        εM_expr = sy.factor(sy.S("1/3") * ε.trace())  # mean volumetric strain
-        e_expr  = ε - εM_expr * sy.eye(3)
-        assert e_expr[1,0] == e_expr[0,1]  # exy
-        assert e_expr[2,0] == e_expr[0,2]  # ezx
-        assert e_expr[1,2] == e_expr[2,1]  # eyz
-#        results["εM"] = εM_expr  # not needed separately since already inserted to e_expr
-        results[sy.symbols("exx")] = e_expr[0,0]
-        results[sy.symbols("eyy")] = e_expr[1,1]
-        results[sy.symbols("ezz")] = e_expr[2,2]
-        results[sy.symbols("eyz")] = e_expr[1,2]
-        results[sy.symbols("ezx")] = e_expr[0,2]
-        results[sy.symbols("exy")] = e_expr[0,1]
-
-        # I4, I5, I6 in terms of (B, e)
-        I4, I5, I6 = sy.symbols("I4, I5, I6")
-        for key, val, kind in ((I4, B.T * B, None),
-                               (I5, B.T * e * B, None),
-                               (I6, B.T * e * e * B, "3par")): # only in 3par model
-            if kind is None or kind == self.kind:
-                assert val.shape == (1,1)  # result should be scalar
-                expr = val[0,0]  # extract scalar from matrix wrapper
-                expr = self.simplify(expr)
-                results[key] = expr
-
-        # u', v', w' in terms of (I4, I5, I6)
-        up, vp, wp = sy.symbols("up, vp, wp")
-        for key, val, kind in ((up, sy.sqrt(I4), None),
-                               (vp, sy.S("3/2") * I5 / I4, None),
-                               (wp, sy.sqrt(I6*I4 - I5**2) / I4, "3par")):
-            if kind is None or kind == self.kind:
-                results[key] = val  # no simplification possible; just save.
-
-        # u, v, w in terms of (u', v', w')
-        u, v, w = sy.symbols("u, v, w")
-        u0, v0, w0 = sy.symbols("u0, v0, w0")
-        for key, val, kind in ((u, up / u0, None),
-                               (v, vp / v0, None),
-                               (w, wp / w0, "3par")):
-            if kind is None or kind == self.kind:
-                results[key] = val
-
-        return results
 
     def simplify(self, expr):
         """Simplify expr.
@@ -358,7 +361,6 @@ def test():
         api = m.define_api()
         api_humanreadable = {scrub(k): scrub(v) for k, v in api.items()}
         print(api_humanreadable)
-        print(m.define_helpers())
 
 if __name__ == '__main__':
     test()

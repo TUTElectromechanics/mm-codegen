@@ -26,104 +26,121 @@ class CodeGenerator:
     # no constructor, this is OOFP with just static and class methods.
 
     @staticmethod
-    def run():
+    def process(expr, defs, simplify):
+        """Detect and generate derivatives needed by expr.
+
+        Also optimize expr by omitting any derivatives that the definitions
+        show to be identically zero.
+
+        Parameters:
+            expr: sy.Expr
+                Expression to process.
+
+            defs: dict(sy.symbol -> sy.Expr)
+                Definitions as output by ``ModelBase.define_api()``.
+
+            simplify: function(sy.Expr -> sy.Expr)
+                Simplifier, used for optimizing the derivative expressions.
+
+        Returns:
+            (optimized_expr, derivatives)
+              where
+                optimized_expr: sy.Expr
+                  Like input, but any identically zero derivatives omitted.
+                derivatives: dict(sy.symbol -> (sy.Expr, str, list(str)))
+                  key: LHS: Derivative(f, *xs)
+                  val: (RHS, f as str, xs as strs)
+                    The str parts can be used with ``util.name_derivative()``
+                    to make a human-readable label in math notation.
+        """
+        # TODO: recurse, detect circular definitions
+        ds = {}
+        for f, *vs in symutil.derivatives_needed_by(expr):
+            if f in defs:  # only process if bound by model
+                k = sy.Derivative(f, *vs, evaluate=False)  # appears in expr; also a label
+                v = simplify(sy.diff(defs[f], *vs))  # differentiate the RHS
+                # f and variables are sy.Symbols; need str for Fortran names
+                ds[k] = (v, str(f), [str(var) for var in vs])
+
+        # Optimize: in expr, delete any derivatives that are now known
+        # to be identically zero.
+        zero = sy.S.Zero
+        def kill_zero(expr):
+            if expr in ds:
+                value, *_ = ds[expr]
+                if value == 0:
+                    return zero  # we must return an Expr, so return symbolic zero
+            return expr
+        out = symutil.map_instancesof_in(kill_zero, sy.Derivative, expr)
+
+        # Only keep derivatives that are not identically zero.
+        final_ds = { k: v for k, v in ds.items() if v[0] != zero }
+
+        return out, final_ds
+
+    @classmethod
+    def make_name_expr_pairs(cls, funcs, ds):
+        # Generated derivatives (only the ones we actually need)
+        name_expr_pairs = []
+        for v, fname, vnames in (ds[k] for k in sorted(ds.keys(), key=symutil.sortkey)):
+            routine_name = util.name_derivative(fname, vnames, as_fortran_identifier=True)  # e.g. dI4_dBx
+            name_expr_pairs.append((routine_name, v))
+        name_expr_pairs.sort()
+        name_expr_pairs.extend(name_expr_pairs)
+
+        # The API functions. Reverse, inserting at the beginning.
+        def sanitize(expr):
+            return symutil.derivatives_to_names_in(expr, as_fortran_identifier=True)
+        for key in reversed(sorted(funcs.keys(), key=symutil.sortkey)):
+            final_name = sanitize(key)
+            final_expr = sanitize(funcs[key])
+            name_expr_pairs.insert(0, (final_name, final_expr))
+
+        return name_expr_pairs
+
+    @classmethod
+    def run(cls):
         """Generate stage1 Fortran code for both 2-parameter and 3-parameter models."""
 
         # TODO: maybe take a Model as input?
         models = (Model(kind="2par"), Model(kind="3par"))
 
         generated_code_out = []
-        for i,model in enumerate(models):
+        for i, model in enumerate(models):
             label = model.kind
             progress_header_outer = "(%d/%d)" % (i+1, len(models))
             print("stage1: %s %s model: initializing" % (progress_header_outer, label))
 
-            api = model.define_api()
-            helpers = model.define_helpers()
+            defs = model.define_api()  # input, original definitions
 
-            # Scan each API function defined by the model to see if we need to
-            # differentiate any helpers to be able to compute it (and which
+            # Scan each stage1 function defined by the model to see if we need to
+            # differentiate any quantities to be able to compute it (and which
             # ones, and w.r.t. which variables).
             #
             # Process in alphabetical order to make terminal output more readable.
             print("stage1: %s %s model: analyzing API" % (progress_header_outer, label))
 
-            api_funcs = {}
-            all_derivatives = {}
-            for j,funcsym in enumerate(sorted(api.keys(), key=symutil.sortkey)):
-                name = symutil.derivatives_to_names_in(funcsym)
-                expr = api[funcsym]
+            api = {}  # output, final optimized definitions
+            derivatives = {}
+            for j, key in enumerate(sorted(defs.keys(), key=symutil.sortkey)):
+                name = symutil.derivatives_to_names_in(key)  # key is a symbol
+                expr = defs[key]
 
-                progress_header_inner = "(%d/%d)" % (j+1, len(api.keys()))
+                progress_header_inner = "(%d/%d)" % (j+1, len(defs.keys()))
                 progress_header = "%s %s" % (progress_header_outer, progress_header_inner)
                 print("stage1: %s %s model: processing %s" % (progress_header, label, name))
 
-                derivatives = {}
-                for f,*vars in symutil.derivatives_needed_by(expr):
-                    if f not in helpers:  # process only if f is bound by Model.define_helpers()
-                        continue
-                    k = sy.Derivative(f, *vars, evaluate=False)  # this is present in expr; also a label
-                    v = sy.diff(helpers[f], *vars)  # differentiate the actual definition
-                    v = model.simplify(v)
-                    # func and var are sy.Symbols; need str for Fortran names
-                    fname = str(f)
-                    vnames = [str(var) for var in vars]
-                    derivatives[k] = (v, fname, vnames)
-
-                # Optimize: in expr, delete any derivatives that are identically
-                # zero due to the structure of the functional dependencies.
-                zero = sy.S.Zero
-                def kill_zero(expr):
-                    if expr in derivatives:  # ...which we collected above
-                        value,*_ = derivatives[expr]
-                        if value == 0:
-                            return zero  # we must return an Expr, so return symbolic zero
-                    return expr
-                out = symutil.map_instancesof_in(kill_zero, sy.Derivative, expr)
-
-                # Only keep derivatives that are not identically zero.
-                final_derivatives = { k:v for k,v in derivatives.items() if v[0] != zero }
+                expr_out, ds = cls.process(expr, defs, model.simplify)
 
                 # We may overwrite, since e.g. dI4/dBx always has the same expression if it is present.
-                all_derivatives.update(final_derivatives)
-                api_funcs[funcsym] = out
+                derivatives.update(ds)
+                api[key] = expr_out
 
-            # Generate the Fortran code
+            # Generate the Fortran code. Alphabetize.
 
             print("stage1: %s %s model: generating code" % (progress_header_outer, label))
 
-            # Auxiliary expressions I4, I5, I6, u', v', w', u, v, w
-            #
-            # These are always generated, whether needed or not. This makes it
-            # easier to generate an API function for ϕ, because we will have
-            # u, v, w, even though they don't appear in any RHS in the model.
-            #
-            # (These are needed for phi, which is externally provided by
-            #  the additional user-defined stage1 interfaces. An alternative
-            #  solution would be to define u_Bε, v_Bε, w_Bε, and make them
-            #  depend on u, v, w, like Model currently does for ϕ.)
-            #
-            # Alphabetize helpers for readability of generated code.
-            name_expr_pairs = [ (k,helpers[k]) for k in sorted(helpers.keys(), key=symutil.sortkey) ]
-
-            # Derivatives of auxiliary expressions (only the ones we actually need)
-            derivative_routines = {}
-            tmp_pairs = []
-            for k,val in all_derivatives.items():
-                v,fname,vname = val
-                routine_name = util.name_derivative(fname, vname, as_fortran_identifier=True)  # e.g. dI4_dBx
-                derivative_routines[k] = routine_name
-                tmp_pairs.append( (routine_name, v) )
-            tmp_pairs.sort()
-            name_expr_pairs.extend(tmp_pairs)
-
-            # The API functions. Alphabetize; reverse, inserting at the beginning.
-            def sanitize(expr):
-                return symutil.derivatives_to_names_in(expr, as_fortran_identifier=True)
-            for funcsym in reversed(sorted(api_funcs.keys(), key=symutil.sortkey)):
-                final_name = sanitize(funcsym)
-                final_expr = sanitize(api_funcs[funcsym])
-                name_expr_pairs.insert(0, (final_name, final_expr))
+            name_expr_pairs = cls.make_name_expr_pairs(api, derivatives)
 
             basename = "mgs_%s_impl" % (label)  # filename without extension
             generated_code = codegen(name_expr_pairs,
@@ -131,7 +148,7 @@ class CodeGenerator:
                                      project="elmer-mgs-galfenol",
                                      prefix=basename)
 
-            for filename,content in generated_code:
+            for filename, content in generated_code:
                 # sanitize identifiers for non-Unicode systems
                 content = util.degreek(content, short=True)
                 generated_code_out.append((label, filename, content))
@@ -141,7 +158,7 @@ class CodeGenerator:
 def main():
     code = CodeGenerator.run()  # stage1 CodeGenerator
 
-    for label,filename,content in code:
+    for label, filename, content in code:
         print("stage1: writing %s for %s" % (filename, label))
         with open(filename, "wt", encoding="utf-8") as f:
             f.write(content)
