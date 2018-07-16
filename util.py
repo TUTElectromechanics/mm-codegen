@@ -42,7 +42,7 @@ def name_derivative(funcname, varnames, allow_reorder=True, as_fortran_identifie
     Return value:
         str:
             The name of the derivative, such as ∂²ϕ/∂Bx² or d2ϕ_dBx2.
-"""
+    """
     # special case: zeroth derivative is the function itself
     if len(varnames) < 1:
         return funcname
@@ -98,7 +98,7 @@ def degreek(s, short=False):
 
     See:
         https://github.com/clarkgrubb/latex-input
-"""
+    """
     mapping = { # === lowercase ===
                 r"α": (r"alp", r"alpha"),
                 r"β": (r"bet", r"beta"),
@@ -165,7 +165,7 @@ def fold_fortran_code(content, width=79):
 
     Fortran line continuation (&) with a six-space following indent
     are used where necessary.
-"""
+    """
     lines = content.split(sep="\n")
     result = ""
     for input_line in lines:
@@ -201,7 +201,7 @@ class TextMultiBuffer:
     where the function *declarations* to be written to both files are
     identical. The difference is that .h has the "interface/end interface"
     declaration, while the .f90 has the function body.
-"""
+    """
 
     def __init__(self):
         self.data = {}
@@ -224,7 +224,7 @@ class TextMultiBuffer:
 
         Returns:
             None
-"""
+        """
         def addto(key, txt):
             if key not in self.data:
                 self.data[key] = ""
@@ -256,7 +256,7 @@ class TextMultiBuffer:
         Returns:
             str:
                 The text stored in the specified named buffer.
-"""
+        """
         return self.data[key]
 
     def keys(self):
