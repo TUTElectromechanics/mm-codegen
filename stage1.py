@@ -146,8 +146,7 @@ class CodeGenerator:
                 progress_header = "%s %s" % (progress_header_outer, progress_header_inner)
                 print("stage1: %s %s model: processing %s" % (progress_header, label, name))
 
-                expr_out = cls.process(expr, defs, model.simplify)
-                defs[key] = expr_out
+                defs[key] = cls.process(expr, defs, model.simplify)
 
             # Generate the Fortran code.
             print("stage1: %s %s model: generating code" % (progress_header_outer, label))
