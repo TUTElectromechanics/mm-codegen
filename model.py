@@ -171,8 +171,6 @@ class Model(ModelBase):
                                                                                                  iteration=i+1,
                                                                                                  total=len(allqs),
                                                                                                  name=util.name_derivative("ϕ", qs)))
-            # strip kilometer-long nested arg lists: replace applied functions with bare symbols
-            # (any Derivative objects still remain, also in the name!)
             sym, expr = self.dϕdq(qs, strip=False)
             results[sym] = expr
 
