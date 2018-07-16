@@ -40,34 +40,32 @@ class CodeGenerator:
 
             defs: dict(sy.symbol -> sy.Expr)
                 Definitions as output by ``ModelBase.define_api()``.
+                !! Will be mutated.
 
             simplify: function(sy.Expr -> sy.Expr)
                 Simplifier, used for optimizing the derivative expressions.
 
         Returns:
-            (optimized_expr, more_defs)
-              where
-                optimized_expr: sy.Expr
-                  Like input, but any identically zero derivatives omitted.
-                more_defs: dict(sy.symbol -> sy.Expr)
-                  Generated definitions, same format as ``defs``.
-                    key: LHS: Derivative(f, *xs)
-                    val: RHS
-                  Key is stripped using ``symutil.strip_function_arguments()``,
-                  value is not stripped.
+            optimized_expr: sy.Expr
+                Like input, but any identically zero derivatives omitted.
+
+            Any new keys for ``defs`` are in the format Derivative(f, *xs),
+            stripped using ``symutil.strip_function_arguments()``.
+
+            The RHS values are not stripped.
         """
         D = partial(sy.Derivative, evaluate=False)
         strip = symutil.strip_function_arguments
         zero = sy.S.Zero
 
-        def process_one(expr, mydefs):
+        def process_one(expr):
             # Compute any needed derivatives for which we have the def.
             ds = {}
             for f, *vs in symutil.derivatives_needed_by(expr):
                 fkey = strip(f)
                 dkey = strip(D(f, *vs))
-                if dkey not in mydefs and fkey in mydefs:
-                    ds[dkey] = simplify(sy.diff(mydefs[fkey], *vs))
+                if dkey not in defs and fkey in defs:
+                    ds[dkey] = simplify(sy.diff(defs[fkey], *vs))
 
             # Optimize: in expr and ds, delete any identically zero derivatives.
             if len(ds):
@@ -78,10 +76,8 @@ class CodeGenerator:
                 return final_expr, final_ds
             return expr, ds
 
-        alldefs = defs.copy()  # all definitions
-        newdefs = {}           # all new definitions not in original input
         def recurse(expr, seen):
-            newexpr, moredefs = process_one(expr, alldefs)
+            newexpr, moredefs = process_one(expr)
 
             invalid = seen.intersection(moredefs.keys())
             if len(invalid):
@@ -89,17 +85,14 @@ class CodeGenerator:
             newseen = seen.copy()  # track seen items separately in each call tree
             newseen.update(moredefs.keys())
 
-            # cheeky side effects
-            alldefs.update(moredefs)  # must do before loop...
-            newdefs.update(moredefs)
+            defs.update(moredefs)  # before loop to make new defs visible...
 
             for k in moredefs:
-                newv = recurse(moredefs[k], newseen)
-                alldefs[k] = newdefs[k] = newv  # ...but also update here
+                defs[k] = recurse(moredefs[k], newseen)  # ...but update here, maybe optimized
 
             return newexpr
 
-        return recurse(expr, set()), newdefs
+        return recurse(expr, set())
 
     @staticmethod
     def make_name_expr_pairs(defs):
@@ -137,34 +130,29 @@ class CodeGenerator:
             progress_header_outer = "(%d/%d)" % (i+1, len(models))
             print("stage1: %s %s model: initializing" % (progress_header_outer, label))
 
-            defs = model.define_api()  # input, original definitions
+            defs_input = model.define_api()  # input, original definitions
 
             print("stage1: %s %s model: analyzing API" % (progress_header_outer, label))
 
             # Compute any needed derivatives which are not already in the API
             # and for which we have the defs.
-            api = {}  # output, final optimized definitions
-            derivatives = {}
-            for j, key in enumerate(sorted(defs.keys(), key=symutil.sortkey)):  # sort for progress readability
+            defs = defs_input.copy()  # output, final optimized definitions
+            for j, key in enumerate(sorted(defs_input.keys(), key=symutil.sortkey)):  # sort for progress readability
                 name = symutil.derivatives_to_names_in(key)  # key is a Symbol or a Derivative
-                expr = defs[key]
+                expr = defs_input[key]
 
-                progress_header_inner = "(%d/%d)" % (j+1, len(defs.keys()))
+                progress_header_inner = "(%d/%d)" % (j+1, len(defs_input.keys()))
                 progress_header = "%s %s" % (progress_header_outer, progress_header_inner)
                 print("stage1: %s %s model: processing %s" % (progress_header, label, name))
 
-                expr_out, ds = cls.process(expr, defs, model.simplify)
-
-                # We may overwrite, since e.g. dI4/dBx always has the same expression if it is present.
-                derivatives.update(ds)
-                api[key] = expr_out
+                expr_out = cls.process(expr, defs, model.simplify)
+                defs[key] = expr_out
 
             # Generate the Fortran code.
             print("stage1: %s %s model: generating code" % (progress_header_outer, label))
 
             basename = "mgs_%s_impl" % (label)  # filename without extension
-            name_expr_pairs = cls.make_name_expr_pairs(api) \
-                            + cls.make_name_expr_pairs(derivatives)
+            name_expr_pairs = cls.make_name_expr_pairs(defs)
             generated_code = codegen(name_expr_pairs,
                                      language="f95",
                                      project="elmer-mgs-galfenol",
