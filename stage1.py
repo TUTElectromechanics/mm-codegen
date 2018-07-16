@@ -139,17 +139,14 @@ class CodeGenerator:
 
             defs = model.define_api()  # input, original definitions
 
-            # Scan each stage1 function defined by the model to see if we need to
-            # differentiate any quantities to be able to compute it (and which
-            # ones, and w.r.t. which variables).
-            #
-            # Process in alphabetical order to make terminal output more readable.
             print("stage1: %s %s model: analyzing API" % (progress_header_outer, label))
 
+            # Compute any needed derivatives which are not already in the API
+            # and for which we have the defs.
             api = {}  # output, final optimized definitions
             derivatives = {}
-            for j, key in enumerate(sorted(defs.keys(), key=symutil.sortkey)):
-                name = symutil.derivatives_to_names_in(key)  # key is a symbol
+            for j, key in enumerate(sorted(defs.keys(), key=symutil.sortkey)):  # sort for progress readability
+                name = symutil.derivatives_to_names_in(key)  # key is a Symbol or a Derivative
                 expr = defs[key]
 
                 progress_header_inner = "(%d/%d)" % (j+1, len(defs.keys()))
