@@ -260,6 +260,8 @@ class Model(ModelBase):
 
                 If False, return the generated expr as-is.
 
+                sym (the name) is always stripped.
+
         Example:
             m = Model(kind="2par")
             m.dϕdq(("Bx",), strip=True)      # ∂ϕ/∂Bx
