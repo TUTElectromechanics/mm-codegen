@@ -451,12 +451,12 @@ class CodeGenerator:
 
         # Sort by level (descending), then by name.
         def level_sortkey(argrec):
-            level, argname, fname = argrec
+            level, argname, _ = argrec
             return (-level, argname)
 
         # Sort by intent, then lexicographically.
         def intent_sortkey(argrec):
-            level, argname, fname = argrec
+            _, argname, fname = argrec
             metarec = metas[fname]  # metadata record for function whose argument this is
             _, intent, _ = metarec[argname]
             return (intent, argname)  # "in" sorts before "inout" and "out" so we're good.
