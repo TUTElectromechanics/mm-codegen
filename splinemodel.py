@@ -53,10 +53,7 @@ class Model(ModelBase):
             raise ValueError("Unknown kind '{invalid}'; valid: '2par', '3par'".format(invalid=kind))
         self.kind = kind
 
-        # es and εs are listed in Voigt notation ordering:
-        #   ε = [[ε1, ε6, ε5], = [[εxx, εxy, εzx],
-        #        [ε6, ε2, ε4],    [εxy, εyy, εyz],
-        #        [ε5, ε4, ε3]]    [εzx, εyz, εzz]]
+        # es and εs are listed in Voigt ordering; see symutil.voigt_mat_idx().
         self.Bs = sy.symbols("Bx, By, Bz")
         self.εs = sy.symbols("εxx, εyy, εzz, εyz, εzx, εxy")
 
@@ -67,14 +64,7 @@ class Model(ModelBase):
         #
         # Use the component form, because sy.diff() cannot differentiate w.r.t.
         # a sy.MatrixSymbol. The component form is also good for Fortran conversion.
-        λexx,λeyy,λezz,λeyz,λezx,λexy = sy.symbols("exx, eyy, ezz, eyz, ezx, exy", cls=sy.Function)
-        exx = λexx(*self.εs)
-        eyy = λeyy(*self.εs)
-        ezz = λezz(*self.εs)
-        eyz = λeyz(*self.εs)
-        ezx = λezx(*self.εs)
-        exy = λexy(*self.εs)
-        self.es = (exx,eyy,ezz,eyz,ezx,exy)
+        self.es = tuple(λe(*self.εs) for λe in sy.symbols("exx, eyy, ezz, eyz, ezx, exy", cls=sy.Function))
 
     # For the same instance of Model, ϕ is always the same, so cache it to
     # speed things up (especially for 3-par with many partial derivatives of ϕ).
@@ -184,26 +174,28 @@ class Model(ModelBase):
         # Define the quantities appearing at the various layers of the ϕ cake.
         print("model: {kind} defining auxiliary expressions".format(kind=self.kind))
 
+        strip = symutil.strip_function_arguments
+
         def voigt_to_mat(vec):
             assert len(vec) == 6
             mat = sy.Matrix.zeros(3, 3)
             for k, (r, c) in symutil.voigt_mat_idx():
                 mat[r, c] = mat[c, r] = vec[k]
+            assert symutil.is_symmetric(mat)
             return mat
 
-        B = sy.Matrix(self.Bs)     # Magnetic flux density
+        B = sy.Matrix(self.Bs)     # Magnetic flux density (as column vector)
         ε = voigt_to_mat(self.εs)  # Cauchy strain
         e = voigt_to_mat(self.es)  # Deviatoric strain
 
         εM_expr = sy.factor(sy.S("1/3") * ε.trace())  # mean volumetric strain
         defs[sy.symbols("εM")] = εM_expr  # will be inserted to e_expr; just a convenience
 
-        e_expr = ε - εM_expr * sy.eye(3)  # RHS of definition
-        assert symutil.is_symmetric(e_expr)
-
-        strip = symutil.strip_function_arguments
-        for k, (r, c) in symutil.voigt_mat_idx():
-            defs[strip(self.es[k])] = e_expr[r, c]
+        # e in terms of ε
+        val = ε - εM_expr * sy.eye(3)
+        assert symutil.is_symmetric(val)
+        for _, (r, c) in symutil.voigt_mat_idx():
+            defs[strip(e[r, c])] = val[r, c]
 
         # I4, I5, I6 in terms of (B, e)
         I4, I5, I6 = self.Is
