@@ -143,9 +143,9 @@ class CodeGenerator:
             name = symutil.derivatives_to_names_in(key)  # key is a Symbol or a Derivative
             expr = defs_input[key]
 
-            progress_header = "({iteration:d}/{total:d})".format(iteration=j+1, total=len(defs_input.keys()))
-            print("stage1: {header} {label} model: processing {name}".format(header=progress_header,
-                                                                             label=label, name=name))
+            print("stage1: ({iteration:d}/{total:d}) {label} model: processing {name}".format(iteration=j+1,
+                                                                                              total=len(defs_input.keys()),
+                                                                                              label=label, name=name))
 
             defs[key] = cls.process(expr, defs, model.simplify)
 
