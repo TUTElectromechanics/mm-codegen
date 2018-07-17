@@ -584,38 +584,23 @@ class CodeGenerator:
         outbuf.append(key_intf, "end interface\n")
 
     @classmethod
-    def run(cls, data):
+    def run(cls, s1code):
         """Generate the stage2 code (i.e. the public API) based on stage1 code.
 
         Parameters:
-            data: tuple of tuples, stage1 code.
+            s1code: tuple of tuples, stage1 code.
                 Each item should have (label, filename, content).
                 This is the output format of stage1.CodeGenerator.run().
+
+                If you need additional user-defined interfaces, just paste them
+                to the end of content before calling run().
 
         Returns:
             tuple of tuples, stage2 code. Each item has the format:
                 (label, output_filename, content)
         """
-        # Add in user-defined stage1 interfaces.
-        #
-        # We just paste them to the end, so they get fed into the interface analyzer
-        # along with the automatically generated stage1 interfaces.
-        #
-        # The tag "{label}" is automatically replaced by "2par" or "3par" as appropriate.
-        def add_user_intfs(old_intf, user_intfs):
-            new_intf = []
-            for l, f, c in old_intf:
-                for filename in (fn.format(label=l) for fn in user_intfs):
-                    print("stage2: {label} model: reading user API '{file}'".format(label=l, file=filename))
-                    with open(filename, "rt", encoding="utf-8") as file:
-                        content = file.read()
-                    c += content
-                new_intf.append((l, f, c))
-            return new_intf
-
-        # we need to analyze only the interfaces (headers, ".h")
-        stage1_intf = [(l, f, c) for l, f, c in data if f.endswith(".h")]
-        stage1_intf = add_user_intfs(stage1_intf, ("mgs_{label}_phi.h", "mgs_physfields.h"))  # FIXME: hardcoded for now
+        # We need only interfaces (headers, ".h"); skip everything else.
+        stage1_intf = [(l, f, c) for l, f, c in s1code if f.endswith(".h")]
 
         generated_code_out = []
         for i, (label, input_filename, content) in enumerate(stage1_intf):
@@ -697,6 +682,24 @@ def load_stage1_files():
         s1code.append((label,filename,content))
     return s1code
 
+def add_user_intfs(s1code, user_intfs):
+    """Add in user-defined stage1 interfaces.
+
+    We just paste them to the end, so they get handled on equal footing
+    with any stage1 generated code.
+
+    The tag "{label}" is replaced by the label from the model.
+    """
+    new_intf = []
+    for l, f, c in s1code:
+        for filename in (fn.format(label=l) for fn in user_intfs):
+            print("stage2: {label} model: reading user API '{file}'".format(label=l, file=filename))
+            with open(filename, "rt", encoding="utf-8") as file:
+                content = file.read()
+            c += content
+        new_intf.append((l, f, c))
+    return new_intf
+
 def main():
 #    # we could call stage1, like this:
 #    import stage1
@@ -706,6 +709,7 @@ def main():
     # (much faster if no need to update the stage1 files; stage1 is slow
     #  since it needs to do a lot of symbolic math).
     s1code = load_stage1_files()
+    s1code = add_user_intfs(s1code, ("mgs_{label}_phi.h", "mgs_physfields.h"))  # FIXME: hardcoded for now
 
     s2code = CodeGenerator.run(s1code)  # stage2 CodeGenerator
 
