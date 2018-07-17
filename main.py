@@ -42,38 +42,42 @@ import os
 import argparse
 
 class Main:
+    """Main program."""
+
     # no constructor, this is OOFP with just static and class methods.
 
-    path = "."
-
     @classmethod
-    def run(cls, stage):
+    def run(cls, stage, path):
         """Run a stage of the code generator.
 
         Parameters:
             stage: int, 1 or 2
                 Stage of code generation.
+                  1: model to internal API
+                  2: internal API to public API
 
         Returns:
-            None. Invokes write() to write output to files.
+            None. Each stage invokes write() to write output to files.
         """
         assert stage in (1, 2)
-
-        path = cls.path
-
         if stage == 1:
-            import stage1
-            from splinemodel import Model as SplineModel
-            for model in (SplineModel(kind="2par"), SplineModel(kind="3par")):
-                code = stage1.CodeGenerator.run(model)
-
+            cls.run_stage1(path)
         else: # stage == 2:
-            import stage2
-            s1code = stage2.load_stage1_intfs(path)
-            s1code = stage2.add_intfs(s1code, path, ("mgs_{label}_phi.h", "mgs_physfields.h"))
-            code = stage2.CodeGenerator.run(s1code)
+            cls.run_stage2(path)
 
-        cls.write(code, path, stage)
+    @classmethod
+    def run_stage1(cls, path):  # path: for output files
+        import stage1
+        from splinemodel import Model as SplineModel
+        for model in (SplineModel(kind="2par"), SplineModel(kind="3par")):
+            cls.write(stage1.CodeGenerator.run(model), path, stage=1)
+
+    @classmethod
+    def run_stage2(cls, path):  # path: for input and output files
+        import stage2
+        s1code = stage2.load_stage1_intfs(path)
+        s1code = stage2.add_intfs(s1code, path, ("mgs_{label}_phi.h", "mgs_physfields.h"))
+        cls.write(stage2.CodeGenerator.run(s1code), path, stage=2)
 
     @staticmethod
     def write(code, path, stage):
@@ -111,21 +115,22 @@ def main():
                                 help='Run stage1 (model to internal API) only.' )
     group_behavior.add_argument('-s2', '--stage2-only', dest='s2_only', default=False, action='store_true',
                                 help='Run stage2 (internal API to public API) only.' )
+    group_behavior.add_argument('-o', '--output-path', dest='path', default=".", type=str, metavar='xxx',
+                                help="Data file path (default %(default)s). Output in stage1, both input and output in stage2." )
 
-    opts = vars(parser.parse_args())
-    enabled = lambda x: x in opts and opts[x] == True
+    opts = parser.parse_args()
 
-    if all(enabled(x) for x in ("s1_only", "s2_only")):
+    if opts.s1_only and opts.s2_only:
         raise ValueError("Cannot specify both -s1 and -s2.")
-    elif enabled("s1_only"):
+    elif opts.s1_only:
         stages = (1,)
-    elif enabled("s2_only"):
+    elif opts.s2_only:
         stages = (2,)
     else:
         stages = (1, 2)
 
     for stage in stages:
-        Main.run(stage)
+        Main.run(stage, opts.path)
 
 if __name__ == '__main__':
     main()
