@@ -164,7 +164,7 @@ class CodeGenerator:
 def main():
     from splinemodel import Model as SplineModel
     for model in (SplineModel(kind="2par"), SplineModel(kind="3par")):
-        code = CodeGenerator.run(model)  # stage1 CodeGenerator
+        code = CodeGenerator.run(model)
 
         for label, filename, content in code:
             print("stage1: writing %s for %s" % (filename, label))
