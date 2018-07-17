@@ -1,5 +1,7 @@
 [MASTER]
 
+# see  pylint --list-msgs  to find IDs
+
 # Specify a configuration file.
 #rcfile=
 
@@ -48,7 +50,7 @@ enable=bad-indentation,mixed-indentation,unnecessary-semicolon,superfluous-paren
 #disable=
 # https://medium.com/@acboulder/type-hints-are-scary-f52d07a36a31#.81j60taq0
 #unidiomatic-typecheck doesn't exist? (different pylint version?)
-disable=format,design,similarities,cyclic-import,import-error,broad-except,no-self-use,no-name-in-module,invalid-name,abstract-method,star-args,import-self,no-init,locally-disabled
+disable=format,design,similarities,cyclic-import,import-error,broad-except,no-self-use,no-name-in-module,invalid-name,abstract-method,star-args,import-self,no-init,len-as-condition,locally-disabled
 
 [REPORTS]
 
