@@ -23,6 +23,7 @@ Created on Tue Oct 24 14:07:45 2017
 """
 
 import re
+import os
 
 from iterutil import uniqify
 from util import fold_fortran_code, TextMultiBuffer
@@ -599,8 +600,7 @@ class CodeGenerator:
             tuple of tuples, stage2 code. Each item has the format:
                 (label, output_filename, content)
         """
-        # We need only interfaces (headers, ".h"); skip everything else.
-        stage1_intf = [(l, f, c) for l, f, c in s1code if f.endswith(".h")]
+        stage1_intf = intfs_only(s1code)
 
         generated_code_out = []
         for i, (label, input_filename, content) in enumerate(stage1_intf):
@@ -658,10 +658,14 @@ class CodeGenerator:
         return generated_code_out
 
 ##############################################################################
-# Main program (stage2 only)
+# Main program (stage2)
 ##############################################################################
 
-def load_stage1_files(path):
+def intfs_only(s1code):
+    """Given s1code, keep only interfaces (.h); ignore implementations (.f90)."""
+    return [(l, f, c) for l, f, c in s1code if f.endswith(".h")]
+
+def load_stage1_intfs(path):
     """Load interfaces of stage1 generated code.
 
     Parameters:
@@ -682,7 +686,6 @@ def load_stage1_files(path):
             content: str
                 File content as one string (containing linefeeds).
     """
-    import os
     p_maybepath = r"(?:.*{pathsep})?".format(pathsep=os.path.sep)
     p_basename = r"mgs_(.*)_impl"
     p_interface = r"\.h"
@@ -710,28 +713,51 @@ def load_stage1_files(path):
 
     return [(getlabel(f), os.path.basename(f), read(f)) for f in matching_files]
 
-def add_user_intfs(s1code, user_intfs):
-    """Add in user-defined stage1 interfaces.
+def add_intfs(s1code, path, basenames):
+    """Add user-defined stage1 interfaces.
 
-    We just paste them to the end, so they get handled on equal footing
-    with any stage1 generated code.
+    Parameters:
+        s1code: [(label,filename,content), ...]
+            As output by ``load_stage1_intfs()`` or ``stage1.CodeGenerator.run()``.
 
-    The tag "{label}" is replaced by the label from the model.
+        path: str
+            Filesystem path to read data from. Relative or absolute.
+            No final pathsep. Example: "." for the current directory.
+
+        basenames: list(str)
+            Basenames of files containing additional user-defined interfaces.
+
+            Their content is just pasted to the end of the s1code content of
+            each model, so they get handled on equal footing with any stage1
+            generated code.
+
+            In the basenames, the tag "{label}" is replaced by each label from
+            s1code. Any missing files are ignored (so it's ok for a file to
+            exist for only some of the models).
+
+    Returns:
+        [(label,filename,content), ...]
+            where each content has been updated with the additional interfaces.
     """
-    new_intf = []
+    out = []
     for l, f, c in s1code:
-        for filename in (fn.format(label=l) for fn in user_intfs):
-            print("stage2: {label} model: reading user API '{file}'".format(label=l, file=filename))
-            with open(filename, "rt", encoding="utf-8") as file:
-                content = file.read()
-            c += content
-        new_intf.append((l, f, c))
-    return new_intf
+        for basename in (fn.format(label=l) for fn in basenames):
+            filename = os.path.join(path, basename)
+            try:
+                with open(filename, "rt", encoding="utf-8") as file:
+                    print("stage2: {label} model: reading additional interface '{file}'".format(label=l, file=basename))
+                    content = file.read()
+                c += content
+            except FileNotFoundError:
+                print("stage2: {label} model: no match for '{file}', ignoring".format(label=l, file=basename))
+        out.append((l, f, c))
+    return out
 
 def main():
-    s1code = load_stage1_files(path=".")
-    s1code = add_user_intfs(s1code, ("mgs_{label}_phi.h", "mgs_physfields.h"))  # FIXME: hardcoded for now
-    s2code = CodeGenerator.run(s1code)  # stage2 CodeGenerator
+    path = "."
+    s1code = load_stage1_intfs(path)
+    s1code = add_intfs(s1code, path, ("mgs_{label}_phi.h", "mgs_physfields.h"))
+    s2code = CodeGenerator.run(s1code)
 
     for label, filename, content in s2code:
         print("stage2: writing {file} for {label}".format(file=filename, label=label))
