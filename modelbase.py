@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Interface for models.
 
-See model.py for a real-world usage example.
+See splinemodel.py for a real-world usage example.
 
 Created on Thu Nov  9 10:39:51 2017
 

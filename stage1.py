@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 """Stage1 code generator: model to internal API.
 
-The generated stage1 functions are standalone pieces where all quantities
-appearing on the RHS of a definition are included into the formal parameter list
-of the function (even if there is another stage1 function that could be used
-to compute that quantity). Dependencies are analyzed later, in stage2.
+At stage1, each generated function is a standalone piece, which requires as
+function arguments the values for all symbols that the expression refers to
+(even if there is another stage1 function that could be used to compute that
+quantity). This format is convenient to generate in SymPy.
+
+Dependencies are analyzed later, in stage2.
 
 Created on Tue Oct 24 14:07:45 2017
 
