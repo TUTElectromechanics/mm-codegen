@@ -166,9 +166,7 @@ class Model(ModelBase):
         defs[sy.symbols("ϕp")] = expr
 
         # All 1st and 2nd derivatives of ϕ.
-        #
         # No danger of confusion in naming; e.g. dϕ_du vs. dϕ_dBx.
-        # For humans, it's obvious which ϕ is meant in each case.
         independent_vars = sorted(self.indepvars.keys())
         secondder_varlists = combinations_with_replacement(independent_vars, 2)
 
@@ -184,72 +182,55 @@ class Model(ModelBase):
             defs[sym] = expr
 
         # Define the quantities appearing at the various layers of the ϕ cake.
-        #
         print("model: {kind} defining auxiliary expressions".format(kind=self.kind))
 
-        Bx,By,Bz = self.Bs
-        εxx,εyy,εzz,εyz,εzx,εxy = self.εs
+        def voigt_to_mat(vec):
+            assert len(vec) == 6
+            mat = sy.Matrix.zeros(3, 3)
+            for k, (r, c) in symutil.voigt_mat_idx():
+                mat[r, c] = mat[c, r] = vec[k]
+            return mat
 
-        # Magnetic flux density.
-        B = sy.Matrix( [Bx, By, Bz] )
-
-        # Cauchy strain. Voigt notation:
-        #   ε = [[ε1, ε6, ε5],
-        #        [ε6, ε2, ε4],
-        #        [ε5, ε4, ε3]]
-        ε = sy.Matrix( [[εxx, εxy, εzx],
-                        [εxy, εyy, εyz],
-                        [εzx, εyz, εzz]] )
-
-        # Deviatoric strain.
-        #
-        exx,eyy,ezz,eyz,ezx,exy = self.es
-        e = sy.Matrix([[exx, exy, ezx],
-                       [exy, eyy, eyz],
-                       [ezx, eyz, ezz]])
+        B = sy.Matrix(self.Bs)     # Magnetic flux density
+        ε = voigt_to_mat(self.εs)  # Cauchy strain
+        e = voigt_to_mat(self.es)  # Deviatoric strain
 
         εM_expr = sy.factor(sy.S("1/3") * ε.trace())  # mean volumetric strain
-        e_expr  = ε - εM_expr * sy.eye(3)
-        assert e_expr[1,0] == e_expr[0,1]  # exy
-        assert e_expr[2,0] == e_expr[0,2]  # ezx
-        assert e_expr[1,2] == e_expr[2,1]  # eyz
-        defs[sy.symbols("εM")] = εM_expr  # already inserted to e_expr; just a convenience
+        defs[sy.symbols("εM")] = εM_expr  # will be inserted to e_expr; just a convenience
+
+        e_expr = ε - εM_expr * sy.eye(3)  # RHS of definition
+        assert symutil.is_symmetric(e_expr)
+
         strip = symutil.strip_function_arguments
-        defs[strip(exx)] = e_expr[0,0]
-        defs[strip(eyy)] = e_expr[1,1]
-        defs[strip(ezz)] = e_expr[2,2]
-        defs[strip(eyz)] = e_expr[1,2]
-        defs[strip(ezx)] = e_expr[0,2]
-        defs[strip(exy)] = e_expr[0,1]
+        for k, (r, c) in symutil.voigt_mat_idx():
+            defs[strip(self.es[k])] = e_expr[r, c]
 
         # I4, I5, I6 in terms of (B, e)
-        I4, I5, I6 = sy.symbols("I4, I5, I6")
+        I4, I5, I6 = self.Is
         for key, val, kind in ((I4, B.T * B, None),
                                (I5, B.T * e * B, None),
                                (I6, B.T * e * e * B, "3par")): # only in 3par model
             if kind is None or kind == self.kind:
                 assert val.shape == (1,1)  # result should be scalar
                 expr = val[0,0]  # extract scalar from matrix wrapper
-                defs[key] = self.simplify(expr)
+                defs[strip(key)] = self.simplify(expr)
 
         # u', v', w' in terms of (I4, I5, I6)
-        up, vp, wp = sy.symbols("up, vp, wp")
-        I4, I5, I6 = self.Is
+        up, vp, wp = self.ups
         for key, val, kind in ((up, sy.sqrt(I4), None),
                                (vp, sy.S("3/2") * I5 / I4, None),
                                (wp, sy.sqrt(I6*I4 - I5**2) / I4, "3par")):
             if kind is None or kind == self.kind:
-                defs[key] = val  # no simplification possible; just save.
+                defs[strip(key)] = val  # no simplification possible; just save.
 
         # u, v, w in terms of (u', v', w')
-        u, v, w = sy.symbols("u, v, w")
-        up, vp, wp = self.ups
+        u, v, w = self.us
         u0, v0, w0 = sy.symbols("u0, v0, w0")
         for key, val, kind in ((u, up / u0, None),
                                (v, vp / v0, None),
                                (w, wp / w0, "3par")):
             if kind is None or kind == self.kind:
-                defs[key] = val
+                defs[strip(key)] = val
 
         assert all(isinstance(key, (sy.Symbol, sy.Derivative)) for key in defs)
         return defs

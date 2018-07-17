@@ -172,3 +172,33 @@ def derivatives_to_names_in(expr, as_fortran_identifier=False):
         # we must return an Expr, so wrap the identifier in a Symbol
         return sy.symbols(name_derivative(fname, vnames, as_fortran_identifier=as_fortran_identifier))
     return map_instancesof_in(rename, sy.Derivative, expr)
+
+def is_symmetric(mat):
+    """Return whether a sy.Matrix is symmetric."""
+    n, nc = mat.shape
+    return nc == n and all(mat[j,i] == mat[i,j] for i in range(n) for j in range(i+1, n))
+
+def voigt_mat_idx():
+    """Return conversion table between Voigt-packed vector and matrix notation.
+
+    Returns:
+        ((k, (r, c)), ...)
+          where
+            k: index in Voigt-packed vector (0-based)
+            r: row in matrix (0-based)
+            c: column in matrix (0-based)
+
+    Example (math notation):
+
+        ε_voigt = [εxx,εyy,εzz,εyz,εzx,εxy] = [ε1,ε2,ε3,ε4,ε5,ε6]
+
+        ε_mat = [[ε1, ε6, ε5]
+                 [ε6, ε2, ε4]
+                 [ε5, ε4, ε3]]
+    """
+    return ((0, (0, 0)),
+            (1, (1, 1)),
+            (2, (2, 2)),
+            (3, (1, 2)),
+            (4, (0, 2)),
+            (5, (0, 1)))
