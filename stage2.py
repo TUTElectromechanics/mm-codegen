@@ -589,12 +589,11 @@ class CodeGenerator:
         """Generate the stage2 code (i.e. the public API) based on stage1 code.
 
         Parameters:
-            s1code: tuple of tuples, stage1 code.
-                Each item should have (label, filename, content).
-                This is the output format of stage1.CodeGenerator.run().
+            s1code: [(label, filename, content), ...]
+                Stage1 code, in the output format of stage1.CodeGenerator.run().
 
-                If you need additional user-defined interfaces, just paste them
-                to the end of content before calling run().
+                If you need additional user-defined interfaces, use add_intfs()
+                on s1code before calling run().
 
         Returns:
             tuple of tuples, stage2 code. Each item has the format:
@@ -752,17 +751,3 @@ def add_intfs(s1code, path, basenames):
                 print("stage2: {label} model: no match for '{file}', ignoring".format(label=l, file=basename))
         out.append((l, f, c))
     return out
-
-def main():
-    path = "."
-    s1code = load_stage1_intfs(path)
-    s1code = add_intfs(s1code, path, ("mgs_{label}_phi.h", "mgs_physfields.h"))
-    s2code = CodeGenerator.run(s1code)
-
-    for label, filename, content in s2code:
-        print("stage2: writing {file} for {label}".format(file=filename, label=label))
-        with open(filename, "wt", encoding="utf-8") as f:
-            f.write(content)
-
-if __name__ == '__main__':
-    main()

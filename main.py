@@ -38,19 +38,69 @@ Created on Mon Nov  6 13:32:31 2017
 
 __version__ = '1.0.0'
 
+import os
 import argparse
 
-def run(stage):
-    assert stage in (1, 2)
+class Main:
+    # no constructor, this is OOFP with just static and class methods.
 
-    if stage == 1:
-        import stage1
-        stage1.main()
-    else: # stage == 2:
-        import stage2
-        stage2.main()
+    path = "."
+
+    @classmethod
+    def run(cls, stage):
+        """Run a stage of the code generator.
+
+        Parameters:
+            stage: int, 1 or 2
+                Stage of code generation.
+
+        Returns:
+            None. Invokes write() to write output to files.
+        """
+        assert stage in (1, 2)
+
+        path = cls.path
+
+        if stage == 1:
+            import stage1
+            from splinemodel import Model as SplineModel
+            for model in (SplineModel(kind="2par"), SplineModel(kind="3par")):
+                code = stage1.CodeGenerator.run(model)
+
+        else: # stage == 2:
+            import stage2
+            s1code = stage2.load_stage1_intfs(path)
+            s1code = stage2.add_intfs(s1code, path, ("mgs_{label}_phi.h", "mgs_physfields.h"))
+            code = stage2.CodeGenerator.run(s1code)
+
+        cls.write(code, path, stage)
+
+    @staticmethod
+    def write(code, path, stage):
+        """Write generated code to files.
+
+        Parameters:
+            code: [(label, filename, content), ...]
+                See ``stage1.CodeGenerator.run()`` and ``stage2.CodeGenerator.run()``.
+
+            path: str
+                Filesystem path to write to. Relative or absolute.
+                No final pathsep. Example: "." for the current directory.
+
+            stage: int, 1 or 2
+                Stage of code generation. For message only.
+
+        Returns:
+            None
+        """
+        for label, basename, content in code:
+            filename = os.path.join(path, basename)
+            print("stage{s}: writing {file} for {label}".format(s=stage, file=basename, label=label))
+            with open(filename, "wt", encoding="utf-8") as f:
+                f.write(content)
 
 def main():
+    """Handle command-line arguments and run the main program."""
     parser = argparse.ArgumentParser(description="""Code generator for elmer-mgs-galfenol.""",
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
@@ -75,7 +125,7 @@ def main():
         stages = (1, 2)
 
     for stage in stages:
-        run(stage)
+        Main.run(stage)
 
 if __name__ == '__main__':
     main()

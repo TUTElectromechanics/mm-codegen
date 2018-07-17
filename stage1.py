@@ -161,16 +161,3 @@ class CodeGenerator:
         # remove Unicode Greek characters.
         return [(label, filename, util.degreek(content, short=True))
                   for filename, content in generated_code]
-
-def main():
-    from splinemodel import Model as SplineModel
-    for model in (SplineModel(kind="2par"), SplineModel(kind="3par")):
-        code = CodeGenerator.run(model)
-
-        for label, filename, content in code:
-            print("stage1: writing {file} for {label}".format(file=filename, label=label))
-            with open(filename, "wt", encoding="utf-8") as f:
-                f.write(content)
-
-if __name__ == '__main__':
-    main()
