@@ -188,6 +188,8 @@ def voigt_mat_idx():
             r: row in matrix (0-based)
             c: column in matrix (0-based)
 
+        The matrix is symmetric; (r, c) pairs are given for the upper triangle only.
+
     Example (math notation):
 
         ε_voigt = [εxx,εyy,εzz,εyz,εzx,εxy] = [ε1,ε2,ε3,ε4,ε5,ε6]
