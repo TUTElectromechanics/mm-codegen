@@ -661,26 +661,51 @@ class CodeGenerator:
 # Main program (stage2 only)
 ##############################################################################
 
-def load_stage1_files():
-    """Load stage1 data from disk and return list of tuples (label,filename,content)."""
-    def relevant(filename):
-        return len(re.findall(r"[23]par_impl.*\.(f90|h)", filename))
-    def npar(filename):
-        groups = re.findall(r"(\d+par)", filename)  # 2par, 3par
-        return groups[0]
+def load_stage1_files(path):
+    """Load interfaces of stage1 generated code.
+
+    Parameters:
+        path: str
+            Filesystem path to read data from. Relative or absolute.
+            No final pathsep. Example: "." for the current directory.
+
+    Returns:
+        [(label,filename,content), ...]
+          where
+            label: str
+                Label from the model. Deduced from the filename.
+            filename: str
+                Basename of the file (no path).
+            content: str
+                File content as one string (containing linefeeds).
+    """
     import os
-    path = "."
-    just_files = [x for x in os.listdir(path) if os.path.isfile(os.path.join(path, x))]
-    matching_files = [x for x in just_files if relevant(x)]
+    p_maybepath = r"(?:.*{pathsep})?".format(pathsep=os.path.sep)
+    p_basename = r"mgs_(.*)_impl"
+    p_interface = r"\.h"
+    pattern = "{maybepath}{basename}{interface}".format(maybepath=p_maybepath,
+                                                        basename=p_basename,
+                                                        interface=p_interface)
+    def relevant(filename):
+        return len(re.findall(pattern, filename))
+    def getlabel(filename):
+        matches = re.findall(pattern, filename)
+        assert len(matches) == 1
+        group = matches[0]
+        return group
+
+    files_and_dirs = [os.path.join(path, x) for x in os.listdir(path)]
+    files = [x for x in files_and_dirs if os.path.isfile(x)]
+    matching_files = [x for x in files if relevant(x)]
     if not len(matching_files):
         raise(ValueError("No stage1 files found; please generate them first by running stage1.py."))
-    s1code = []
-    for filename in matching_files:
-        label = npar(filename)
+
+    def read(filename):
         with open(filename, "rt", encoding="utf-8") as f:
             content = f.read()
-        s1code.append((label,filename,content))
-    return s1code
+        return content
+
+    return [(getlabel(f), os.path.basename(f), read(f)) for f in matching_files]
 
 def add_user_intfs(s1code, user_intfs):
     """Add in user-defined stage1 interfaces.
@@ -701,16 +726,8 @@ def add_user_intfs(s1code, user_intfs):
     return new_intf
 
 def main():
-#    # we could call stage1, like this:
-#    import stage1
-#    s1code = stage1.CodeGenerator.run()
-
-    # But we can just load stage1 files to be able to run s2 standalone
-    # (much faster if no need to update the stage1 files; stage1 is slow
-    #  since it needs to do a lot of symbolic math).
-    s1code = load_stage1_files()
+    s1code = load_stage1_files(path=".")
     s1code = add_user_intfs(s1code, ("mgs_{label}_phi.h", "mgs_physfields.h"))  # FIXME: hardcoded for now
-
     s2code = CodeGenerator.run(s1code)  # stage2 CodeGenerator
 
     for label, filename, content in s2code:
