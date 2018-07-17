@@ -73,12 +73,13 @@ class CodeGenerator:
                     fj_inargs: (arg1, arg2, ..., argm): tuple(str)
                         intent(in) args of fj. Ordering preserved.
                     fj_meta: dict
-                        Metadata record for an argument:
+                        Metadata record (metarec) for fj.
+                        Contains metadata for arguments in fj_allargs:
                           argname: (dtype, intent, dimspec)
                             where dimspec is None for non-arrays.
                         Special case: for argname=fj itself, contains the
-                                      metadata record for the return value
-                                      of the function (functions only!).
+                                      metadata for the return value of the
+                                      function (functions only!).
 
                 Similarly for subroutines (sj, sj_allargs, sj_inargs, sj_meta).
 
@@ -291,7 +292,7 @@ class CodeGenerator:
 
         Returns:
             tuple (bound, free), where each item is:
-              set of ``(level, arg, fname)`` tuples:
+              set of ``(level, arg, fname)`` tuples (argument records, argrecs):
                 where
                   ``level`` (int) is the recursion depth where ``arg`` was
                   seen. A ``level`` of 0 means top level. A level ``i > 0``
