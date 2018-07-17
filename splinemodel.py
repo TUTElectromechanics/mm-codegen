@@ -10,6 +10,12 @@ The derivatives ∂ϕ/∂u, ∂ϕ/∂v, ∂ϕ/∂w must be externally supplied.
 In terms of these ∂ϕ/∂u, ∂ϕ/∂v, ∂ϕ/∂w, any partial derivatives introduced
 by the chain rule are automatically generated.
 
+This module does **not** implement splines; the spline implementation is
+to be externally supplied by the user-defined additional stage1 interfaces.
+This only handles the layer cake of auxiliary variables, to translate
+from the physical fields (B, ε) to the auxiliary domain (u, v, w)
+where the splines are defined.
+
 Created on Tue Oct 24 14:07:45 2017
 
 @author: Juha Jeronen <juha.jeronen@tut.fi>

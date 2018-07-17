@@ -20,8 +20,6 @@ from sympy.utilities.codegen import codegen  # not imported by default
 import symutil
 import util
 
-from model import Model  # TODO: parameterize this?
-
 class CodeGenerator:
     """Generate stage1 Fortran code (internal functions)."""
 
@@ -120,58 +118,58 @@ class CodeGenerator:
                   for k in sorted(defs.keys(), key=symutil.sortkey)]
 
     @classmethod
-    def run(cls):
-        """Generate stage1 Fortran code for both 2-parameter and 3-parameter models."""
+    def run(cls, model):
+        """Generate stage1 Fortran code.
 
-        # TODO: maybe take a Model as input?
-        models = (Model(kind="2par"), Model(kind="3par"))
+        Parameters:
+            model: Instance of a class implementing the ModelBase interface.
+                The mathematical model.
 
-        generated_code_out = []
-        for i, model in enumerate(models):
-            label = model.kind
-            progress_header_outer = "(%d/%d)" % (i+1, len(models))
-            print("stage1: %s %s model: initializing" % (progress_header_outer, label))
+        Returns:
+            tuple of tuples, stage1 code. Each item has the format:
+                (label, output_filename, content)
+        """
+        label = model.kind
+        print("stage1: %s model: initializing" % (label))
 
-            defs_input = model.define_api()  # input, original definitions
+        defs_input = model.define_api()  # input, original definitions
 
-            print("stage1: %s %s model: analyzing API" % (progress_header_outer, label))
+        print("stage1: %s model: analyzing API" % (label))
 
-            # Compute any needed derivatives which are not already in the API
-            # and for which we have the defs.
-            defs = defs_input.copy()  # output, final optimized definitions
-            for j, key in enumerate(sorted(defs_input.keys(), key=symutil.sortkey)):  # sort for progress readability
-                name = symutil.derivatives_to_names_in(key)  # key is a Symbol or a Derivative
-                expr = defs_input[key]
+        # Compute any needed derivatives which are not already in the API
+        # and for which we have the defs.
+        defs = defs_input.copy()  # output, final optimized definitions
+        for j, key in enumerate(sorted(defs_input.keys(), key=symutil.sortkey)):  # sort for progress readability
+            name = symutil.derivatives_to_names_in(key)  # key is a Symbol or a Derivative
+            expr = defs_input[key]
 
-                progress_header_inner = "(%d/%d)" % (j+1, len(defs_input.keys()))
-                progress_header = "%s %s" % (progress_header_outer, progress_header_inner)
-                print("stage1: %s %s model: processing %s" % (progress_header, label, name))
+            progress_header = "(%d/%d)" % (j+1, len(defs_input.keys()))
+            print("stage1: %s %s model: processing %s" % (progress_header, label, name))
 
-                defs[key] = cls.process(expr, defs, model.simplify)
+            defs[key] = cls.process(expr, defs, model.simplify)
 
-            # Generate the Fortran code.
-            print("stage1: %s %s model: generating code" % (progress_header_outer, label))
+        print("stage1: %s model: generating code" % (label))
 
-            basename = "mgs_%s_impl" % (label)  # filename without extension
-            name_expr_pairs = cls.make_name_expr_pairs(defs)
-            generated_code = codegen(name_expr_pairs,
-                                     language="f95",
-                                     project="elmer-mgs-galfenol",
-                                     prefix=basename)
+        basename = "mgs_%s_impl" % (label)  # filename without extension
+        name_expr_pairs = cls.make_name_expr_pairs(defs)
+        generated_code = codegen(name_expr_pairs,
+                                 language="f95",
+                                 project="elmer-mgs-galfenol",
+                                 prefix=basename)
 
-            for filename, content in generated_code:
-                content = util.degreek(content, short=True)  # remove Unicode
-                generated_code_out.append((label, filename, content))
-
-        return generated_code_out
+        # remove Unicode Greek characters.
+        return [(label, filename, util.degreek(content, short=True))
+                  for filename, content in generated_code]
 
 def main():
-    code = CodeGenerator.run()  # stage1 CodeGenerator
+    from splinemodel import Model as SplineModel
+    for model in (SplineModel(kind="2par"), SplineModel(kind="3par")):
+        code = CodeGenerator.run(model)  # stage1 CodeGenerator
 
-    for label, filename, content in code:
-        print("stage1: writing %s for %s" % (filename, label))
-        with open(filename, "wt", encoding="utf-8") as f:
-            f.write(content)
+        for label, filename, content in code:
+            print("stage1: writing %s for %s" % (filename, label))
+            with open(filename, "wt", encoding="utf-8") as f:
+                f.write(content)
 
 if __name__ == '__main__':
     main()
