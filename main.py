@@ -36,12 +36,46 @@ Created on Mon Nov  6 13:32:31 2017
 @author: Juha Jeronen <juha.jeronen@tut.fi>
 """
 
-import stage1
-import stage2
+__version__ = '1.0.0'
+
+import argparse
+
+def run(stage):
+    assert stage in (1, 2)
+
+    if stage == 1:
+        import stage1
+        stage1.main()
+    else: # stage == 2:
+        import stage2
+        stage2.main()
 
 def main():
-    stage1.main()
-    stage2.main()
+    parser = argparse.ArgumentParser(description="""Code generator for elmer-mgs-galfenol.""",
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+
+    parser.add_argument( '-v', '--version', action='version', version=('%(prog)s ' + __version__) )
+
+    group_behavior = parser.add_argument_group('behavior', 'Behavior options.')
+    group_behavior.add_argument('-s1', '--stage1-only', dest='s1_only', default=False, action='store_true',
+                                help='Run stage1 (model to internal API) only.' )
+    group_behavior.add_argument('-s2', '--stage2-only', dest='s2_only', default=False, action='store_true',
+                                help='Run stage2 (internal API to public API) only.' )
+
+    opts = vars(parser.parse_args())
+    enabled = lambda x: x in opts and opts[x] == True
+
+    if all(enabled(x) for x in ("s1_only", "s2_only")):
+        raise ValueError("Cannot specify both -s1 and -s2.")
+    elif enabled("s1_only"):
+        stages = (1,)
+    elif enabled("s2_only"):
+        stages = (2,)
+    else:
+        stages = (1, 2)
+
+    for stage in stages:
+        run(stage)
 
 if __name__ == '__main__':
     main()
