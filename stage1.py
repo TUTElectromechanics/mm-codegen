@@ -130,11 +130,11 @@ class CodeGenerator:
                 (label, output_filename, content)
         """
         label = model.kind
-        print("stage1: %s model: initializing" % (label))
+        print("stage1: {label} model: initializing".format(label=label))
 
         defs_input = model.define_api()  # input, original definitions
 
-        print("stage1: %s model: analyzing API" % (label))
+        print("stage1: {label} model: analyzing API".format(label=label))
 
         # Compute any needed derivatives which are not already in the API
         # and for which we have the defs.
@@ -143,14 +143,15 @@ class CodeGenerator:
             name = symutil.derivatives_to_names_in(key)  # key is a Symbol or a Derivative
             expr = defs_input[key]
 
-            progress_header = "(%d/%d)" % (j+1, len(defs_input.keys()))
-            print("stage1: %s %s model: processing %s" % (progress_header, label, name))
+            progress_header = "({iteration:d}/{total:d})".format(iteration=j+1, total=len(defs_input.keys()))
+            print("stage1: {header} {label} model: processing {name}".format(header=progress_header,
+                                                                             label=label, name=name))
 
             defs[key] = cls.process(expr, defs, model.simplify)
 
-        print("stage1: %s model: generating code" % (label))
+        print("stage1: {label} model: generating code".format(label=label))
 
-        basename = "mgs_%s_impl" % (label)  # filename without extension
+        basename = "mgs_{label}_impl".format(label=label)  # filename without extension
         name_expr_pairs = cls.make_name_expr_pairs(defs)
         generated_code = codegen(name_expr_pairs,
                                  language="f95",
@@ -167,7 +168,7 @@ def main():
         code = CodeGenerator.run(model)
 
         for label, filename, content in code:
-            print("stage1: writing %s for %s" % (filename, label))
+            print("stage1: writing {file} for {label}".format(file=filename, label=label))
             with open(filename, "wt", encoding="utf-8") as f:
                 f.write(content)
 
