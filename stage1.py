@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Code generator for evaluating the partial derivatives of the potential ϕ.
+"""Stage1 code generator: model to internal API.
 
-ϕ = ϕ(u,v,w). The derivatives ∂ϕ/∂u, ∂ϕ/∂v, ∂ϕ/∂w must be externally supplied.
-
-In terms of these ∂ϕ/∂u, ∂ϕ/∂v, ∂ϕ/∂w, any partial derivatives introduced
-by the chain rule are automatically generated.
+The generated stage1 functions are standalone pieces where all quantities
+appearing on the RHS of a definition are included into the formal parameter list
+of the function (even if there is another stage1 function that could be used
+to compute that quantity). Dependencies are analyzed later, in stage2.
 
 Created on Tue Oct 24 14:07:45 2017
 
