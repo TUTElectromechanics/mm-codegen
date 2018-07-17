@@ -2,12 +2,31 @@
 # -*- coding: utf-8 -*-
 """Stage1 code generator: model to internal API.
 
-At stage1, each generated function is a standalone piece, which requires as
-function arguments the values for all symbols that the expression refers to
+At stage1, each generated Fortran function is a standalone piece, which requires
+as function arguments the values for all symbols that the expression refers to
 (even if there is another stage1 function that could be used to compute that
-quantity). This format is convenient to generate in SymPy.
+quantity). This format is convenient to generate in SymPy. Dependencies are
+analyzed later, in stage2.
 
-Dependencies are analyzed later, in stage2.
+The RHSs of quantities may depend also on derivatives of other quantities defined
+in the model; definitions for any needed derivatives are automatically generated,
+by symbolically differentiating the definition of the original quantity
+referred to (and then algebraically simplifying the result). Any derivatives
+that the definitions show to be identically zero are automatically dropped.
+
+This derivative processing is performed recursively to catch any new derivatives
+that may appear on the RHS in the differentiation. Circular lookups are treated
+as an error; if this happens, check the definitions.
+
+SymPy applied functions (unspecified function with known dependencies) are
+allowed on the RHSs, since they can be formally differentiated.
+
+For the definition format, see modelbase.py.
+
+Finally, note that it is not necessary to define everything in stage1;
+if you have a custom Fortran code to compute some functions (and/or their
+derivatives), just tell stage2 about its interface, and those functions will
+be considered as stage1 code (on equal footing with any code generated here).
 
 Created on Tue Oct 24 14:07:45 2017
 

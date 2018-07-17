@@ -34,7 +34,7 @@ class ModelBase:
             has been defined, then stage1 will automatically derive ∂f/∂x by
             differentiating the RHS of "f", and add it to the definitions.
 
-          - Chain rule based expressions for the derivatives of a potential,
+          - Chain rule based expressions for the derivatives of a function,
             represented as a SymPy applied function (i.e. unspecified function,
             but with specified dependencies), in terms of other SymPy applied
             functions, and at the final layer, in terms of independent variables.
@@ -62,13 +62,15 @@ class ModelBase:
         On the LHS, bare SymPy symbols are used (even if a function).
 
         On the LHS, to represent a derivative, use an unevaluated Derivative
-        instance. Example: sy.Derivative(ϕ, Bx, evaluate=False) means ∂ϕ/∂Bx.
+        instance with bare symbols in it (with function arguments stripped).
+        Example: ∂ϕ/∂Bx is represented by sy.Derivative(ϕ, Bx, evaluate=False).
 
         RHS is a SymPy expression; applied functions can be used here if needed.
+        Do not strip the RHSs - that will confuse the differentiation logic.
 
         CAUTION:
-            To reliably produce these unevaluated derivatives, first use an
-            applied function (with the desired dependencies), differentiate
+            To reliably produce unevaluated derivatives for LHS names, first use
+            an applied function (with the desired dependencies), differentiate
             that, and finally strip the result. This is required, since strictly
             speaking, for bare symbols ∂x/∂x = 1 and ∂y/∂x = 0 for all y ≠ x.
 
@@ -90,7 +92,21 @@ class ModelBase:
                 λf = sy.symbols("f", cls=sy.Function)  # undefined function
                 f = λf(x, y)                           # applied function
                 d2fdxdy = D(D(f, x), y)  # --> ok  (just D(f, x, y) also ok)
-                LHSname = symutil.strip_function_arguments(d2fdxdy)  # --> "Derivative(f, x, y)"
+                name = symutil.strip_function_arguments(d2fdxdy)  # --> "Derivative(f, x, y)"
+
+            The same strategy for name generation applies also to layer cakes:
+
+                λg = sy.symbols("g", cls=sy.Function)
+                g = λg(f)
+                dgdf = D(g, f)  # --> ok, Derivative(g(f(x)), f(x))
+                name = symutil.strip_function_arguments(dgdf)  # --> "Derivative(g, f)"
+
+                dgdx = D(g, x).doit().doit()
+                name = symutil.strip_function_arguments(dgdx)  # --> "Derivative(g, x)"
+
+            In the last example, the first .doit() evaluates the differentiation,
+            and the second changes the format of the result to standard notation.
+            See splinemodel.py for another example (search for "doit").
 
         Abstract method, must be overridden in a derived class.
 
