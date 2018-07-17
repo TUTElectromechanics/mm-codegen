@@ -669,6 +669,9 @@ def load_stage1_files(path):
             Filesystem path to read data from. Relative or absolute.
             No final pathsep. Example: "." for the current directory.
 
+            Will be scanned for filenames of the form "mgs_*_impl.h",
+            where the wildcard gives the model label.
+
     Returns:
         [(label,filename,content), ...]
           where
