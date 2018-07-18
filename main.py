@@ -44,8 +44,9 @@ class Main:
     @classmethod
     def run_stage1(cls, path):  # path: for output files
         import stage1
+        from polymodel import Model as PolyModel
         from splinemodel import Model as SplineModel
-        for model in (SplineModel(kind="2par"), SplineModel(kind="3par")):
+        for model in (PolyModel(), SplineModel(kind="2par"), SplineModel(kind="3par")):
             cls.write(stage1.CodeGenerator.run(model), path, stage=1)
 
     @classmethod
