@@ -68,13 +68,11 @@ class Model(PotentialModelBase):
         # No danger of confusion in naming; e.g. dϕ_dI1 vs. dϕ_dBx.
         independent_vars = sorted(self.indepvars.keys())
         secondder_varlists = combinations_with_replacement(independent_vars, 2)
-
         allqs = [(var,) for var in independent_vars]
         allqs.extend(secondder_varlists)
-#        allqs = (("Bx",), ("Bx","Bx"),)  # DEBUG
-        for i, qs in enumerate(allqs):
+        for i, qs in enumerate(allqs, start=1):
             print("model: {kind} ({iteration:d}/{total:d}) forming expression for {name}".format(kind=self.label,
-                                                                                                 iteration=i+1,
+                                                                                                 iteration=i,
                                                                                                  total=len(allqs),
                                                                                                  name=util.name_derivative("ϕ", qs)))
             sym, expr = self.dϕdq(qs, strip=False)
@@ -127,9 +125,9 @@ class Model(PotentialModelBase):
         *αs, = sy.symbols("α1:{:d}".format(nα+1))  # comma to make tuple context
         *βs, = sy.symbols("β1:{:d}".format(nβ+1))
         *γs, = sy.symbols("γ1:{:d}".format(nγ+1))
-        I4_terms = sum(αi * I4**(i+1) for i, αi in enumerate(αs))  # i+1, 0-based numbering
-        I5_terms = sum(βi * I5**(i+1) for i, βi in enumerate(βs))
-        I6_terms = sum(γi * I6**(i+1) for i, γi in enumerate(γs))
+        I4_terms = sum(αi * I4**i for i, αi in enumerate(αs, start=1))
+        I5_terms = sum(βi * I5**i for i, βi in enumerate(βs, start=1))
+        I6_terms = sum(γi * I6**i for i, γi in enumerate(γs, start=1))
         ϕ_magn = I4_terms + I5_terms + I6_terms
 
         defs[strip(self.ϕ)] = ϕ_mech + ϕ_magn

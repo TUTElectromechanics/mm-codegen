@@ -605,9 +605,9 @@ class CodeGenerator:
         stage1_intf = intfs_only(s1code)
 
         generated_code_out = []
-        for i, (label, input_filename, content) in enumerate(stage1_intf):
+        for i, (label, input_filename, content) in enumerate(stage1_intf, start=1):
 
-            progress_header_outer = "({iteration:d}/{total:d})".format(iteration=i+1, total=len(stage1_intf))
+            progress_header_outer = "({iteration:d}/{total:d})".format(iteration=i, total=len(stage1_intf))
             print("stage2: {outer_progress} {label} model: generating public API based on '{file}'".format(outer_progress=progress_header_outer,
                                                                                                            label=label,
                                                                                                            file=input_filename))
@@ -637,9 +637,9 @@ class CodeGenerator:
             # Generate public API for functions, then for subroutines.
             for objtype, (objs, _, _) in (("function",   data_funcs),
                                           ("subroutine", data_subroutines)):
-                for j, (stage1_oname, stage1_args) in enumerate(objs):
+                for j, (stage1_oname, stage1_args) in enumerate(objs, start=1):
 
-                    progress_header_inner = "({iteration:d}/{total:d})".format(iteration=j+1, total=len(objs))
+                    progress_header_inner = "({iteration:d}/{total:d})".format(iteration=j, total=len(objs))
                     progress_header = "{outer_progress} {inner_progress}".format(outer_progress=progress_header_outer,
                                                                                  inner_progress=progress_header_inner)
                     print("stage2: {header} {label} model: public API for {objtype} {name}".format(header=progress_header,

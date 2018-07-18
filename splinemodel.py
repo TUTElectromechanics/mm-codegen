@@ -103,13 +103,11 @@ class Model(PotentialModelBase):
         # No danger of confusion in naming; e.g. dϕ_du vs. dϕ_dBx.
         independent_vars = sorted(self.indepvars.keys())
         secondder_varlists = combinations_with_replacement(independent_vars, 2)
-
         allqs = [(var,) for var in independent_vars]
         allqs.extend(secondder_varlists)
-#        allqs = (("Bx",), ("Bx","Bx"),)  # DEBUG
-        for i, qs in enumerate(allqs):
+        for i, qs in enumerate(allqs, start=1):
             print("model: {kind} ({iteration:d}/{total:d}) forming expression for {name}".format(kind=self.label,
-                                                                                                 iteration=i+1,
+                                                                                                 iteration=i,
                                                                                                  total=len(allqs),
                                                                                                  name=util.name_derivative("ϕ", qs)))
             sym, expr = self.dϕdq(qs, strip=False)

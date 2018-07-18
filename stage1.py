@@ -160,11 +160,11 @@ class CodeGenerator:
         # Compute any needed derivatives which are not already in the API
         # and for which we have the defs.
         defs = defs_input.copy()  # output, final optimized definitions
-        for j, key in enumerate(sorted(defs_input.keys(), key=symutil.sortkey)):  # sort for progress readability
+        for j, key in enumerate(sorted(defs_input.keys(), key=symutil.sortkey), start=1):  # sort for progress readability
             name = symutil.derivatives_to_names_in(key)  # key is a Symbol or a Derivative
             expr = defs_input[key]
 
-            print("stage1: ({iteration:d}/{total:d}) {label} model: processing {name}".format(iteration=j+1,
+            print("stage1: ({iteration:d}/{total:d}) {label} model: processing {name}".format(iteration=j,
                                                                                               total=len(defs_input.keys()),
                                                                                               label=label, name=name))
 
