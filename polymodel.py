@@ -60,7 +60,7 @@ class Model(PotentialModelBase):
         defs = {}
 
 #        # This needed only if ϕ provided externally at stage2. We define ϕ in the model.
-#        print("model: {kind} forming expression for ϕ".format(kind=self.label))
+#        print("model: {label} forming expression for ϕ".format(label=self.label))
 #        sym, expr = self.dϕdq(qs=(), strip=False)
 #        defs[sy.symbols("ϕp")] = expr  # ϕ' to avoid name conflict with user code "phi".
 
@@ -71,15 +71,15 @@ class Model(PotentialModelBase):
         allqs = [(var,) for var in independent_vars]
         allqs.extend(secondder_varlists)
         for i, qs in enumerate(allqs, start=1):
-            print("model: {kind} ({iteration:d}/{total:d}) forming expression for {name}".format(kind=self.label,
-                                                                                                 iteration=i,
-                                                                                                 total=len(allqs),
-                                                                                                 name=util.name_derivative("ϕ", qs)))
+            print("model: {label} ({iteration:d}/{total:d}) forming expression for {name}".format(label=self.label,
+                                                                                                  iteration=i,
+                                                                                                  total=len(allqs),
+                                                                                                  name=util.name_derivative("ϕ", qs)))
             sym, expr = self.dϕdq(qs, strip=False)
             defs[sym] = expr
 
         # Define the quantities appearing at the various layers of the ϕ cake.
-        print("model: {kind} writing definitions".format(kind=self.label))
+        print("model: {label} writing definitions".format(label=self.label))
 
         strip = symutil.strip_function_arguments
 

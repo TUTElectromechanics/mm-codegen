@@ -95,7 +95,7 @@ class Model(PotentialModelBase):
         # On the RHS, we put just "ϕ", thus telling stage2 that ϕ' depends
         # on the user-defined function ϕ(u, v, w). Then stage2 does the rest,
         # so that the public API for ϕ' indeed takes B and ε as its args.
-        print("model: {kind} forming expression for ϕ".format(kind=self.label))
+        print("model: {label} forming expression for ϕ".format(label=self.label))
         sym, expr = self.dϕdq(qs=(), strip=False)
         defs[sy.symbols("ϕp")] = expr
 
@@ -106,15 +106,15 @@ class Model(PotentialModelBase):
         allqs = [(var,) for var in independent_vars]
         allqs.extend(secondder_varlists)
         for i, qs in enumerate(allqs, start=1):
-            print("model: {kind} ({iteration:d}/{total:d}) forming expression for {name}".format(kind=self.label,
-                                                                                                 iteration=i,
-                                                                                                 total=len(allqs),
-                                                                                                 name=util.name_derivative("ϕ", qs)))
+            print("model: {label} ({iteration:d}/{total:d}) forming expression for {name}".format(label=self.label,
+                                                                                                  iteration=i,
+                                                                                                  total=len(allqs),
+                                                                                                  name=util.name_derivative("ϕ", qs)))
             sym, expr = self.dϕdq(qs, strip=False)
             defs[sym] = expr
 
         # Define the quantities appearing at the various layers of the ϕ cake.
-        print("model: {kind} writing definitions".format(kind=self.label))
+        print("model: {label} writing definitions".format(label=self.label))
 
         strip = symutil.strip_function_arguments
 
@@ -133,29 +133,29 @@ class Model(PotentialModelBase):
 
         # I4, I5, I6 in terms of (B, e)
         I4, I5, I6 = self.Is
-        for key, val, kind in ((I4, B.T * B, None),
-                               (I5, B.T * e * B, None),
-                               (I6, B.T * e * e * B, "3par")): # only in 3par model
-            if kind is None or kind == self.label:
+        for key, val, label in ((I4, B.T * B, None),
+                                (I5, B.T * e * B, None),
+                                (I6, B.T * e * e * B, "3par")): # only in 3par model
+            if label is None or label == self.label:
                 assert val.shape == (1,1)  # result should be scalar
                 expr = val[0,0]  # extract scalar from matrix wrapper
                 defs[strip(key)] = self.simplify(expr)
 
         # u', v', w' in terms of (I4, I5, I6)
         up, vp, wp = self.ups
-        for key, val, kind in ((up, sy.sqrt(I4), None),
-                               (vp, sy.S("3/2") * I5 / I4, None),
-                               (wp, sy.sqrt(I6*I4 - I5**2) / I4, "3par")):
-            if kind is None or kind == self.label:
+        for key, val, label in ((up, sy.sqrt(I4), None),
+                                (vp, sy.S("3/2") * I5 / I4, None),
+                                (wp, sy.sqrt(I6*I4 - I5**2) / I4, "3par")):
+            if label is None or label == self.label:
                 defs[strip(key)] = val  # no simplification possible; just save.
 
         # u, v, w in terms of (u', v', w')
         u, v, w = self.us
         u0, v0, w0 = sy.symbols("u0, v0, w0")
-        for key, val, kind in ((u, up / u0, None),
-                               (v, vp / v0, None),
-                               (w, wp / w0, "3par")):
-            if kind is None or kind == self.label:
+        for key, val, label in ((u, up / u0, None),
+                                (v, vp / v0, None),
+                                (w, wp / w0, "3par")):
+            if label is None or label == self.label:
                 defs[strip(key)] = val
 
         assert all(isinstance(key, (sy.Symbol, sy.Derivative)) for key in defs)
