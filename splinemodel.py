@@ -24,7 +24,6 @@ Created on Tue Oct 24 14:07:45 2017
 import sympy as sy
 
 import symutil
-import util
 
 from potentialmodelbase import PotentialModelBase
 
