@@ -57,12 +57,14 @@ class PotentialModelBase(ModelBase):
                 Use an empty tuple to skip differentiation and get just ϕ itself.
 
             strip: bool
-                If True, pass the generated expr through ``symutil.strip_function_arguments()``
+                See return value for definitions of ``sym`` and ``expr``.
+
+                If True, pass expr through ``symutil.strip_function_arguments()``
                 before returning it, replacing applied functions with bare symbols.
 
-                If False, return the generated expr as-is.
+                If False, return expr as-is.
 
-                sym (the name) is always stripped.
+                sym is always stripped.
 
         Example:
             m = Model()
@@ -72,6 +74,11 @@ class PotentialModelBase(ModelBase):
 
         Returns:
             tuple (sym, expr)
+                sym: sy.Derivative
+                    Name of the derivative. Unevaluated derivative with bare
+                    symbols, e.g. sy.Derivative(ϕ, Bx, Bx, evaluate=False).
+                expr: sy.Expr
+                    The result of the symbolic differentiation.
         """
         invalid_inputs = [q for q in qs if q not in self.indepvars]
         if len(invalid_inputs):
