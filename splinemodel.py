@@ -47,7 +47,7 @@ class Model(ModelBase):
         """
         if kind not in ("2par", "3par"):
             raise ValueError("Unknown kind '{invalid}'; valid: '2par', '3par'".format(invalid=kind))
-        self.kind = kind
+        self.label = kind
 
         # es and εs are listed in Voigt ordering; see symutil.voigt_mat_idx().
         self.Bs = sy.symbols("Bx, By, Bz")
@@ -114,9 +114,9 @@ class Model(ModelBase):
         self.us = u, v, w
 
         # Finally, the normalized u, v, w are the formal parameters of ϕ.
-        if self.kind == "2par":
+        if kind == "2par":
             self.ϕ = fsym("ϕ", u, v)
-        else: # self.kind == "3par":
+        else: # kind == "3par":
             self.ϕ = fsym("ϕ", u, v, w)
 
     def define_api(self):
@@ -141,7 +141,7 @@ class Model(ModelBase):
         # On the RHS, we put just "ϕ", thus telling stage2 that ϕ' depends
         # on the user-defined function ϕ(u, v, w). Then stage2 does the rest,
         # so that the public API for ϕ' indeed takes B and ε as its args.
-        print("model: {kind} forming expression for ϕ".format(kind=self.kind))
+        print("model: {kind} forming expression for ϕ".format(kind=self.label))
         sym, expr = self.dϕdq(qs=(), strip=False)
         defs[sy.symbols("ϕp")] = expr
 
@@ -154,7 +154,7 @@ class Model(ModelBase):
         allqs.extend(secondder_varlists)
 #        allqs = (("Bx",), ("Bx","Bx"),)  # DEBUG
         for i, qs in enumerate(allqs):
-            print("model: {kind} ({iteration:d}/{total:d}) forming expression for {name}".format(kind=self.kind,
+            print("model: {kind} ({iteration:d}/{total:d}) forming expression for {name}".format(kind=self.label,
                                                                                                  iteration=i+1,
                                                                                                  total=len(allqs),
                                                                                                  name=util.name_derivative("ϕ", qs)))
@@ -162,7 +162,7 @@ class Model(ModelBase):
             defs[sym] = expr
 
         # Define the quantities appearing at the various layers of the ϕ cake.
-        print("model: {kind} defining auxiliary expressions".format(kind=self.kind))
+        print("model: {kind} defining auxiliary expressions".format(kind=self.label))
 
         strip = symutil.strip_function_arguments
 
@@ -192,7 +192,7 @@ class Model(ModelBase):
         for key, val, kind in ((I4, B.T * B, None),
                                (I5, B.T * e * B, None),
                                (I6, B.T * e * e * B, "3par")): # only in 3par model
-            if kind is None or kind == self.kind:
+            if kind is None or kind == self.label:
                 assert val.shape == (1,1)  # result should be scalar
                 expr = val[0,0]  # extract scalar from matrix wrapper
                 defs[strip(key)] = self.simplify(expr)
@@ -202,7 +202,7 @@ class Model(ModelBase):
         for key, val, kind in ((up, sy.sqrt(I4), None),
                                (vp, sy.S("3/2") * I5 / I4, None),
                                (wp, sy.sqrt(I6*I4 - I5**2) / I4, "3par")):
-            if kind is None or kind == self.kind:
+            if kind is None or kind == self.label:
                 defs[strip(key)] = val  # no simplification possible; just save.
 
         # u, v, w in terms of (u', v', w')
@@ -211,7 +211,7 @@ class Model(ModelBase):
         for key, val, kind in ((u, up / u0, None),
                                (v, vp / v0, None),
                                (w, wp / w0, "3par")):
-            if kind is None or kind == self.kind:
+            if kind is None or kind == self.label:
                 defs[strip(key)] = val
 
         assert all(isinstance(key, (sy.Symbol, sy.Derivative)) for key in defs)
@@ -329,8 +329,8 @@ class Model(ModelBase):
 def test():
     scrub = symutil.derivatives_to_names_in
     for kind in ("2par", "3par"):
+        print(kind)
         m = Model(kind)
-        print(m.kind)
         api = m.define_api()
         api_humanreadable = {scrub(k): scrub(v) for k, v in api.items()}
         print(api_humanreadable)

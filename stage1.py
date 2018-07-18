@@ -150,7 +150,7 @@ class CodeGenerator:
             tuple of tuples, stage1 code. Each item has the format:
                 (label, output_filename, content)
         """
-        label = model.kind
+        label = model.label
         print("stage1: {label} model: initializing".format(label=label))
 
         defs_input = model.define_api()  # input, original definitions
