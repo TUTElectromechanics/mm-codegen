@@ -81,17 +81,17 @@ class Model(ModelBase):
             λf = sy.symbols(name, cls=sy.Function)
             return λf(*deps)
 
-        # es and εs are listed in Voigt ordering; see symutil.voigt_mat_idx().
+        # We use the component form, because sy.diff() cannot differentiate w.r.t.
+        # a sy.MatrixSymbol. The component form is also good for Fortran conversion.
+        #
+        # εs and es are listed in Voigt ordering; see symutil.voigt_mat_idx().
         self.Bs = sy.symbols("Bx, By, Bz")
         self.εs = sy.symbols("εxx, εyy, εzz, εyz, εzx, εxy")
 
         # All independent variables
         self.indepvars = {s.name:s for s in self.Bs + self.εs}
 
-        # Deviatoric strain. Tell SymPy e = e(ε), without an explicit expression.
-        #
-        # Use the component form, because sy.diff() cannot differentiate w.r.t.
-        # a sy.MatrixSymbol. The component form is also good for Fortran conversion.
+        # Deviatoric strain. Declare e = e(ε), no explicit expression yet.
         self.es = tuple(fsym(name, *self.εs) for name in ("exx", "eyy", "ezz", "eyz", "ezx", "exy"))
 
         # Build ϕ as a SymPy applied function.
