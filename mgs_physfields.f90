@@ -154,7 +154,7 @@ REAL*8, intent(out), dimension(1:9, 1:9) :: dS_deps_out
 ! rank-4 tensor packed into rank-2 array
 !
 ! Definition in index notation:
-!   (∂σ/∂ε)_{ijkl} = ∂(σ_{ij}/∂(ε_{kl})
+!   (∂σ/∂ε)_{ijkl} = ∂(σ_{ij})/∂(ε_{kl})
 !
 ! where i, j, k and l = 1,2,3 (each independently)
 !
