@@ -96,8 +96,7 @@ class PotentialModelBase(ModelBase):
         #   Make an unknown function ϕ; then convert it to an applied function
         #   that depends on all indepvars; then perform differentiations (if any);
         #   finally, strip the argument lists from the result.
-        λϕ = sy.symbols("ϕ", cls=sy.Function)
-        sym = λϕ(*self.indepvars.values())  # **Symbols** of the indepvars
+        sym = symutil.make_function("ϕ", *self.indepvars.values())  # **Symbols** of the indepvars
 
         # For the expression part (RHS of the API function being generated),
         # we use ϕ(u, v, w), where u, v, w then depend on... and so on,

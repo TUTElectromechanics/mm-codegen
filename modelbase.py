@@ -89,24 +89,22 @@ class ModelBase:
 
                 import symutil
                 x, y = sy.symbols("x, y")
-                λf = sy.symbols("f", cls=sy.Function)  # undefined function
-                f = λf(x, y)                           # applied function
+                f = symutil.make_function("f", x, y)
                 d2fdxdy = D(D(f, x), y)  # --> ok  (just D(f, x, y) also ok)
                 name = symutil.strip_function_arguments(d2fdxdy)  # --> "Derivative(f, x, y)"
 
             The same strategy for name generation applies also to layer cakes:
 
-                λg = sy.symbols("g", cls=sy.Function)
-                g = λg(f)
+                g = symutil.make_function("g", f)
                 dgdf = D(g, f)  # --> ok, Derivative(g(f(x)), f(x))
                 name = symutil.strip_function_arguments(dgdf)  # --> "Derivative(g, f)"
 
-                dgdx = D(g, x).doit().doit()
-                name = symutil.strip_function_arguments(dgdx)  # --> "Derivative(g, x)"
+                dgdx_name = symutil.strip_function_arguments(D(g, x))  # --> "Derivative(g, x)"
+                dgdx_expr = (sy.diff(g, x)).doit()  # --> Derivative(f(x, y), x)*Derivative(g(f(x, y)), f(x, y))
 
-            In the last example, the first .doit() evaluates the differentiation,
-            and the second changes the format of the result to standard notation.
-            See splinemodel.py for another example (search for "doit").
+            In the last example, the .doit() changes the format of the result
+            to standard notation. See PotentialModelBase.dϕdq() for another example
+            (search for "doit").
 
         Abstract method, must be overridden in a derived class.
 
