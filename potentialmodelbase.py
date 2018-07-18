@@ -57,7 +57,7 @@ class PotentialModelBase(ModelBase):
                 Use an empty tuple to skip differentiation and get just ϕ itself.
 
             strip: bool
-                If True, pass the generated expr through symutil.strip_function_arguments()
+                If True, pass the generated expr through ``symutil.strip_function_arguments()``
                 before returning it, replacing applied functions with bare symbols.
 
                 If False, return the generated expr as-is.
@@ -134,12 +134,15 @@ class PotentialModelBase(ModelBase):
         return (sym, expr)
 
     def dϕ_dqs(self, jacobian=True, hessian=True):
-        """Return 1st and 2nd derivatives of ϕ.
+        """Return 1st and 2nd derivatives of ϕ w.r.t. all independent variables.
 
-        If ϕ is a layer cake, it will be differentiated only formally (using the
-        chain rule), without inserting any definitions. This is convenient,
-        since by keeping the functional relations intact we avoid generating
-        common subexpressions.
+        Convenience function. This is essentially a loop over ``dϕ_dq()``,
+        to differentiate self.ϕ symbolically.
+
+        If ϕ is a layer cake of SymPy applied functions, it will be differentiated
+        only formally (using the chain rule), without inserting any definitions.
+        This is convenient, since by keeping the functional relations intact
+        we avoid generating (possibly lengthy) common subexpressions.
 
         (stage2 takes care of actually calling the functions to obtain the
          necessary values at each step of evaluating the RHS.)
@@ -153,11 +156,8 @@ class PotentialModelBase(ModelBase):
         Returns:
             dict(sy.Symbol -> sy.Expr)
               where
-                key: bare symbol representing the derivative
-                value: expression, obtained by differentiating self.ϕ symbolically
-
-            Keys are stripped using ``symutil.strip_function_arguments()``.
-            The RHS values are not stripped.
+                key: see sym in ``dϕ_dq()``
+                value: see expr in ``dϕ_dq()``
         """
         ivars = sorted(self.indepvars.keys())  # names (str) of indep vars
         out = {}
