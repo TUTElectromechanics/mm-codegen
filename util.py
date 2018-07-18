@@ -242,10 +242,6 @@ class TextMultiBuffer:
         # single-key case
         addto(key, text)
 
-    def buffers(self):
-        """Get keys of currently defined named buffers."""
-        return self.data.keys()
-
     def get(self, key):
         """Get content of named buffer.
 
@@ -260,7 +256,7 @@ class TextMultiBuffer:
         return self.data[key]
 
     def keys(self):
-        """Return the currently defined keys."""
+        """Get keys of currently defined named buffers."""
         return self.data.keys()
 
     def values(self):
