@@ -86,7 +86,7 @@ class Model(PotentialModelBase):
         I1, I2, I4, I5, I6 = self.Is
         for key, val in ((I1, ε.trace()),
                          (I2, (ε.T * ε).trace())):
-            defs[strip(key)] = val
+            defs[strip(key)] = self.simplify(val)
 
         # I4, I5, I6 in terms of (B, e)
         for key, val in ((I4, B.T * B),
