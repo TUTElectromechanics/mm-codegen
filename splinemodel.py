@@ -237,9 +237,9 @@ class Model(ModelBase):
 
         Example:
             m = Model(kind="2par")
-            m.dϕdq(("Bx",), strip=True)      # ∂ϕ/∂Bx
-            m.dϕdq(("Bx","Bx"), strip=True)  # ∂²ϕ/∂Bx²
-            m.dϕdq(("Bx","By"), strip=True)  # ∂²ϕ/∂BxBy
+            m.dϕdq(("Bx",), strip=False)      # ∂ϕ/∂Bx
+            m.dϕdq(("Bx","Bx"), strip=False)  # ∂²ϕ/∂Bx²
+            m.dϕdq(("Bx","By"), strip=False)  # ∂²ϕ/∂BxBy
 
         Returns:
             tuple (sym, expr)
