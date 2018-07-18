@@ -63,7 +63,7 @@ class Model(PotentialModelBase):
 
         # All 1st and 2nd derivatives of ϕ w.r.t. the independent vars B and ε.
         # Formally, without inserting expressions.
-        defs.update(self.dϕ_dqs())
+        defs.update(self.dϕdqs())
 
         # Define the quantities appearing at the various layers of the ϕ cake.
         print("model: {label} writing definitions".format(label=self.label))

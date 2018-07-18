@@ -139,10 +139,10 @@ class PotentialModelBase(ModelBase):
         assert sym != 0, "BUG in dϕdq(): symbol for function name is 0"
         return (sym, expr)
 
-    def dϕ_dqs(self, jacobian=True, hessian=True):
+    def dϕdqs(self, jacobian=True, hessian=True):
         """Return 1st and 2nd derivatives of ϕ w.r.t. all independent variables.
 
-        Convenience function. This is essentially a loop over ``dϕ_dq()``,
+        Convenience function. This is essentially a loop over ``dϕdq()``,
         to differentiate self.ϕ symbolically.
 
         If ϕ is a layer cake of SymPy applied functions, it will be differentiated
@@ -162,8 +162,8 @@ class PotentialModelBase(ModelBase):
         Returns:
             dict(sy.Symbol -> sy.Expr)
               where
-                key: see sym in ``dϕ_dq()``
-                value: see expr in ``dϕ_dq()``
+                key: see sym in ``dϕdq()``
+                value: see expr in ``dϕdq()``
         """
         ivars = sorted(self.indepvars.keys())  # names (str) of indep vars
         out = {}
