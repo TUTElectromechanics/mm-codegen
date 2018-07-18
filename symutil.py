@@ -12,6 +12,61 @@ from sympy.core.function import UndefinedFunction
 
 from util import name_derivative
 
+def make_function(name, *deps):
+    """Create an unspecified function with known dependencies.
+
+    (Convenience function.)
+
+    Parameters:
+        name: str
+            Name of the function to define.
+
+        *deps: sy.Symbol
+            Either an independent variable (bare symbol, e.g. sy.symbols("x")),
+            or to create a layer cake, a symbol previously returned by
+            ``make_function()`` itself.
+
+    Returns:
+        sy.Function
+            The applied function (see below).
+
+    In SymPy, unspecified functions are set up in two steps:
+
+    1) An "undefined function": a symbol for a generic unknown function
+       having the given symbol name.
+
+       Each function must have a unique symbol name. SymPy distinguishes
+       between symbols by symbol name, flags and Python object type
+       (e.g. sy.Symbol vs. sy.Function).
+
+    2) An "applied function" (of symbols). Calling an UndefinedFunction
+       instance, with symbols as parameters, returns an otherwise
+       unspecified function that formally depends on the given symbols.
+       Importantly, these dependencies are recognized in symbolic
+       differentiation.
+
+       SymPy creates a new Python type (class) for each function name,
+       using the symbol name of the undefined-function instance (that
+       was used to create the applied-function instance) as the name
+       of the new Python type.
+
+    Example, raw SymPy:
+
+        import sympy as sy
+        x, y = sy.symbols("x, y")              # independent variables
+        λf = sy.symbols("f", cls=sy.Function)  # undefined function
+        f = λf(x, y)                           # applied function
+        type(f)  # --> f
+
+    Using ``make_function()``:
+
+        import sympy as sy
+        x, y = sy.symbols("x, y")
+        f = make_function("f", x, y)
+    """
+    λf = sy.symbols(name, cls=sy.Function)
+    return λf(*deps)
+
 def sortkey(sym):
     """Sort key for ``sy.Symbol`` objects.
 
@@ -179,7 +234,9 @@ def is_symmetric(mat):
     return nc == n and all(mat[j,i] == mat[i,j] for i in range(n) for j in range(i+1, n))
 
 def voigt_mat_idx():
-    """Return conversion table between Voigt-packed vector and matrix notation.
+    """Return index conversion table between Voigt-packed vector and matrix.
+
+    For symmetric rank-2 tensors in 3D space.
 
     Returns:
         ((k, (r, c)), ...)
@@ -204,3 +261,24 @@ def voigt_mat_idx():
             (3, (1, 2)),
             (4, (0, 2)),
             (5, (0, 1)))
+
+def voigt_to_mat(vec):
+    """Convert Voigt-packed vector to matrix.
+
+    For symmetric rank-2 tensors in 3D space.
+
+    Parameters:
+        vec: indexable, length 6
+            See ``voigt_mat_idx()`` for which component is which.
+
+    Returns:
+        sy.Matrix, shape (3, 3)
+            The matrix representation of vec. Guaranteed to be symmetric.
+    """
+    if len(vec) != 6:
+        raise ValueError("vec should have length 6, got {invalid}".format(invalid=len(vec)))
+    mat = sy.Matrix.zeros(3, 3)
+    for k, (r, c) in voigt_mat_idx():
+        mat[r, c] = mat[c, r] = vec[k]
+    assert is_symmetric(mat)
+    return mat
