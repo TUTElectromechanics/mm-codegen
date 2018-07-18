@@ -25,8 +25,6 @@ from itertools import combinations_with_replacement
 
 import sympy as sy
 
-from memoize import memoize
-
 from reccollect import recursive_collect # sometimes better than sy.rcollect (maybe due to autosyms).
 import symutil
 import util
@@ -66,11 +64,8 @@ class Model(ModelBase):
         # a sy.MatrixSymbol. The component form is also good for Fortran conversion.
         self.es = tuple(λe(*self.εs) for λe in sy.symbols("exx, eyy, ezz, eyz, ezx, exy", cls=sy.Function))
 
-    # For the same instance of Model, ϕ is always the same, so cache it to
-    # speed things up (especially for 3-par with many partial derivatives of ϕ).
-    @memoize
-    def build_ϕ(self):
-        """Build and return ϕ as a SymPy applied function."""
+        # Build ϕ as a SymPy applied function.
+        #
         # In SymPy, an unspecified function with known dependencies
         # is set up in two steps:
         #
@@ -122,12 +117,9 @@ class Model(ModelBase):
 
         # Finally, the normalized u, v, w are the formal parameters of ϕ.
         if self.kind == "2par":
-            ϕ = fsym("ϕ", u, v)
+            self.ϕ = fsym("ϕ", u, v)
         else: # self.kind == "3par":
-            ϕ = fsym("ϕ", u, v, w)
-
-        # ϕ carries with it all the information about the (nested) dependencies.
-        return ϕ
+            self.ϕ = fsym("ϕ", u, v, w)
 
     def define_api(self):
         """See docstring for ``ModelBase.define_api()``."""
@@ -145,8 +137,8 @@ class Model(ModelBase):
         # after degreeking.
         #
         # We want to keep that one as "phi", so that on the RHS, ϕ = ϕ(u, v, w),
-        # consistently with how build_ϕ() defines ϕ. Hence we name our export
-        # as "ϕp", which stands for "phi prime".
+        # consistently with how __init__() defines self.ϕ. Hence we name our
+        # export as "ϕp", which stands for "phi prime".
         #
         # On the RHS, we put just "ϕ", thus telling stage2 that ϕ' depends
         # on the user-defined function ϕ(u, v, w). Then stage2 does the rest,
@@ -278,7 +270,7 @@ class Model(ModelBase):
         # until the independent variables are reached.
         #
         # Differentiating this, SymPy will automatically apply the chain rule.
-        expr = self.build_ϕ()
+        expr = self.ϕ
 
         # In SymPy, differentiating an unknown function gives an unapplied
         # Subs (mathematical substitution) object instance:
