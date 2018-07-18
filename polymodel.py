@@ -69,7 +69,7 @@ class Model(PotentialModelBase):
         """See docstring for ``ModelBase.define_api()``."""
         defs = {}
 
-#        # We need this part only if ϕ is provided externally at stage2.
+#        # This needed only if ϕ provided externally at stage2. We define ϕ in the model.
 #        print("model: {kind} forming expression for ϕ".format(kind=self.label))
 #        sym, expr = self.dϕdq(qs=(), strip=False)
 #        defs[sy.symbols("ϕp")] = expr  # ϕ' to avoid name conflict with user code "phi".
