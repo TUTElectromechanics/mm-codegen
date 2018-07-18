@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Code generator for evaluating the partial derivatives of the potential ϕ.
-
-Note ϕ = ϕ(u,v,w). The direct partial derivatives ∂ϕ/∂u, ∂ϕ/∂v, ∂ϕ/∂w,
-the scalings u0,v0,w0 (of u = u'/u0 et al.), and the physical fields Bx,By,Bz,
-εxx,εyy,εzz,εyz,εzx,εxy must be externally supplied; everything else is
-automatically generated.
+"""Main program for the code generator.
 
 Created on Mon Nov  6 13:32:31 2017
 
