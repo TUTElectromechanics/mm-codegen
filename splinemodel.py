@@ -31,8 +31,6 @@ import util
 
 from modelbase import ModelBase
 
-# TODO: test the framework by defining another version that substitutes everything into the declaration (no separate exprs)
-
 class Model(ModelBase):
     """Generate mathematical expressions for the spline-based (B,ε) model."""
 
