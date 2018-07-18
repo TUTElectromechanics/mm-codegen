@@ -84,10 +84,7 @@ class Model(PotentialModelBase):
         self.us = u, v, w
 
         # Finally, the normalized u, v, w are the formal parameters of ϕ.
-        if kind == "2par":
-            self.ϕ = makef("ϕ", u, v)
-        else: # kind == "3par":
-            self.ϕ = makef("ϕ", u, v, w)
+        self.ϕ = makef("ϕ", u, v) if kind == "2par" else makef("ϕ", u, v, w)
 
     def define_api(self):
         """See docstring for ``ModelBase.define_api()``."""
