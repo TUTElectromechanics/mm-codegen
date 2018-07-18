@@ -83,7 +83,7 @@ class Model(ModelBase):
         #    differentiation.
         #
         #    SymPy creates a new Python type (class) for each function name,
-        #    using the symbol name of the undefined function instance (that
+        #    using the symbol name of the undefined-function instance (that
         #    was used to create the applied-function instance) as the name
         #    of the new Python type.
         #
