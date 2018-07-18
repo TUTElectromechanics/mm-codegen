@@ -11,8 +11,11 @@ Created on Wed Jul 18 13:47:54 2018
 
 from abc import ABCMeta
 
+from itertools import combinations_with_replacement
+
 import sympy as sy
 
+import util
 import symutil
 from reccollect import recursive_collect # sometimes better than sy.rcollect (maybe due to autosyms).
 
@@ -129,6 +132,50 @@ class PotentialModelBase(ModelBase):
 
         assert sym != 0, "BUG in dϕdq(): symbol for function name is 0"
         return (sym, expr)
+
+    def dϕ_dqs(self, jacobian=True, hessian=True):
+        """Return 1st and 2nd derivatives of ϕ.
+
+        If ϕ is a layer cake, it will be differentiated only formally (using the
+        chain rule), without inserting any definitions. This is convenient,
+        since by keeping the functional relations intact we avoid generating
+        common subexpressions.
+
+        (stage2 takes care of actually calling the functions to obtain the
+         necessary values at each step of evaluating the RHS.)
+
+        Parameters:
+            jacobian: bool
+                Compute first derivatives.
+            hessian: bool
+                Compute second derivatives.
+
+        Returns:
+            dict(sy.Symbol -> sy.Expr)
+              where
+                key: bare symbol representing the derivative
+                value: expression, obtained by differentiating self.ϕ symbolically
+
+            Keys are stripped using ``symutil.strip_function_arguments()``.
+            The RHS values are not stripped.
+        """
+        ivars = sorted(self.indepvars.keys())  # names (str) of indep vars
+        out = {}
+        allqs = []
+        if jacobian:
+            allqs.extend((var,) for var in ivars)
+        if hessian:
+            allqs.extend(combinations_with_replacement(ivars, 2))
+        for i, qs in enumerate(allqs, start=1):
+            print("model: {label} ({iteration:d}/{total:d}) forming expression for {name}".format(label=self.label,
+                                                                                                  iteration=i,
+                                                                                                  total=len(allqs),
+                                                                                                  name=util.name_derivative("ϕ", qs)))
+            # No danger of confusion in naming; e.g. dϕ_du vs. dϕ_dBx.
+            sym, expr = self.dϕdq(qs, strip=False)
+            out[sym] = expr
+
+        return out
 
     def simplify(self, expr):
         """Simplify expr.

@@ -26,8 +26,6 @@ Created on Wed Jul 18 13:47:54 2018
 @author: Juha Jeronen <juha.jeronen@tut.fi>
 """
 
-from itertools import combinations_with_replacement
-
 import sympy as sy
 
 import symutil
@@ -65,18 +63,7 @@ class Model(PotentialModelBase):
 #        defs[sy.symbols("ϕp")] = expr  # ϕ' to avoid name conflict with user code "phi".
 
         # All 1st and 2nd derivatives of ϕ - formally, without inserting expressions.
-        # No danger of confusion in naming; e.g. dϕ_dI1 vs. dϕ_dBx.
-        independent_vars = sorted(self.indepvars.keys())
-        secondder_varlists = combinations_with_replacement(independent_vars, 2)
-        allqs = [(var,) for var in independent_vars]
-        allqs.extend(secondder_varlists)
-        for i, qs in enumerate(allqs, start=1):
-            print("model: {label} ({iteration:d}/{total:d}) forming expression for {name}".format(label=self.label,
-                                                                                                  iteration=i,
-                                                                                                  total=len(allqs),
-                                                                                                  name=util.name_derivative("ϕ", qs)))
-            sym, expr = self.dϕdq(qs, strip=False)
-            defs[sym] = expr
+        defs.update(self.dϕ_dqs())
 
         # Define the quantities appearing at the various layers of the ϕ cake.
         print("model: {label} writing definitions".format(label=self.label))
