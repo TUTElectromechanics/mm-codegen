@@ -49,21 +49,6 @@ class Model(ModelBase):
             raise ValueError("Unknown kind '{invalid}'; valid: '2par', '3par'".format(invalid=kind))
         self.label = kind
 
-        # es and εs are listed in Voigt ordering; see symutil.voigt_mat_idx().
-        self.Bs = sy.symbols("Bx, By, Bz")
-        self.εs = sy.symbols("εxx, εyy, εzz, εyz, εzx, εxy")
-
-        # All independent variables
-        self.indepvars = {s.name:s for s in self.Bs + self.εs}
-
-        # Deviatoric strain. Tell SymPy e = e(ε), without an explicit expression.
-        #
-        # Use the component form, because sy.diff() cannot differentiate w.r.t.
-        # a sy.MatrixSymbol. The component form is also good for Fortran conversion.
-        self.es = tuple(λe(*self.εs) for λe in sy.symbols("exx, eyy, ezz, eyz, ezx, exy", cls=sy.Function))
-
-        # Build ϕ as a SymPy applied function.
-        #
         # In SymPy, an unspecified function with known dependencies
         # is set up in two steps:
         #
@@ -96,6 +81,20 @@ class Model(ModelBase):
             λf = sy.symbols(name, cls=sy.Function)
             return λf(*deps)
 
+        # es and εs are listed in Voigt ordering; see symutil.voigt_mat_idx().
+        self.Bs = sy.symbols("Bx, By, Bz")
+        self.εs = sy.symbols("εxx, εyy, εzz, εyz, εzx, εxy")
+
+        # All independent variables
+        self.indepvars = {s.name:s for s in self.Bs + self.εs}
+
+        # Deviatoric strain. Tell SymPy e = e(ε), without an explicit expression.
+        #
+        # Use the component form, because sy.diff() cannot differentiate w.r.t.
+        # a sy.MatrixSymbol. The component form is also good for Fortran conversion.
+        self.es = tuple(fsym(name, *self.εs) for name in ("exx", "eyy", "ezz", "eyz", "ezx", "exy"))
+
+        # Build ϕ as a SymPy applied function.
         I4 = fsym("I4", *self.Bs)  # i.e. in math notation, I4 = I4(Bx, By, Bz)
         I5 = fsym("I5", *(self.Bs + self.es))  # deviatoric strain!
         I6 = fsym("I6", *(self.Bs + self.es))
