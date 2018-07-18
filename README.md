@@ -9,29 +9,30 @@ Tested in Python 3.4.
 
 ## Getting started
 
-The roles of the scripts are as follows:
+The roles of the files are as follows:
 
- - [``main.py``](main.py): Top-level program to run the whole code generator in one go.
+ - [``main.py``](main.py): Top-level program. Start here. Has command-line options to run only stage1 or stage2 (if desired) and to choose the datafile path.
  - [``modelbase.py``](modelbase.py): Abstract base class that defines the API representing a mathematical model for the material. This allows later extending the program to support different material models.
- - [``model.py``](model.py): Specialization of ``ModelBase`` to our particular material model (based on the potential ϕ), as represented using SymPy.
- - [``stage1.py``](stage1.py): Take a SymPy model, generate a private Fortran 90 API.
- - [``stage2.py``](stage2.py): Take a stage1 API, and create the corresponding public Fortran 90 API.
+ - [``potentialmodelbase.py``](potentialmodelbase.py): Specialization of ``ModelBase``, still abstract. Central place to [DRY](https://en.wikipedia.org/wiki/Don't_repeat_yourself) out code for models based on the potential ϕ, using the independent variables (B, ε).
+ - [``polymodel.py``](polymodel.py): Specialization of ``PotentialModelBase`` to our particular material model, based on a global polynomial ϕ(I1, I2, I4, I5, I6) as in our EMSA2018 paper. No I3, since linear elasticity. This version supplies a definition for ϕ in the model itself, so no custom Fortran code is needed to evaluate ϕ or its immediate derivatives (∂ϕ/∂I1 etc.).
+ - [``splinemodel.py``](splinemodel.py): Specialization of ``PotentialModelBase`` to our particular material model, based on a spline representation for the potential ϕ. This module only handles the layer cake of auxiliary variables so that SymPy can apply the chain rule to e.g. ∂ϕ/∂Bx. The spline implementation for ϕ (and ∂ϕ/∂u, ∂ϕ/∂v, ∂ϕ/∂w and the second derivatives) is expected to be externally supplied at stage2 as a custom Fortran code.
+ - [``stage1.py``](stage1.py): Compiler: model to internal Fortran 90 API. Extensively utilizes SymPy.
+ - [``stage2.py``](stage2.py): Compiler: internal Fortran 90 API to public Fortran 90 API. Custom Python code.
 
 Low-level utilities are located in:
 
- - [``iterutil.py``](iterutil.py): Utilities for iterables
- - [``memoize.py``](memoize.py): Instance method memoizer [recipe by Daniel Miller](https://github.com/ActiveState/code/tree/master/recipes/Python/577452_memoize_decorator_instance), used under [MIT license](https://github.com/ActiveState/code/blob/master/recipes/Python/577452_memoize_decorator_instance/LICENSE.md). Used for accelerating computation.
- - [``numutil.py``](numutil.py): Numerical utilities
- - [``reccollect.py``](reccollect.py): Recursive collect for SymPy, with a vengeance. In some applications (such as here), leads to shorter output expressions than SymPy's own `collect()` in recursive mode, since this implementation dynamically decides on which symbols to collect first as it goes along.
+ - [``iterutil.py``](iterutil.py): Utilities for iterables.
+ - [``reccollect.py``](reccollect.py): Recursive ``collect()`` for SymPy, with a vengeance. In some applications (such as here), leads to shorter output expressions than SymPy's own `collect()` in recursive mode, since this implementation dynamically decides on which symbols to collect first as it goes along.
  - [``symutil.py``](symutil.py): Some custom utilities for SymPy, which is as much as [CAS](https://en.wikipedia.org/wiki/Computer_algebra_system) *construction kit* as it is a (relatively) complete CAS system.
  - [``util.py``](util.py): Miscellaneous utilities to make code generation easier; e.g. removal of Unicode Greek symbols, naming of derivatives, and adding line breaks to Fortran code.
+ - [``extras/numutil.py``](extras/numutil.py): Numerical utilities.
 
 Small independent programs provided for testing, development and documentation purposes:
 
- - [``converter.py``](converter.py): Convert B-spline basis functions to cubic-spline interpolated data in Elmer format. Note that this correspondence is very highly sensitive to the placement of the knots of the interpolation splines. For example, for the knot at the center of the span, even an [ulp](https://en.wikipedia.org/wiki/Unit_in_the_last_place) of difference can have a significant effect on the output.
- - [``elmerspline.py``](elmerspline.py): Python port of the cubic-spline routines in [Elmer's ``GeneralUtils.F90``](https://github.com/ElmerCSC/elmerfem/blob/devel/fem/src/GeneralUtils.F90), providing spline-based interpolation in the plane through given points. Not used in this project.
- - [``hermite_element.py``](hermite_element.py): SymPy code to automatically derive arbitrary-order 1D Hermite interpolation functions with *C<sup>k</sup>* continuity, interpolating a function and its first *k* derivatives. Not used in this project.
- - [``ppeval.py``](ppeval.py): Python evaluator for MATLAB's ppform splines in 2D, for evaluating the potential ϕ, based on its B-spline fit. The final version will contain a Fortran port of the necessary subset of ppeval.
+ - [``extras/converter.py``](extras/converter.py): Convert B-spline basis functions to cubic-spline interpolated data in Elmer format. Note that this correspondence is very highly sensitive to the placement of the knots of the interpolation splines. For example, for the knot at the center of the span, even an [ulp](https://en.wikipedia.org/wiki/Unit_in_the_last_place) of difference can have a significant effect on the output.
+ - [``extras/elmerspline.py``](extras/elmerspline.py): Python port of the cubic-spline routines in [Elmer's ``GeneralUtils.F90``](https://github.com/ElmerCSC/elmerfem/blob/devel/fem/src/GeneralUtils.F90), providing spline-based interpolation in the plane through given points. Not used in this project.
+ - [``extras/hermite_element.py``](extras/hermite_element.py): SymPy code to automatically derive arbitrary-order 1D Hermite interpolation functions with *C<sup>k</sup>* continuity, interpolating a function and its first *k* derivatives. Basically a teaching example to demonstrate some features of SymPy. Not used in this project.
+ - [``extras/ppeval.py``](extras/ppeval.py): Python evaluator for MATLAB's ppform splines in 2D, for evaluating the potential ϕ, based on its B-spline fit. The final version of the program for the spline model will contain a Fortran port of the necessary subset of ppeval.
 
 
 To get a more detailed overview of what calls or defines what, consider running [Pyan3](https://github.com/Technologicat/pyan) on the code.
@@ -41,15 +42,25 @@ To get a more detailed overview of what calls or defines what, consider running 
 
 The API is generated in two stages.
 
-Stage1 reads the mathematical definitions from Model (represented using SymPy), and applies the chain rule to determine the first and second partial derivatives of ϕ with respect to the physical fields (independent variables), e.g. ∂²ϕ/∂Bx². It then generates code to evaluate the generated chain-rule expressions, along with the expressions each of these depends on.
+At **stage1**, each generated Fortran function is a standalone piece, which requires as function arguments the values for all symbols that the expression refers to (even if there is another stage1 function that could be used to compute that quantity). This format is convenient to generate in SymPy. Dependencies are analyzed later, in stage2.
 
-After stage1, each generated function is a standalone piece, which requires as function arguments the values for all symbols that the expression refers to. This format is convenient to generate in SymPy, but inconvenient to use, since the same generated API contains also functions to compute the values for those arguments.
+The RHSs of quantities may depend also on derivatives of other quantities defined in the model; definitions for any needed derivatives are automatically generated, by symbolically differentiating the definition of the original quantity referred to (and then algebraically simplifying the result). Any derivatives that the definitions show to be identically zero are automatically dropped.
 
-This is where stage2 comes in. It takes the interface generated by stage1, and analyzes the dependencies between the functions. It generates wrapper functions, where all bound symbols - i.e. quantities defined by any of the stage1 generated functions - are automatically computed, by calling the standalone pieces generated in stage1 and recursing where necessary.
+This derivative processing is performed recursively to catch any new derivatives that may appear on the RHS in the differentiation. Circular lookups are treated as an error; if this happens, check the definitions.
 
-Each function generated by stage2 takes in values only for the free symbols - i.e. quantities **not** defined by any of the stage1 generated functions - encountered anywhere in its call tree. This makes e.g. ∂²ϕ/∂Bx² "see" the dependencies on e.g. u0, I4, and εxx.
+SymPy applied functions (unspecified function with known dependencies) are allowed on the RHSs, since they can be formally differentiated.
 
-Additional stage1 interfaces (for manually written f90 code) may be provided. The stage2 code generator adds these to the set of known stage1 functions. This is the mechanism used to pack the components of the physical fields into tensors, and to provide a hook to evaluate the potential ϕ.
+For the definition format, see [modelbase.py](modelbase.py).
+
+It is not necessary to define everything in stage1; if you have a custom Fortran code to compute some functions (and/or their derivatives), just tell stage2 about its interface, and those functions will be considered as stage1 code (on equal footing with any code generated here).
+
+**stage2** takes in the generated code from stage1, and possible additional user-defined Fortran interfaces (see ``stage2.add_intfs()``). These are treated on equal footing as stage1 code. User-defined Fortran code is the mechanism used to pack the components of the physical fields into tensors (see [``mgs_physfields.h``](mgs_physfields.h)), and to provide a hook to evaluate the potential ϕ and its immediate derivatives (∂ϕ/∂u, ∂ϕ/∂v, ∂ϕ/∂w) in the spline version (see [``mgs_2par_phi.h``](mgs_2par_phi.h), [``mgs_3par_phi.h``](mgs_3par_phi.h)).
+
+stage2 analyzes the dependencies between the stage1 functions, and writes wrappers, where all bound symbols (quantities defined by any of the stage1 functions) are automatically computed, by calling other stage1 functions (recursing where necessary).
+
+Each function generated by stage2 takes in values only for the free symbols (quantities *not* defined by any of the stage1 functions) encountered anywhere in its call tree. This makes e.g. ∂²ϕ/∂Bx² "see" the dependencies on e.g. u0, I4, and εxx.
+
+"Free symbol" is here meant in a mathematical sense; in the programming sense, these "free symbols" appear in the formal parameter list of the function being generated, so they are bound names.
 
 
 ## Dependencies
