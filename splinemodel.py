@@ -25,7 +25,6 @@ from itertools import combinations_with_replacement
 
 import sympy as sy
 
-from reccollect import recursive_collect # sometimes better than sy.rcollect (maybe due to autosyms).
 import symutil
 import util
 
@@ -49,23 +48,11 @@ class Model(PotentialModelBase):
             raise ValueError("Unknown kind '{invalid}'; valid: '2par', '3par'".format(invalid=kind))
         self.label = kind
 
-        # We use the component form, because sy.diff() cannot differentiate w.r.t.
-        # a sy.MatrixSymbol. The component form is also good for Fortran conversion.
-        #
-        # εs and es are listed in Voigt ordering; see symutil.voigt_mat_idx().
-        self.Bs = sy.symbols("Bx, By, Bz")
-        self.εs = sy.symbols("εxx, εyy, εzz, εyz, εzx, εxy")
-
-        # All independent variables
-        self.indepvars = {s.name:s for s in self.Bs + self.εs}
-
+        super().__init__()
         makef = symutil.make_function
 
-        # Deviatoric strain. Declare e = e(ε), no explicit expression yet.
-        self.es = tuple(makef(name, *self.εs)
-                          for name in ("exx", "eyy", "ezz", "eyz", "ezx", "exy"))
+        # Set up applied-function definitions for the layer cake.
 
-        # Build ϕ as a SymPy applied function.
         I4 = makef("I4", *self.Bs)  # i.e. in math notation, I4 = I4(Bx, By, Bz)
         I5 = makef("I5", *(self.Bs + self.es))  # deviatoric strain!
         I6 = makef("I6", *(self.Bs + self.es))
@@ -175,28 +162,6 @@ class Model(PotentialModelBase):
 
         assert all(isinstance(key, (sy.Symbol, sy.Derivative)) for key in defs)
         return defs
-
-    def simplify(self, expr):
-        """Simplify expr.
-
-        Specifically geared to optimize expressions treated by this class.
-        """
-        #   - expand() first to expand all parentheses (to be able to re-group)
-        #   - together() to combine rationals
-        #   - recursive_collect() to collect() on all symbols in expr, recursively.
-        #   - May leave "leftovers" in some parts of expr; e.g. for dI6/dBx,
-        #     reccollect.analyze() gives [exy, ezx, By, Bx, Bz, exx, eyz, ezz, eyy]
-        #     because overall more optimal (by the metric in analyze()) than
-        #     going "B first".
-        #   - Hence Bx will be duplicated in terms that have been collected on
-        #     [exy, ezx], in parts of expr where "B first" would have been better.
-        #   - Hence in the result, collect again, now on self.Bs (no autodetect).
-        #   - Finally, collect_const_in() to extract each constant factor
-        #     to the topmost possible level in the expression.
-        expr = recursive_collect(sy.together(sy.expand(expr)))
-        expr = recursive_collect(expr, syms=self.Bs)
-        expr = symutil.collect_const_in(expr)
-        return expr
 
 def test():
     def scrub(expr):

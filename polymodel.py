@@ -30,7 +30,6 @@ from itertools import combinations_with_replacement
 
 import sympy as sy
 
-from reccollect import recursive_collect # sometimes better than sy.rcollect (maybe due to autosyms).
 import symutil
 import util
 
@@ -43,17 +42,8 @@ class Model(PotentialModelBase):
         """Constructor."""
         self.label = "poly"
 
-        # εs and es are listed in Voigt ordering; see symutil.voigt_mat_idx().
-        self.Bs = sy.symbols("Bx, By, Bz")
-        self.εs = sy.symbols("εxx, εyy, εzz, εyz, εzx, εxy")
-
-        self.indepvars = {s.name:s for s in self.Bs + self.εs}
-
+        super().__init__()
         makef = symutil.make_function
-
-        # Deviatoric strain, e = e(ε).
-        self.es = tuple(makef(name, *self.εs)
-                          for name in ("exx", "eyy", "ezz", "eyz", "ezx", "exy"))
 
         I1 = makef("I1", *self.εs)  # Cauchy strain!
         I2 = makef("I2", *self.εs)
@@ -146,28 +136,6 @@ class Model(PotentialModelBase):
 
         assert all(isinstance(key, (sy.Symbol, sy.Derivative)) for key in defs)
         return defs
-
-    def simplify(self, expr):
-        """Simplify expr.
-
-        Specifically geared to optimize expressions treated by this class.
-        """
-        #   - expand() first to expand all parentheses (to be able to re-group)
-        #   - together() to combine rationals
-        #   - recursive_collect() to collect() on all symbols in expr, recursively.
-        #   - May leave "leftovers" in some parts of expr; e.g. for dI6/dBx,
-        #     reccollect.analyze() gives [exy, ezx, By, Bx, Bz, exx, eyz, ezz, eyy]
-        #     because overall more optimal (by the metric in analyze()) than
-        #     going "B first".
-        #   - Hence Bx will be duplicated in terms that have been collected on
-        #     [exy, ezx], in parts of expr where "B first" would have been better.
-        #   - Hence in the result, collect again, now on self.Bs (no autodetect).
-        #   - Finally, collect_const_in() to extract each constant factor
-        #     to the topmost possible level in the expression.
-        expr = recursive_collect(sy.together(sy.expand(expr)))
-        expr = recursive_collect(expr, syms=self.Bs)
-        expr = symutil.collect_const_in(expr)
-        return expr
 
 def test():
     def scrub(expr):

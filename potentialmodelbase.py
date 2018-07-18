@@ -14,12 +14,31 @@ from abc import ABCMeta
 import sympy as sy
 
 import symutil
+from reccollect import recursive_collect # sometimes better than sy.rcollect (maybe due to autosyms).
 
 from modelbase import ModelBase
 
 class PotentialModelBase(ModelBase):
-    """Abstract base class for scalar potential models."""
+    """Abstract base class for scalar potential models using (B, ε)."""
     __metaclass__ = ABCMeta
+
+    def __init__(self):
+        """Constructor.
+
+        Sets up the independent variables B, ε, and the deviatoric strain e = e(ε).
+        """
+        # We use the component form, because sy.diff() cannot differentiate w.r.t.
+        # a sy.MatrixSymbol. The component form is also good for Fortran conversion.
+        #
+        # εs and es are listed in Voigt ordering; see symutil.voigt_mat_idx().
+        self.Bs = sy.symbols("Bx, By, Bz")
+        self.εs = sy.symbols("εxx, εyy, εzz, εyz, εzx, εxy")
+
+        self.indepvars = {s.name:s for s in self.Bs + self.εs}
+
+        # Deviatoric strain. Declare e = e(ε), no explicit expression yet.
+        self.es = tuple(symutil.make_function(name, *self.εs)
+                          for name in ("exx", "eyy", "ezz", "eyz", "ezx", "exy"))
 
     def dϕdq(self, qs, strip):
         """Differentiate the potential ϕ w.r.t. given independent variables.
@@ -51,8 +70,6 @@ class PotentialModelBase(ModelBase):
         Returns:
             tuple (sym, expr)
         """
-        assert hasattr(self, "indepvars")  # if not, check your implementation!
-
         invalid_inputs = [q for q in qs if q not in self.indepvars]
         if len(invalid_inputs):
             raise ValueError("Variable(s) {invalid} not in self.indepvars".format(invalid=", ".join(invalid_inputs)))
@@ -112,3 +129,25 @@ class PotentialModelBase(ModelBase):
 
         assert sym != 0, "BUG in dϕdq(): symbol for function name is 0"
         return (sym, expr)
+
+    def simplify(self, expr):
+        """Simplify expr.
+
+        Specifically geared to optimize expressions treated by this class.
+        """
+        #   - expand() first to expand all parentheses (to be able to re-group)
+        #   - together() to combine rationals
+        #   - recursive_collect() to collect() on all symbols in expr, recursively.
+        #   - May leave "leftovers" in some parts of expr; e.g. for dI6/dBx,
+        #     reccollect.analyze() gives [exy, ezx, By, Bx, Bz, exx, eyz, ezz, eyy]
+        #     because overall more optimal (by the metric in analyze()) than
+        #     going "B first".
+        #   - Hence Bx will be duplicated in terms that have been collected on
+        #     [exy, ezx], in parts of expr where "B first" would have been better.
+        #   - Hence in the result, collect again, now on self.Bs (no autodetect).
+        #   - Finally, collect_const_in() to extract each constant factor
+        #     to the topmost possible level in the expression.
+        expr = recursive_collect(sy.together(sy.expand(expr)))
+        expr = recursive_collect(expr, syms=self.Bs)
+        expr = symutil.collect_const_in(expr)
+        return expr
