@@ -96,7 +96,8 @@ class Model(PotentialModelBase):
         sym, expr = self.dϕdq(qs=(), strip=False)
         defs[sy.symbols("ϕp")] = expr
 
-        # All 1st and 2nd derivatives of ϕ - formally, without inserting expressions.
+        # All 1st and 2nd derivatives of ϕ w.r.t. the independent vars B and ε.
+        # Formally, without inserting expressions.
         defs.update(self.dϕ_dqs())
 
         # Define the quantities appearing at the various layers of the ϕ cake.
