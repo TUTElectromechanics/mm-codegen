@@ -40,17 +40,16 @@ class Model(PotentialModelBase):
         self.label = "poly"
 
         super().__init__()
-        makef = symutil.make_function
 
-        I1 = makef("I1", *self.εs)  # Cauchy strain!
-        I2 = makef("I2", *self.εs)
-#        I3 = makef("I3", *self.εs)
-        I4 = makef("I4", *self.Bs)  # i.e. in math notation, I4 = I4(Bx, By, Bz)
-        I5 = makef("I5", *(self.Bs + self.es))  # deviatoric strain!
-        I6 = makef("I6", *(self.Bs + self.es))
-        self.Is = I1, I2, I4, I5, I6
+        self.Is = [symutil.make_function(name, *deps)
+                     for name, deps in (("I1", self.εs),  # Cauchy strain!
+                                        ("I2", self.εs),
+#                                        ("I3", self.εs),
+                                        ("I4", self.Bs),
+                                        ("I5", self.Bs + self.es),  # deviatoric strain!
+                                        ("I6", self.Bs + self.es))]
 
-        self.ϕ = makef("ϕ", *self.Is)
+        self.ϕ = symutil.make_function("ϕ", *self.Is)
 
     def define_api(self):
         """See docstring for ``ModelBase.define_api()``."""
