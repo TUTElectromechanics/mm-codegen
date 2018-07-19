@@ -23,7 +23,7 @@
 !
 ! For more information, see the implementation file.
 
-! H = ∂ϕ/∂B
+! H = -∂ϕ/∂B
 interface
 subroutine H(dphi_dBx, dphi_dBy, dphi_dBz,
              H_out)
@@ -50,7 +50,7 @@ REAL*8, intent(out), dimension(1:3, 1:3) :: dH_dB_out
 end subroutine
 end interface
 
-! σ = ∂ϕ/∂ε
+! σ = +∂ϕ/∂ε
 interface
 subroutine S(dphi_depsxx, dphi_depsyy, dphi_depszz,
              dphi_depsyz, dphi_depszx, dphi_depsxy,
