@@ -8,7 +8,7 @@
 ! This file is manually implemented, do not delete!
 !***************************************************
 
-! This is the interface expected by MagnetoStriction.f90.
+! Adaptor for Elmer. This is the interface expected by MagnetoStriction.f90.
 !
 ! Here e actually denotes the Cauchy strain ε.
 
