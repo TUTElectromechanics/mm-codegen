@@ -808,12 +808,39 @@ d2I6_dBzdexy_public = d2I6_dBzdexy(Bx, By, eyz_, ezx_)
 
 end function
 
+REAL*8 function d2I6_dexxdexy_public(Bx, By)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+
+d2I6_dexxdexy_public = d2I6_dexxdexy(Bx, By)
+
+end function
+
 REAL*8 function d2I6_dexy2_public(Bx, By)
 implicit none
 REAL*8, intent(in) :: Bx
 REAL*8, intent(in) :: By
 
 d2I6_dexy2_public = d2I6_dexy2(Bx, By)
+
+end function
+
+REAL*8 function d2I6_dexydeyy_public(Bx, By)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+
+d2I6_dexydeyy_public = d2I6_dexydeyy(Bx, By)
+
+end function
+
+REAL*8 function d2I6_dexydeyz_public(Bx, Bz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: Bz
+
+d2I6_dexydeyz_public = d2I6_dexydeyz(Bx, Bz)
 
 end function
 
@@ -1016,15 +1043,6 @@ d2I6_dexydeyz_public = d2I6_dexydeyz(Bx, Bz)
 
 end function
 
-REAL*8 function d2I6_deyydeyz_public(By, Bz)
-implicit none
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-
-d2I6_deyydeyz_public = d2I6_deyydeyz(By, Bz)
-
-end function
-
 REAL*8 function d2I6_deyz2_public(By, Bz)
 implicit none
 REAL*8, intent(in) :: By
@@ -1170,6 +1188,15 @@ REAL*8, intent(in) :: Bx
 REAL*8, intent(in) :: Bz
 
 d2I6_dezx2_public = d2I6_dezx2(Bx, Bz)
+
+end function
+
+REAL*8 function d2I6_dezxdezz_public(Bx, Bz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: Bz
+
+d2I6_dezxdezz_public = d2I6_dezxdezz(Bx, Bz)
 
 end function
 
@@ -1379,6 +1406,19 @@ d2vp_dI42_public = d2vp_dI42(I4_, I5_)
 
 end function
 
+REAL*8 function d2vp_dI4dI5_public(Bx, By, Bz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8 I4_
+
+I4_ = I4(Bx, By, Bz)
+
+d2vp_dI4dI5_public = d2vp_dI4dI5(I4_)
+
+end function
+
 REAL*8 function dvp_dI5_public(Bx, By, Bz)
 implicit none
 REAL*8, intent(in) :: Bx
@@ -1482,6 +1522,42 @@ I5_ = I5(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
 I6_ = I6(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
 
 d2wp_dI42_public = d2wp_dI42(I4_, I5_, I6_)
+
+end function
+
+REAL*8 function d2wp_dI4dI5_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
+      epszx, epszz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epsxx
+REAL*8, intent(in) :: epsxy
+REAL*8, intent(in) :: epsyy
+REAL*8, intent(in) :: epsyz
+REAL*8, intent(in) :: epszx
+REAL*8, intent(in) :: epszz
+REAL*8 exx_
+REAL*8 exy_
+REAL*8 eyy_
+REAL*8 eyz_
+REAL*8 ezx_
+REAL*8 ezz_
+REAL*8 I4_
+REAL*8 I5_
+REAL*8 I6_
+
+exx_ = exx(epsxx, epsyy, epszz)
+exy_ = exy(epsxy)
+eyy_ = eyy(epsxx, epsyy, epszz)
+eyz_ = eyz(epsyz)
+ezx_ = ezx(epszx)
+ezz_ = ezz(epsxx, epsyy, epszz)
+I4_ = I4(Bx, By, Bz)
+I5_ = I5(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
+I6_ = I6(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
+
+d2wp_dI4dI5_public = d2wp_dI4dI5(I4_, I5_, I6_)
 
 end function
 
@@ -1629,42 +1705,6 @@ d2wp_dI52_public = d2wp_dI52(I4_, I5_, I6_)
 
 end function
 
-REAL*8 function d2wp_dI5dI6_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
-      epszx, epszz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epsxx
-REAL*8, intent(in) :: epsxy
-REAL*8, intent(in) :: epsyy
-REAL*8, intent(in) :: epsyz
-REAL*8, intent(in) :: epszx
-REAL*8, intent(in) :: epszz
-REAL*8 exx_
-REAL*8 exy_
-REAL*8 eyy_
-REAL*8 eyz_
-REAL*8 ezx_
-REAL*8 ezz_
-REAL*8 I4_
-REAL*8 I5_
-REAL*8 I6_
-
-exx_ = exx(epsxx, epsyy, epszz)
-exy_ = exy(epsxy)
-eyy_ = eyy(epsxx, epsyy, epszz)
-eyz_ = eyz(epsyz)
-ezx_ = ezx(epszx)
-ezz_ = ezz(epsxx, epsyy, epszz)
-I4_ = I4(Bx, By, Bz)
-I5_ = I5(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
-I6_ = I6(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
-
-d2wp_dI5dI6_public = d2wp_dI5dI6(I4_, I5_, I6_)
-
-end function
-
 REAL*8 function dwp_dI6_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
       epszx, epszz)
 implicit none
@@ -1698,6 +1738,42 @@ I5_ = I5(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
 I6_ = I6(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
 
 dwp_dI6_public = dwp_dI6(I4_, I5_, I6_)
+
+end function
+
+REAL*8 function d2wp_dI5dI6_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
+      epszx, epszz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epsxx
+REAL*8, intent(in) :: epsxy
+REAL*8, intent(in) :: epsyy
+REAL*8, intent(in) :: epsyz
+REAL*8, intent(in) :: epszx
+REAL*8, intent(in) :: epszz
+REAL*8 exx_
+REAL*8 exy_
+REAL*8 eyy_
+REAL*8 eyz_
+REAL*8 ezx_
+REAL*8 ezz_
+REAL*8 I4_
+REAL*8 I5_
+REAL*8 I6_
+
+exx_ = exx(epsxx, epsyy, epszz)
+exy_ = exy(epsxy)
+eyy_ = eyy(epsxx, epsyy, epszz)
+eyz_ = eyz(epsyz)
+ezx_ = ezx(epszx)
+ezz_ = ezz(epsxx, epsyy, epszz)
+I4_ = I4(Bx, By, Bz)
+I5_ = I5(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
+I6_ = I6(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
+
+d2wp_dI5dI6_public = d2wp_dI5dI6(I4_, I5_, I6_)
 
 end function
 
@@ -8705,7 +8781,7 @@ dphi_dBz_ = dphi_dBz(dI4_dBz_, dI5_dBz_, dI6_dBz_, du_dup_, dup_dI4_, &
       dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_, &
       dphi_du_, dphi_dv_, dphi_dw_)
 
-H(dphi_dBx_, dphi_dBy_, dphi_dBz_, H_out)
+call H(dphi_dBx_, dphi_dBy_, dphi_dBz_, H_out)
 
 end subroutine
 
@@ -8906,8 +8982,8 @@ d2phi_dBz2_ = d2phi_dBz2(d2I4_dBz2_, d2I5_dBz2_, d2I6_dBz2_, d2up_dI42_, &
       dI6_dBz_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
       dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_du_, dphi_dv_, dphi_dw_)
 
-dH_dB(d2phi_dBx2_, d2phi_dBy2_, d2phi_dBz2_, d2phi_dBxdBy_, d2phi_dBxdBz_, &
-      d2phi_dBydBz_, dH_dB_out)
+call dH_dB(d2phi_dBx2_, d2phi_dBy2_, d2phi_dBz2_, d2phi_dBxdBy_, &
+      d2phi_dBxdBz_, d2phi_dBydBz_, dH_dB_out)
 
 end subroutine
 
@@ -9044,7 +9120,7 @@ dphi_depszz_ = dphi_depszz(dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_dezz_, dexx_depszz_, deyy_depszz_, dezz_depszz_, &
       dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
 
-S(dphi_depsxx_, dphi_depsyy_, dphi_depszz_, dphi_depsyz_, dphi_depszx_, &
+call S(dphi_depsxx_, dphi_depsyy_, dphi_depszz_, dphi_depsyz_, dphi_depszx_, &
       dphi_depsxy_, S_out)
 
 end subroutine
@@ -9336,7 +9412,7 @@ d2phi_depszz2_ = d2phi_depszz2(d2I6_dexx2_, d2I6_deyy2_, d2I6_dezz2_, &
       dI6_dezz_, dexx_depszz_, deyy_depszz_, dezz_depszz_, dv_dvp_, &
       dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dw_)
 
-dS_deps(d2phi_depsxx2_, d2phi_depsyy2_, d2phi_depszz2_, d2phi_depsyz2_, &
+call dS_deps(d2phi_depsxx2_, d2phi_depsyy2_, d2phi_depszz2_, d2phi_depsyz2_, &
       d2phi_depszx2_, d2phi_depsxy2_, d2phi_depsxxdepsxy_, &
       d2phi_depsxxdepsyy_, d2phi_depsxxdepsyz_, d2phi_depsxxdepszx_, &
       d2phi_depsxxdepszz_, d2phi_depsxydepsyy_, d2phi_depsxydepsyz_, &

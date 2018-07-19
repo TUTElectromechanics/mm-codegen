@@ -509,6 +509,19 @@ d2vp_dI42_public = d2vp_dI42(I4_, I5_)
 
 end function
 
+REAL*8 function d2vp_dI4dI5_public(Bx, By, Bz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8 I4_
+
+I4_ = I4(Bx, By, Bz)
+
+d2vp_dI4dI5_public = d2vp_dI4dI5(I4_)
+
+end function
+
 REAL*8 function dvp_dI5_public(Bx, By, Bz)
 implicit none
 REAL*8, intent(in) :: Bx
@@ -5047,7 +5060,7 @@ dphi_dBy_ = dphi_dBy(dI4_dBy_, dI5_dBy_, du_dup_, dup_dI4_, dv_dvp_, &
 dphi_dBz_ = dphi_dBz(dI4_dBz_, dI5_dBz_, du_dup_, dup_dI4_, dv_dvp_, &
       dvp_dI4_, dvp_dI5_, dphi_du_, dphi_dv_)
 
-H(dphi_dBx_, dphi_dBy_, dphi_dBz_, H_out)
+call H(dphi_dBx_, dphi_dBy_, dphi_dBz_, H_out)
 
 end subroutine
 
@@ -5177,8 +5190,8 @@ d2phi_dBz2_ = d2phi_dBz2(d2I4_dBz2_, d2I5_dBz2_, d2up_dI42_, d2vp_dI42_, &
       d2vp_dI4dI5_, d2phi_du2_, d2phi_dudv_, d2phi_dv2_, dI4_dBz_, dI5_dBz_, &
       du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dphi_du_, dphi_dv_)
 
-dH_dB(d2phi_dBx2_, d2phi_dBy2_, d2phi_dBz2_, d2phi_dBxdBy_, d2phi_dBxdBz_, &
-      d2phi_dBydBz_, dH_dB_out)
+call dH_dB(d2phi_dBx2_, d2phi_dBy2_, d2phi_dBz2_, d2phi_dBxdBy_, &
+      d2phi_dBxdBz_, d2phi_dBydBz_, dH_dB_out)
 
 end subroutine
 
@@ -5285,7 +5298,7 @@ dphi_depszx_ = dphi_depszx(dI5_dezx_, dezx_depszx_, dv_dvp_, dvp_dI5_, &
 dphi_depszz_ = dphi_depszz(dI5_dexx_, dI5_deyy_, dI5_dezz_, dexx_depszz_, &
       deyy_depszz_, dezz_depszz_, dv_dvp_, dvp_dI5_, dphi_dv_)
 
-S(dphi_depsxx_, dphi_depsyy_, dphi_depszz_, dphi_depsyz_, dphi_depszx_, &
+call S(dphi_depsxx_, dphi_depsyy_, dphi_depszz_, dphi_depsyz_, dphi_depszx_, &
       dphi_depsxy_, S_out)
 
 end subroutine
@@ -5450,7 +5463,7 @@ d2phi_depszxdepszz_ = d2phi_depszxdepszz(d2phi_dv2_, dI5_dexx_, dI5_deyy_, &
 d2phi_depszz2_ = d2phi_depszz2(d2phi_dv2_, dI5_dexx_, dI5_deyy_, dI5_dezz_, &
       dexx_depszz_, deyy_depszz_, dezz_depszz_, dv_dvp_, dvp_dI5_)
 
-dS_deps(d2phi_depsxx2_, d2phi_depsyy2_, d2phi_depszz2_, d2phi_depsyz2_, &
+call dS_deps(d2phi_depsxx2_, d2phi_depsyy2_, d2phi_depszz2_, d2phi_depsyz2_, &
       d2phi_depszx2_, d2phi_depsxy2_, d2phi_depsxxdepsxy_, &
       d2phi_depsxxdepsyy_, d2phi_depsxxdepsyz_, d2phi_depsxxdepszx_, &
       d2phi_depsxxdepszz_, d2phi_depsxydepsyy_, d2phi_depsxydepsyz_, &

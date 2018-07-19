@@ -919,12 +919,39 @@ d2I6_dBzdexy_public = d2I6_dBzdexy(Bx, By, eyz_, ezx_)
 
 end function
 
+REAL*8 function d2I6_dexxdexy_public(Bx, By)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+
+d2I6_dexxdexy_public = d2I6_dexxdexy(Bx, By)
+
+end function
+
 REAL*8 function d2I6_dexy2_public(Bx, By)
 implicit none
 REAL*8, intent(in) :: Bx
 REAL*8, intent(in) :: By
 
 d2I6_dexy2_public = d2I6_dexy2(Bx, By)
+
+end function
+
+REAL*8 function d2I6_dexydeyy_public(Bx, By)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+
+d2I6_dexydeyy_public = d2I6_dexydeyy(Bx, By)
+
+end function
+
+REAL*8 function d2I6_dexydeyz_public(Bx, Bz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: Bz
+
+d2I6_dexydeyz_public = d2I6_dexydeyz(Bx, Bz)
 
 end function
 
@@ -1127,15 +1154,6 @@ d2I6_dexydeyz_public = d2I6_dexydeyz(Bx, Bz)
 
 end function
 
-REAL*8 function d2I6_deyydeyz_public(By, Bz)
-implicit none
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-
-d2I6_deyydeyz_public = d2I6_deyydeyz(By, Bz)
-
-end function
-
 REAL*8 function d2I6_deyz2_public(By, Bz)
 implicit none
 REAL*8, intent(in) :: By
@@ -1281,6 +1299,15 @@ REAL*8, intent(in) :: Bx
 REAL*8, intent(in) :: Bz
 
 d2I6_dezx2_public = d2I6_dezx2(Bx, Bz)
+
+end function
+
+REAL*8 function d2I6_dezxdezz_public(Bx, Bz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: Bz
+
+d2I6_dezxdezz_public = d2I6_dezxdezz(Bx, Bz)
 
 end function
 
@@ -3828,7 +3855,7 @@ dphi_dBy_ = dphi_dBy(dI4_dBy_, dI5_dBy_, dI6_dBy_, dphi_dI4_, dphi_dI5_, &
 dphi_dBz_ = dphi_dBz(dI4_dBz_, dI5_dBz_, dI6_dBz_, dphi_dI4_, dphi_dI5_, &
       dphi_dI6_)
 
-H(dphi_dBx_, dphi_dBy_, dphi_dBz_, H_out)
+call H(dphi_dBx_, dphi_dBy_, dphi_dBz_, H_out)
 
 end subroutine
 
@@ -3930,8 +3957,8 @@ d2phi_dBydBz_ = d2phi_dBydBz(d2I5_dBydBz_, d2I6_dBydBz_, d2phi_dI42_, &
 d2phi_dBz2_ = d2phi_dBz2(d2I4_dBz2_, d2I5_dBz2_, d2I6_dBz2_, d2phi_dI42_, &
       dI4_dBz_, dphi_dI4_, dphi_dI5_, dphi_dI6_)
 
-dH_dB(d2phi_dBx2_, d2phi_dBy2_, d2phi_dBz2_, d2phi_dBxdBy_, d2phi_dBxdBz_, &
-      d2phi_dBydBz_, dH_dB_out)
+call dH_dB(d2phi_dBx2_, d2phi_dBy2_, d2phi_dBz2_, d2phi_dBxdBy_, &
+      d2phi_dBxdBz_, d2phi_dBydBz_, dH_dB_out)
 
 end subroutine
 
@@ -4066,7 +4093,7 @@ dphi_depszz_ = dphi_depszz(dI1_depszz_, dI2_depszz_, dI5_dexx_, dI5_deyy_, &
       deyy_depszz_, dezz_depszz_, dphi_dI1_, dphi_dI2_, dphi_dI5_, &
       dphi_dI6_)
 
-S(dphi_depsxx_, dphi_depsyy_, dphi_depszz_, dphi_depsyz_, dphi_depszx_, &
+call S(dphi_depsxx_, dphi_depsyy_, dphi_depszz_, dphi_depsyz_, dphi_depszx_, &
       dphi_depsxy_, S_out)
 
 end subroutine
@@ -4232,7 +4259,7 @@ d2phi_depszz2_ = d2phi_depszz2(d2I2_depszz2_, d2I6_dexx2_, d2I6_deyy2_, &
       d2I6_dezz2_, d2phi_dI12_, dI1_depszz_, dexx_depszz_, deyy_depszz_, &
       dezz_depszz_, dphi_dI2_, dphi_dI6_)
 
-dS_deps(d2phi_depsxx2_, d2phi_depsyy2_, d2phi_depszz2_, d2phi_depsyz2_, &
+call dS_deps(d2phi_depsxx2_, d2phi_depsyy2_, d2phi_depszz2_, d2phi_depsyz2_, &
       d2phi_depszx2_, d2phi_depsxy2_, d2phi_depsxxdepsxy_, &
       d2phi_depsxxdepsyy_, d2phi_depsxxdepsyz_, d2phi_depsxxdepszx_, &
       d2phi_depsxxdepszz_, d2phi_depsxydepsyy_, d2phi_depsxydepsyz_, &
