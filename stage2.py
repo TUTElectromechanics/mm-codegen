@@ -580,8 +580,8 @@ class CodeGenerator:
                                                                                  stage1_name=stage1_oname,
                                                                                  args=final_args))
         else: # objtype == "subroutine":
-            outbuf.append(key_impl, "{stage1_name}({args})\n".format(stage1_name=stage1_oname,
-                                                                     args=final_args))
+            outbuf.append(key_impl, "call {stage1_name}({args})\n".format(stage1_name=stage1_oname,
+                                                                          args=final_args))
 
         outbuf.append(key_impl, "\n")
         outbuf.append(key_both, "end {objtype}\n".format(objtype=objtype))
