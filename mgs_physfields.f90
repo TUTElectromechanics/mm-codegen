@@ -165,15 +165,15 @@ REAL*8, intent(out), dimension(1:9, 1:9) :: dS_deps_out
 !
 ! TODO: confirm Elmer's packing convention with Juhani
 
-integer, parameter i11 = 1
-integer, parameter i12 = 2
-integer, parameter i13 = 3
-integer, parameter i21 = 4
-integer, parameter i22 = 5
-integer, parameter i23 = 6
-integer, parameter i31 = 7
-integer, parameter i32 = 8
-integer, parameter i33 = 9
+integer, parameter :: i11 = 1
+integer, parameter :: i12 = 2
+integer, parameter :: i13 = 3
+integer, parameter :: i21 = 4
+integer, parameter :: i22 = 5
+integer, parameter :: i23 = 6
+integer, parameter :: i31 = 7
+integer, parameter :: i32 = 8
+integer, parameter :: i33 = 9
 
 dS_deps_out(i11, i11) = d2phi_depsxx2
 dS_deps_out(i11, i12) = d2phi_depsxxdepsxy
