@@ -98,6 +98,7 @@ class CodeGenerator:
             CAPTURING_META = 2
 
         results = {}
+        seen = set()
         for objtype in ("function", "subroutine"):
             def header_ends(line):
                 matches = re.findall(r"\)", line)
@@ -125,7 +126,9 @@ class CodeGenerator:
                 if len(invalid_args):
                     raise ValueError("'{fname}' missing intent declaration for args (in alphabetical order): {invalid}".format(fname=fname,
                                                                                                                                invalid=invalid_args))
-
+                if fname in seen:
+                    raise ValueError("Duplicate definition for '{fname}'".format(fname=fname))
+                seen.add(fname)
                 result.append((fname, inargs, outargs, allargs, meta))
 
             result = []
