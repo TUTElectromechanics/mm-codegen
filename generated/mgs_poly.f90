@@ -919,30 +919,12 @@ d2I6_dBzdexy_public = d2I6_dBzdexy(Bx, By, eyz_, ezx_)
 
 end function
 
-REAL*8 function d2I6_dexxdexy_public(Bx, By)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-
-d2I6_dexxdexy_public = d2I6_dexxdexy(Bx, By)
-
-end function
-
 REAL*8 function d2I6_dexy2_public(Bx, By)
 implicit none
 REAL*8, intent(in) :: Bx
 REAL*8, intent(in) :: By
 
 d2I6_dexy2_public = d2I6_dexy2(Bx, By)
-
-end function
-
-REAL*8 function d2I6_dexydeyy_public(Bx, By)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-
-d2I6_dexydeyy_public = d2I6_dexydeyy(Bx, By)
 
 end function
 
@@ -1263,15 +1245,6 @@ ezx_ = ezx(epszx)
 ezz_ = ezz(epsxx, epsyy, epszz)
 
 d2I6_dBzdezx_public = d2I6_dBzdezx(Bx, By, Bz, exx_, exy_, ezx_, ezz_)
-
-end function
-
-REAL*8 function d2I6_dexxdezx_public(Bx, Bz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: Bz
-
-d2I6_dexxdezx_public = d2I6_dexxdezx(Bx, Bz)
 
 end function
 

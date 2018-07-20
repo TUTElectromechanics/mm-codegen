@@ -808,30 +808,12 @@ d2I6_dBzdexy_public = d2I6_dBzdexy(Bx, By, eyz_, ezx_)
 
 end function
 
-REAL*8 function d2I6_dexxdexy_public(Bx, By)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-
-d2I6_dexxdexy_public = d2I6_dexxdexy(Bx, By)
-
-end function
-
 REAL*8 function d2I6_dexy2_public(Bx, By)
 implicit none
 REAL*8, intent(in) :: Bx
 REAL*8, intent(in) :: By
 
 d2I6_dexy2_public = d2I6_dexy2(Bx, By)
-
-end function
-
-REAL*8 function d2I6_dexydeyy_public(Bx, By)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-
-d2I6_dexydeyy_public = d2I6_dexydeyy(Bx, By)
 
 end function
 
@@ -1155,15 +1137,6 @@ d2I6_dBzdezx_public = d2I6_dBzdezx(Bx, By, Bz, exx_, exy_, ezx_, ezz_)
 
 end function
 
-REAL*8 function d2I6_dexxdezx_public(Bx, Bz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: Bz
-
-d2I6_dexxdezx_public = d2I6_dexxdezx(Bx, Bz)
-
-end function
-
 REAL*8 function d2I6_dexydezx_public(By, Bz)
 implicit none
 REAL*8, intent(in) :: By
@@ -1406,19 +1379,6 @@ d2vp_dI42_public = d2vp_dI42(I4_, I5_)
 
 end function
 
-REAL*8 function d2vp_dI4dI5_public(Bx, By, Bz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8 I4_
-
-I4_ = I4(Bx, By, Bz)
-
-d2vp_dI4dI5_public = d2vp_dI4dI5(I4_)
-
-end function
-
 REAL*8 function dvp_dI5_public(Bx, By, Bz)
 implicit none
 REAL*8, intent(in) :: Bx
@@ -1522,78 +1482,6 @@ I5_ = I5(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
 I6_ = I6(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
 
 d2wp_dI42_public = d2wp_dI42(I4_, I5_, I6_)
-
-end function
-
-REAL*8 function d2wp_dI4dI5_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
-      epszx, epszz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epsxx
-REAL*8, intent(in) :: epsxy
-REAL*8, intent(in) :: epsyy
-REAL*8, intent(in) :: epsyz
-REAL*8, intent(in) :: epszx
-REAL*8, intent(in) :: epszz
-REAL*8 exx_
-REAL*8 exy_
-REAL*8 eyy_
-REAL*8 eyz_
-REAL*8 ezx_
-REAL*8 ezz_
-REAL*8 I4_
-REAL*8 I5_
-REAL*8 I6_
-
-exx_ = exx(epsxx, epsyy, epszz)
-exy_ = exy(epsxy)
-eyy_ = eyy(epsxx, epsyy, epszz)
-eyz_ = eyz(epsyz)
-ezx_ = ezx(epszx)
-ezz_ = ezz(epsxx, epsyy, epszz)
-I4_ = I4(Bx, By, Bz)
-I5_ = I5(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
-I6_ = I6(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
-
-d2wp_dI4dI5_public = d2wp_dI4dI5(I4_, I5_, I6_)
-
-end function
-
-REAL*8 function d2wp_dI4dI6_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
-      epszx, epszz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epsxx
-REAL*8, intent(in) :: epsxy
-REAL*8, intent(in) :: epsyy
-REAL*8, intent(in) :: epsyz
-REAL*8, intent(in) :: epszx
-REAL*8, intent(in) :: epszz
-REAL*8 exx_
-REAL*8 exy_
-REAL*8 eyy_
-REAL*8 eyz_
-REAL*8 ezx_
-REAL*8 ezz_
-REAL*8 I4_
-REAL*8 I5_
-REAL*8 I6_
-
-exx_ = exx(epsxx, epsyy, epszz)
-exy_ = exy(epsxy)
-eyy_ = eyy(epsxx, epsyy, epszz)
-eyz_ = eyz(epsyz)
-ezx_ = ezx(epszx)
-ezz_ = ezz(epsxx, epsyy, epszz)
-I4_ = I4(Bx, By, Bz)
-I5_ = I5(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
-I6_ = I6(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
-
-d2wp_dI4dI6_public = d2wp_dI4dI6(I4_, I5_, I6_)
 
 end function
 
@@ -1738,6 +1626,42 @@ I5_ = I5(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
 I6_ = I6(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
 
 dwp_dI6_public = dwp_dI6(I4_, I5_, I6_)
+
+end function
+
+REAL*8 function d2wp_dI4dI6_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
+      epszx, epszz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epsxx
+REAL*8, intent(in) :: epsxy
+REAL*8, intent(in) :: epsyy
+REAL*8, intent(in) :: epsyz
+REAL*8, intent(in) :: epszx
+REAL*8, intent(in) :: epszz
+REAL*8 exx_
+REAL*8 exy_
+REAL*8 eyy_
+REAL*8 eyz_
+REAL*8 ezx_
+REAL*8 ezz_
+REAL*8 I4_
+REAL*8 I5_
+REAL*8 I6_
+
+exx_ = exx(epsxx, epsyy, epszz)
+exy_ = exy(epsxy)
+eyy_ = eyy(epsxx, epsyy, epszz)
+eyz_ = eyz(epsyz)
+ezx_ = ezx(epszx)
+ezz_ = ezz(epsxx, epsyy, epszz)
+I4_ = I4(Bx, By, Bz)
+I5_ = I5(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
+I6_ = I6(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
+
+d2wp_dI4dI6_public = d2wp_dI4dI6(I4_, I5_, I6_)
 
 end function
 

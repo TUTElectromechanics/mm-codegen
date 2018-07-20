@@ -461,21 +461,7 @@ REAL*8, intent(in) :: ezx
 end function
 end interface
 interface
-REAL*8 function d2I6_dexxdexy(Bx, By)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-end function
-end interface
-interface
 REAL*8 function d2I6_dexy2(Bx, By)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-end function
-end interface
-interface
-REAL*8 function d2I6_dexydeyy(Bx, By)
 implicit none
 REAL*8, intent(in) :: Bx
 REAL*8, intent(in) :: By
@@ -658,13 +644,6 @@ REAL*8, intent(in) :: ezz
 end function
 end interface
 interface
-REAL*8 function d2I6_dexxdezx(Bx, Bz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: Bz
-end function
-end interface
-interface
 REAL*8 function d2I6_dexydezx(By, Bz)
 implicit none
 REAL*8, intent(in) :: By
@@ -787,12 +766,6 @@ REAL*8, intent(in) :: I5
 end function
 end interface
 interface
-REAL*8 function d2vp_dI4dI5(I4)
-implicit none
-REAL*8, intent(in) :: I4
-end function
-end interface
-interface
 REAL*8 function dvp_dI5(I4)
 implicit none
 REAL*8, intent(in) :: I4
@@ -827,22 +800,6 @@ REAL*8, intent(in) :: I6
 end function
 end interface
 interface
-REAL*8 function d2wp_dI4dI5(I4, I5, I6)
-implicit none
-REAL*8, intent(in) :: I4
-REAL*8, intent(in) :: I5
-REAL*8, intent(in) :: I6
-end function
-end interface
-interface
-REAL*8 function d2wp_dI4dI6(I4, I5, I6)
-implicit none
-REAL*8, intent(in) :: I4
-REAL*8, intent(in) :: I5
-REAL*8, intent(in) :: I6
-end function
-end interface
-interface
 REAL*8 function dwp_dI5(I4, I5, I6)
 implicit none
 REAL*8, intent(in) :: I4
@@ -868,6 +825,14 @@ end function
 end interface
 interface
 REAL*8 function dwp_dI6(I4, I5, I6)
+implicit none
+REAL*8, intent(in) :: I4
+REAL*8, intent(in) :: I5
+REAL*8, intent(in) :: I6
+end function
+end interface
+interface
+REAL*8 function d2wp_dI4dI6(I4, I5, I6)
 implicit none
 REAL*8, intent(in) :: I4
 REAL*8, intent(in) :: I5

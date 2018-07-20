@@ -301,12 +301,6 @@ REAL*8, intent(in) :: I5
 end function
 end interface
 interface
-REAL*8 function d2vp_dI4dI5(I4)
-implicit none
-REAL*8, intent(in) :: I4
-end function
-end interface
-interface
 REAL*8 function dvp_dI5(I4)
 implicit none
 REAL*8, intent(in) :: I4

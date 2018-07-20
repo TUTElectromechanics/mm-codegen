@@ -395,14 +395,6 @@ d2vp_dI42 = 3*I5/I4**3
 
 end function
 
-REAL*8 function d2vp_dI4dI5(I4)
-implicit none
-REAL*8, intent(in) :: I4
-
-d2vp_dI4dI5 = -3.0d0/2.0d0/I4**2
-
-end function
-
 REAL*8 function dvp_dI5(I4)
 implicit none
 REAL*8, intent(in) :: I4
@@ -1764,7 +1756,7 @@ REAL*8, intent(in) :: eyz
 REAL*8, intent(in) :: ezx
 REAL*8, intent(in) :: ezz
 
-I5 = Bx**2*exx + 2*Bx*Bz*ezx + By**2*eyy + 2*By*(Bx*exy + Bz*eyz) + Bz** &
+I5 = Bx**2*exx + 2*Bx*(By*exy + Bz*ezx) + By**2*eyy + 2*By*Bz*eyz + Bz** &
       2*ezz
 
 end function

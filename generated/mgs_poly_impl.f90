@@ -654,8 +654,8 @@ REAL*8, intent(in) :: eyy
 REAL*8, intent(in) :: eyz
 REAL*8, intent(in) :: ezx
 
-dI6_dexy = 2*Bx**2*exy + 2*Bx*Bz*eyz + 2*By**2*exy + 2*By*(Bx*(exx + eyy &
-      ) + Bz*ezx)
+dI6_dexy = 2*Bx**2*exy + 2*Bx*(By*(exx + eyy) + Bz*eyz) + 2*By**2*exy + &
+      2*By*Bz*ezx
 
 end function
 
@@ -698,30 +698,12 @@ d2I6_dBzdexy = 2*Bx*eyz + 2*By*ezx
 
 end function
 
-REAL*8 function d2I6_dexxdexy(Bx, By)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-
-d2I6_dexxdexy = 2*Bx*By
-
-end function
-
 REAL*8 function d2I6_dexy2(Bx, By)
 implicit none
 REAL*8, intent(in) :: Bx
 REAL*8, intent(in) :: By
 
 d2I6_dexy2 = 2*Bx**2 + 2*By**2
-
-end function
-
-REAL*8 function d2I6_dexydeyy(Bx, By)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-
-d2I6_dexydeyy = 2*Bx*By
 
 end function
 
@@ -815,8 +797,8 @@ REAL*8, intent(in) :: eyz
 REAL*8, intent(in) :: ezx
 REAL*8, intent(in) :: ezz
 
-dI6_deyz = 2*Bx*Bz*exy + 2*By**2*eyz + 2*By*(Bx*ezx + Bz*(eyy + ezz)) + &
-      2*Bz**2*eyz
+dI6_deyz = 2*Bx*By*ezx + 2*By**2*eyz + 2*Bz**2*eyz + 2*Bz*(Bx*exy + By*( &
+      eyy + ezz))
 
 end function
 
@@ -938,15 +920,6 @@ REAL*8, intent(in) :: ezx
 REAL*8, intent(in) :: ezz
 
 d2I6_dBzdezx = 2*Bx*(exx + ezz) + 2*By*exy + 4*Bz*ezx
-
-end function
-
-REAL*8 function d2I6_dexxdezx(Bx, Bz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: Bz
-
-d2I6_dexxdezx = 2*Bx*Bz
 
 end function
 
@@ -2112,7 +2085,7 @@ REAL*8, intent(in) :: eyz
 REAL*8, intent(in) :: ezx
 REAL*8, intent(in) :: ezz
 
-I5 = Bx**2*exx + 2*Bx*Bz*ezx + By**2*eyy + 2*By*(Bx*exy + Bz*eyz) + Bz** &
+I5 = Bx**2*exx + 2*Bx*(By*exy + Bz*ezx) + By**2*eyy + 2*By*Bz*eyz + Bz** &
       2*ezz
 
 end function
@@ -2129,10 +2102,10 @@ REAL*8, intent(in) :: eyz
 REAL*8, intent(in) :: ezx
 REAL*8, intent(in) :: ezz
 
-I6 = Bx**2*(exx**2 + exy**2 + ezx**2) + 2*Bx*Bz*(exx*ezx + exy*eyz + ezx &
-      *ezz) + By**2*(exy**2 + eyy**2 + eyz**2) + 2*By*(Bx*(exx*exy + &
-      exy*eyy + eyz*ezx) + Bz*(exy*ezx + eyy*eyz + eyz*ezz)) + Bz**2*( &
-      eyz**2 + ezx**2 + ezz**2)
+I6 = Bx**2*(exx**2 + exy**2 + ezx**2) + 2*Bx*(By*(exx*exy + exy*eyy + &
+      eyz*ezx) + Bz*(exx*ezx + exy*eyz + ezx*ezz)) + By**2*(exy**2 + &
+      eyy**2 + eyz**2) + 2*By*Bz*(exy*ezx + eyy*eyz + eyz*ezz) + Bz**2* &
+      (eyz**2 + ezx**2 + ezz**2)
 
 end function
 

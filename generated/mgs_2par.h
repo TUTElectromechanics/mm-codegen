@@ -383,15 +383,6 @@ end function
 end interface
 
 interface
-REAL*8 function d2vp_dI4dI5_public(Bx, By, Bz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-end function
-end interface
-
-interface
 REAL*8 function dvp_dI5_public(Bx, By, Bz)
 implicit none
 REAL*8, intent(in) :: Bx

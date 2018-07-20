@@ -542,21 +542,7 @@ REAL*8, intent(in) :: ezx
 end function
 end interface
 interface
-REAL*8 function d2I6_dexxdexy(Bx, By)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-end function
-end interface
-interface
 REAL*8 function d2I6_dexy2(Bx, By)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-end function
-end interface
-interface
-REAL*8 function d2I6_dexydeyy(Bx, By)
 implicit none
 REAL*8, intent(in) :: Bx
 REAL*8, intent(in) :: By
@@ -736,13 +722,6 @@ REAL*8, intent(in) :: exx
 REAL*8, intent(in) :: exy
 REAL*8, intent(in) :: ezx
 REAL*8, intent(in) :: ezz
-end function
-end interface
-interface
-REAL*8 function d2I6_dexxdezx(Bx, Bz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: Bz
 end function
 end interface
 interface

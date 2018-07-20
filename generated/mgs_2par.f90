@@ -509,19 +509,6 @@ d2vp_dI42_public = d2vp_dI42(I4_, I5_)
 
 end function
 
-REAL*8 function d2vp_dI4dI5_public(Bx, By, Bz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8 I4_
-
-I4_ = I4(Bx, By, Bz)
-
-d2vp_dI4dI5_public = d2vp_dI4dI5(I4_)
-
-end function
-
 REAL*8 function dvp_dI5_public(Bx, By, Bz)
 implicit none
 REAL*8, intent(in) :: Bx

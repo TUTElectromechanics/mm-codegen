@@ -657,23 +657,7 @@ end function
 end interface
 
 interface
-REAL*8 function d2I6_dexxdexy_public(Bx, By)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-end function
-end interface
-
-interface
 REAL*8 function d2I6_dexy2_public(Bx, By)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-end function
-end interface
-
-interface
-REAL*8 function d2I6_dexydeyy_public(Bx, By)
 implicit none
 REAL*8, intent(in) :: Bx
 REAL*8, intent(in) :: By
@@ -890,14 +874,6 @@ REAL*8, intent(in) :: epsxy
 REAL*8, intent(in) :: epsyy
 REAL*8, intent(in) :: epszx
 REAL*8, intent(in) :: epszz
-end function
-end interface
-
-interface
-REAL*8 function d2I6_dexxdezx_public(Bx, Bz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: Bz
 end function
 end interface
 
