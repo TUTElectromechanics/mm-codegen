@@ -18,7 +18,7 @@ class Main:
     # no constructor, this is OOFP with just static and class methods.
 
     @classmethod
-    def run(cls, stage, path):
+    def run(cls, stage, gpath, upath):
         """Run a stage of the code generator.
 
         Parameters:
@@ -27,29 +27,39 @@ class Main:
                   1: model to internal API
                   2: internal API to public API
 
+            gpath: str
+                Path of generated .f90 and .h files. Output in stage1,
+                both input and output in stage2 (input since stage2
+                reads the stage1 output).
+
+            upath: str
+                Path of user-defined .h files. Stage2 input.
+
+        Paths can be relative or absolute.
+
         Returns:
             None. Each stage invokes write() to write output to files.
         """
         assert stage in (1, 2)
         if stage == 1:
-            cls.run_stage1(path)
+            cls.run_stage1(gpath)
         else: # stage == 2:
-            cls.run_stage2(path)
+            cls.run_stage2(gpath, upath)
 
     @classmethod
-    def run_stage1(cls, path):  # path: for output files
+    def run_stage1(cls, gpath):  # path: for output files
         import stage1
         from polymodel import Model as PolyModel
         from splinemodel import Model as SplineModel
         for model in (PolyModel(), SplineModel(kind="2par"), SplineModel(kind="3par")):
-            cls.write(stage1.CodeGenerator.run(model), path, stage=1)
+            cls.write(stage1.CodeGenerator.run(model), gpath, stage=1)
 
     @classmethod
-    def run_stage2(cls, path):  # path: for input and output files
+    def run_stage2(cls, gpath, upath):  # path: for input and output files
         import stage2
-        s1code = stage2.load_stage1_intfs(path)
-        s1code = stage2.add_intfs(s1code, path, ("mgs_{label}_phi.h", "mgs_physfields.h"))
-        cls.write(stage2.CodeGenerator.run(s1code), path, stage=2)
+        s1code = stage2.load_stage1_intfs(gpath)
+        s1code = stage2.add_intfs(s1code, upath, ("mgs_{label}_phi.h", "mgs_physfields.h"))
+        cls.write(stage2.CodeGenerator.run(s1code), gpath, stage=2)
 
     @staticmethod
     def write(code, path, stage):
@@ -87,8 +97,10 @@ def main():
                                 help='Run stage1 (model to internal API) only.' )
     group_behavior.add_argument('-s2', '--stage2-only', dest='s2_only', default=False, action='store_true',
                                 help='Run stage2 (internal API to public API) only.' )
-    group_behavior.add_argument('-o', '--output-path', dest='path', default=".", type=str, metavar='xxx',
-                                help="Data file path (default %(default)s). Output in stage1, both input and output in stage2." )
+    group_behavior.add_argument('-gp', '--generated-files-path', dest='gpath', default="generated", type=str, metavar='xxx',
+                                help="Path for generated files (default '%(default)s'). Output in stage1, both input and output in stage2." )
+    group_behavior.add_argument('-up', '--user-files-path', dest='upath', default=".", type=str, metavar='xxx',
+                                help="Path for user files (default '%(default)s'). Input (additional Fortran interfaces) in stage2." )
 
     opts = parser.parse_args()
 
@@ -102,7 +114,7 @@ def main():
         stages = (1, 2)
 
     for stage in stages:
-        Main.run(stage, opts.path)
+        Main.run(stage, opts.gpath, opts.upath)
 
 if __name__ == '__main__':
     main()
