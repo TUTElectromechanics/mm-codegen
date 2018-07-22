@@ -71,9 +71,7 @@ class CodeGenerator:
                 Like input, but any identically zero derivatives omitted.
 
             Any new keys for ``defs`` are in the format Derivative(f, *xs),
-            stripped using ``ModelBase.keyify()``.
-
-            The RHS values are not stripped.
+            keyified using ``ModelBase.keyify()``.
         """
         keyify = ModelBase.keyify
         D = partial(sy.Derivative, evaluate=False)
