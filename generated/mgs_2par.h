@@ -156,6 +156,27 @@ end function
 end interface
 
 interface
+REAL*8 function d2I5_dBxdexx_public(Bx)
+implicit none
+REAL*8, intent(in) :: Bx
+end function
+end interface
+
+interface
+REAL*8 function d2I5_dBxdexy_public(By)
+implicit none
+REAL*8, intent(in) :: By
+end function
+end interface
+
+interface
+REAL*8 function d2I5_dBxdezx_public(Bz)
+implicit none
+REAL*8, intent(in) :: Bz
+end function
+end interface
+
+interface
 REAL*8 function dI5_dBy_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
       epszz)
 implicit none
@@ -187,6 +208,27 @@ end function
 end interface
 
 interface
+REAL*8 function d2I5_dBydexy_public(Bx)
+implicit none
+REAL*8, intent(in) :: Bx
+end function
+end interface
+
+interface
+REAL*8 function d2I5_dBydeyy_public(By)
+implicit none
+REAL*8, intent(in) :: By
+end function
+end interface
+
+interface
+REAL*8 function d2I5_dBydeyz_public(Bz)
+implicit none
+REAL*8, intent(in) :: Bz
+end function
+end interface
+
+interface
 REAL*8 function dI5_dBz_public(Bx, By, Bz, epsxx, epsyy, epsyz, epszx, &
       epszz)
 implicit none
@@ -211,14 +253,28 @@ end function
 end interface
 
 interface
-REAL*8 function dI5_dexx_public(Bx)
+REAL*8 function d2I5_dBzdeyz_public(By)
+implicit none
+REAL*8, intent(in) :: By
+end function
+end interface
+
+interface
+REAL*8 function d2I5_dBzdezx_public(Bx)
 implicit none
 REAL*8, intent(in) :: Bx
 end function
 end interface
 
 interface
-REAL*8 function d2I5_dBxdexx_public(Bx)
+REAL*8 function d2I5_dBzdezz_public(Bz)
+implicit none
+REAL*8, intent(in) :: Bz
+end function
+end interface
+
+interface
+REAL*8 function dI5_dexx_public(Bx)
 implicit none
 REAL*8, intent(in) :: Bx
 end function
@@ -233,28 +289,7 @@ end function
 end interface
 
 interface
-REAL*8 function d2I5_dBxdexy_public(By)
-implicit none
-REAL*8, intent(in) :: By
-end function
-end interface
-
-interface
-REAL*8 function d2I5_dBydexy_public(Bx)
-implicit none
-REAL*8, intent(in) :: Bx
-end function
-end interface
-
-interface
 REAL*8 function dI5_deyy_public(By)
-implicit none
-REAL*8, intent(in) :: By
-end function
-end interface
-
-interface
-REAL*8 function d2I5_dBydeyy_public(By)
 implicit none
 REAL*8, intent(in) :: By
 end function
@@ -269,20 +304,6 @@ end function
 end interface
 
 interface
-REAL*8 function d2I5_dBydeyz_public(Bz)
-implicit none
-REAL*8, intent(in) :: Bz
-end function
-end interface
-
-interface
-REAL*8 function d2I5_dBzdeyz_public(By)
-implicit none
-REAL*8, intent(in) :: By
-end function
-end interface
-
-interface
 REAL*8 function dI5_dezx_public(Bx, Bz)
 implicit none
 REAL*8, intent(in) :: Bx
@@ -291,28 +312,7 @@ end function
 end interface
 
 interface
-REAL*8 function d2I5_dBxdezx_public(Bz)
-implicit none
-REAL*8, intent(in) :: Bz
-end function
-end interface
-
-interface
-REAL*8 function d2I5_dBzdezx_public(Bx)
-implicit none
-REAL*8, intent(in) :: Bx
-end function
-end interface
-
-interface
 REAL*8 function dI5_dezz_public(Bz)
-implicit none
-REAL*8, intent(in) :: Bz
-end function
-end interface
-
-interface
-REAL*8 function d2I5_dBzdezz_public(Bz)
 implicit none
 REAL*8, intent(in) :: Bz
 end function
@@ -383,7 +383,7 @@ end function
 end interface
 
 interface
-REAL*8 function dvp_dI5_public(Bx, By, Bz)
+REAL*8 function d2vp_dI4dI5_public(Bx, By, Bz)
 implicit none
 REAL*8, intent(in) :: Bx
 REAL*8, intent(in) :: By
@@ -392,7 +392,7 @@ end function
 end interface
 
 interface
-REAL*8 function d2vp_dI4dI5_public(Bx, By, Bz)
+REAL*8 function dvp_dI5_public(Bx, By, Bz)
 implicit none
 REAL*8, intent(in) :: Bx
 REAL*8, intent(in) :: By

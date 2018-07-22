@@ -172,6 +172,30 @@ d2I5_dBxdBz = 2*ezx
 
 end function
 
+REAL*8 function d2I5_dBxdexx(Bx)
+implicit none
+REAL*8, intent(in) :: Bx
+
+d2I5_dBxdexx = 2*Bx
+
+end function
+
+REAL*8 function d2I5_dBxdexy(By)
+implicit none
+REAL*8, intent(in) :: By
+
+d2I5_dBxdexy = 2*By
+
+end function
+
+REAL*8 function d2I5_dBxdezx(Bz)
+implicit none
+REAL*8, intent(in) :: Bz
+
+d2I5_dBxdezx = 2*Bz
+
+end function
+
 REAL*8 function dI5_dBy(Bx, By, Bz, exy, eyy, eyz)
 implicit none
 REAL*8, intent(in) :: Bx
@@ -201,6 +225,30 @@ d2I5_dBydBz = 2*eyz
 
 end function
 
+REAL*8 function d2I5_dBydexy(Bx)
+implicit none
+REAL*8, intent(in) :: Bx
+
+d2I5_dBydexy = 2*Bx
+
+end function
+
+REAL*8 function d2I5_dBydeyy(By)
+implicit none
+REAL*8, intent(in) :: By
+
+d2I5_dBydeyy = 2*By
+
+end function
+
+REAL*8 function d2I5_dBydeyz(Bz)
+implicit none
+REAL*8, intent(in) :: Bz
+
+d2I5_dBydeyz = 2*Bz
+
+end function
+
 REAL*8 function dI5_dBz(Bx, By, Bz, eyz, ezx, ezz)
 implicit none
 REAL*8, intent(in) :: Bx
@@ -222,19 +270,35 @@ d2I5_dBz2 = 2*ezz
 
 end function
 
+REAL*8 function d2I5_dBzdeyz(By)
+implicit none
+REAL*8, intent(in) :: By
+
+d2I5_dBzdeyz = 2*By
+
+end function
+
+REAL*8 function d2I5_dBzdezx(Bx)
+implicit none
+REAL*8, intent(in) :: Bx
+
+d2I5_dBzdezx = 2*Bx
+
+end function
+
+REAL*8 function d2I5_dBzdezz(Bz)
+implicit none
+REAL*8, intent(in) :: Bz
+
+d2I5_dBzdezz = 2*Bz
+
+end function
+
 REAL*8 function dI5_dexx(Bx)
 implicit none
 REAL*8, intent(in) :: Bx
 
 dI5_dexx = Bx**2
-
-end function
-
-REAL*8 function d2I5_dBxdexx(Bx)
-implicit none
-REAL*8, intent(in) :: Bx
-
-d2I5_dBxdexx = 2*Bx
 
 end function
 
@@ -247,35 +311,11 @@ dI5_dexy = 2*Bx*By
 
 end function
 
-REAL*8 function d2I5_dBxdexy(By)
-implicit none
-REAL*8, intent(in) :: By
-
-d2I5_dBxdexy = 2*By
-
-end function
-
-REAL*8 function d2I5_dBydexy(Bx)
-implicit none
-REAL*8, intent(in) :: Bx
-
-d2I5_dBydexy = 2*Bx
-
-end function
-
 REAL*8 function dI5_deyy(By)
 implicit none
 REAL*8, intent(in) :: By
 
 dI5_deyy = By**2
-
-end function
-
-REAL*8 function d2I5_dBydeyy(By)
-implicit none
-REAL*8, intent(in) :: By
-
-d2I5_dBydeyy = 2*By
 
 end function
 
@@ -288,22 +328,6 @@ dI5_deyz = 2*By*Bz
 
 end function
 
-REAL*8 function d2I5_dBydeyz(Bz)
-implicit none
-REAL*8, intent(in) :: Bz
-
-d2I5_dBydeyz = 2*Bz
-
-end function
-
-REAL*8 function d2I5_dBzdeyz(By)
-implicit none
-REAL*8, intent(in) :: By
-
-d2I5_dBzdeyz = 2*By
-
-end function
-
 REAL*8 function dI5_dezx(Bx, Bz)
 implicit none
 REAL*8, intent(in) :: Bx
@@ -313,35 +337,11 @@ dI5_dezx = 2*Bx*Bz
 
 end function
 
-REAL*8 function d2I5_dBxdezx(Bz)
-implicit none
-REAL*8, intent(in) :: Bz
-
-d2I5_dBxdezx = 2*Bz
-
-end function
-
-REAL*8 function d2I5_dBzdezx(Bx)
-implicit none
-REAL*8, intent(in) :: Bx
-
-d2I5_dBzdezx = 2*Bx
-
-end function
-
 REAL*8 function dI5_dezz(Bz)
 implicit none
 REAL*8, intent(in) :: Bz
 
 dI5_dezz = Bz**2
-
-end function
-
-REAL*8 function d2I5_dBzdezz(Bz)
-implicit none
-REAL*8, intent(in) :: Bz
-
-d2I5_dBzdezz = 2*Bz
 
 end function
 
@@ -396,6 +396,76 @@ d2I6_dBxdBz = 2*exx*ezx + 2*exy*eyz + 2*ezx*ezz
 
 end function
 
+REAL*8 function d2I6_dBxdexx(Bx, By, Bz, exx, exy, ezx)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: exx
+REAL*8, intent(in) :: exy
+REAL*8, intent(in) :: ezx
+
+d2I6_dBxdexx = 4*Bx*exx + 2*By*exy + 2*Bz*ezx
+
+end function
+
+REAL*8 function d2I6_dBxdexy(Bx, By, Bz, exx, exy, eyy, eyz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: exx
+REAL*8, intent(in) :: exy
+REAL*8, intent(in) :: eyy
+REAL*8, intent(in) :: eyz
+
+d2I6_dBxdexy = 4*Bx*exy + 2*By*(exx + eyy) + 2*Bz*eyz
+
+end function
+
+REAL*8 function d2I6_dBxdeyy(By, exy)
+implicit none
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: exy
+
+d2I6_dBxdeyy = 2*By*exy
+
+end function
+
+REAL*8 function d2I6_dBxdeyz(By, Bz, exy, ezx)
+implicit none
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: exy
+REAL*8, intent(in) :: ezx
+
+d2I6_dBxdeyz = 2*By*ezx + 2*Bz*exy
+
+end function
+
+REAL*8 function d2I6_dBxdezx(Bx, By, Bz, exx, eyz, ezx, ezz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: exx
+REAL*8, intent(in) :: eyz
+REAL*8, intent(in) :: ezx
+REAL*8, intent(in) :: ezz
+
+d2I6_dBxdezx = 4*Bx*ezx + 2*By*eyz + 2*Bz*(exx + ezz)
+
+end function
+
+REAL*8 function d2I6_dBxdezz(Bz, ezx)
+implicit none
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: ezx
+
+d2I6_dBxdezz = 2*Bz*ezx
+
+end function
+
 REAL*8 function dI6_dBy(Bx, By, Bz, exx, exy, eyy, eyz, ezx, ezz)
 implicit none
 REAL*8, intent(in) :: Bx
@@ -435,6 +505,76 @@ d2I6_dBydBz = 2*exy*ezx + 2*eyy*eyz + 2*eyz*ezz
 
 end function
 
+REAL*8 function d2I6_dBydexx(Bx, exy)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: exy
+
+d2I6_dBydexx = 2*Bx*exy
+
+end function
+
+REAL*8 function d2I6_dBydexy(Bx, By, Bz, exx, exy, eyy, ezx)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: exx
+REAL*8, intent(in) :: exy
+REAL*8, intent(in) :: eyy
+REAL*8, intent(in) :: ezx
+
+d2I6_dBydexy = 2*Bx*(exx + eyy) + 4*By*exy + 2*Bz*ezx
+
+end function
+
+REAL*8 function d2I6_dBydeyy(Bx, By, Bz, exy, eyy, eyz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: exy
+REAL*8, intent(in) :: eyy
+REAL*8, intent(in) :: eyz
+
+d2I6_dBydeyy = 2*Bx*exy + 4*By*eyy + 2*Bz*eyz
+
+end function
+
+REAL*8 function d2I6_dBydeyz(Bx, By, Bz, eyy, eyz, ezx, ezz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: eyy
+REAL*8, intent(in) :: eyz
+REAL*8, intent(in) :: ezx
+REAL*8, intent(in) :: ezz
+
+d2I6_dBydeyz = 2*Bx*ezx + 4*By*eyz + 2*Bz*(eyy + ezz)
+
+end function
+
+REAL*8 function d2I6_dBydezx(Bx, Bz, exy, eyz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: exy
+REAL*8, intent(in) :: eyz
+
+d2I6_dBydezx = 2*Bx*eyz + 2*Bz*exy
+
+end function
+
+REAL*8 function d2I6_dBydezz(Bz, eyz)
+implicit none
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: eyz
+
+d2I6_dBydezz = 2*Bz*eyz
+
+end function
+
 REAL*8 function dI6_dBz(Bx, By, Bz, exx, exy, eyy, eyz, ezx, ezz)
 implicit none
 REAL*8, intent(in) :: Bx
@@ -462,6 +602,76 @@ d2I6_dBz2 = 2*eyz**2 + 2*ezx**2 + 2*ezz**2
 
 end function
 
+REAL*8 function d2I6_dBzdexx(Bx, ezx)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: ezx
+
+d2I6_dBzdexx = 2*Bx*ezx
+
+end function
+
+REAL*8 function d2I6_dBzdexy(Bx, By, eyz, ezx)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: eyz
+REAL*8, intent(in) :: ezx
+
+d2I6_dBzdexy = 2*Bx*eyz + 2*By*ezx
+
+end function
+
+REAL*8 function d2I6_dBzdeyy(By, eyz)
+implicit none
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: eyz
+
+d2I6_dBzdeyy = 2*By*eyz
+
+end function
+
+REAL*8 function d2I6_dBzdeyz(Bx, By, Bz, exy, eyy, eyz, ezz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: exy
+REAL*8, intent(in) :: eyy
+REAL*8, intent(in) :: eyz
+REAL*8, intent(in) :: ezz
+
+d2I6_dBzdeyz = 2*Bx*exy + 2*By*(eyy + ezz) + 4*Bz*eyz
+
+end function
+
+REAL*8 function d2I6_dBzdezx(Bx, By, Bz, exx, exy, ezx, ezz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: exx
+REAL*8, intent(in) :: exy
+REAL*8, intent(in) :: ezx
+REAL*8, intent(in) :: ezz
+
+d2I6_dBzdezx = 2*Bx*(exx + ezz) + 2*By*exy + 4*Bz*ezx
+
+end function
+
+REAL*8 function d2I6_dBzdezz(Bx, By, Bz, eyz, ezx, ezz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: eyz
+REAL*8, intent(in) :: ezx
+REAL*8, intent(in) :: ezz
+
+d2I6_dBzdezz = 2*Bx*ezx + 2*By*eyz + 4*Bz*ezz
+
+end function
+
 REAL*8 function dI6_dexx(Bx, By, Bz, exx, exy, ezx)
 implicit none
 REAL*8, intent(in) :: Bx
@@ -472,37 +682,6 @@ REAL*8, intent(in) :: exy
 REAL*8, intent(in) :: ezx
 
 dI6_dexx = 2*Bx*(Bx*exx + By*exy + Bz*ezx)
-
-end function
-
-REAL*8 function d2I6_dBxdexx(Bx, By, Bz, exx, exy, ezx)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: exx
-REAL*8, intent(in) :: exy
-REAL*8, intent(in) :: ezx
-
-d2I6_dBxdexx = 4*Bx*exx + 2*By*exy + 2*Bz*ezx
-
-end function
-
-REAL*8 function d2I6_dBydexx(Bx, exy)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: exy
-
-d2I6_dBydexx = 2*Bx*exy
-
-end function
-
-REAL*8 function d2I6_dBzdexx(Bx, ezx)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: ezx
-
-d2I6_dBzdexx = 2*Bx*ezx
 
 end function
 
@@ -548,45 +727,6 @@ dI6_dexy = 2*Bx**2*exy + 2*Bx*(By*(exx + eyy) + Bz*eyz) + 2*By**2*exy + &
 
 end function
 
-REAL*8 function d2I6_dBxdexy(Bx, By, Bz, exx, exy, eyy, eyz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: exx
-REAL*8, intent(in) :: exy
-REAL*8, intent(in) :: eyy
-REAL*8, intent(in) :: eyz
-
-d2I6_dBxdexy = 4*Bx*exy + 2*By*(exx + eyy) + 2*Bz*eyz
-
-end function
-
-REAL*8 function d2I6_dBydexy(Bx, By, Bz, exx, exy, eyy, ezx)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: exx
-REAL*8, intent(in) :: exy
-REAL*8, intent(in) :: eyy
-REAL*8, intent(in) :: ezx
-
-d2I6_dBydexy = 2*Bx*(exx + eyy) + 4*By*exy + 2*Bz*ezx
-
-end function
-
-REAL*8 function d2I6_dBzdexy(Bx, By, eyz, ezx)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: eyz
-REAL*8, intent(in) :: ezx
-
-d2I6_dBzdexy = 2*Bx*eyz + 2*By*ezx
-
-end function
-
 REAL*8 function d2I6_dexy2(Bx, By)
 implicit none
 REAL*8, intent(in) :: Bx
@@ -596,12 +736,30 @@ d2I6_dexy2 = 2*Bx**2 + 2*By**2
 
 end function
 
+REAL*8 function d2I6_dexydeyy(Bx, By)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+
+d2I6_dexydeyy = 2*Bx*By
+
+end function
+
 REAL*8 function d2I6_dexydeyz(Bx, Bz)
 implicit none
 REAL*8, intent(in) :: Bx
 REAL*8, intent(in) :: Bz
 
 d2I6_dexydeyz = 2*Bx*Bz
+
+end function
+
+REAL*8 function d2I6_dexydezx(By, Bz)
+implicit none
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+
+d2I6_dexydezx = 2*By*Bz
 
 end function
 
@@ -615,46 +773,6 @@ REAL*8, intent(in) :: eyy
 REAL*8, intent(in) :: eyz
 
 dI6_deyy = 2*By*(Bx*exy + By*eyy + Bz*eyz)
-
-end function
-
-REAL*8 function d2I6_dBxdeyy(By, exy)
-implicit none
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: exy
-
-d2I6_dBxdeyy = 2*By*exy
-
-end function
-
-REAL*8 function d2I6_dBydeyy(Bx, By, Bz, exy, eyy, eyz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: exy
-REAL*8, intent(in) :: eyy
-REAL*8, intent(in) :: eyz
-
-d2I6_dBydeyy = 2*Bx*exy + 4*By*eyy + 2*Bz*eyz
-
-end function
-
-REAL*8 function d2I6_dBzdeyy(By, eyz)
-implicit none
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: eyz
-
-d2I6_dBzdeyy = 2*By*eyz
-
-end function
-
-REAL*8 function d2I6_dexydeyy(Bx, By)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-
-d2I6_dexydeyy = 2*Bx*By
 
 end function
 
@@ -691,54 +809,6 @@ dI6_deyz = 2*Bx*By*ezx + 2*By**2*eyz + 2*Bz**2*eyz + 2*Bz*(Bx*exy + By*( &
 
 end function
 
-REAL*8 function d2I6_dBxdeyz(By, Bz, exy, ezx)
-implicit none
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: exy
-REAL*8, intent(in) :: ezx
-
-d2I6_dBxdeyz = 2*By*ezx + 2*Bz*exy
-
-end function
-
-REAL*8 function d2I6_dBydeyz(Bx, By, Bz, eyy, eyz, ezx, ezz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: eyy
-REAL*8, intent(in) :: eyz
-REAL*8, intent(in) :: ezx
-REAL*8, intent(in) :: ezz
-
-d2I6_dBydeyz = 2*Bx*ezx + 4*By*eyz + 2*Bz*(eyy + ezz)
-
-end function
-
-REAL*8 function d2I6_dBzdeyz(Bx, By, Bz, exy, eyy, eyz, ezz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: exy
-REAL*8, intent(in) :: eyy
-REAL*8, intent(in) :: eyz
-REAL*8, intent(in) :: ezz
-
-d2I6_dBzdeyz = 2*Bx*exy + 2*By*(eyy + ezz) + 4*Bz*eyz
-
-end function
-
-REAL*8 function d2I6_dexydeyz(Bx, Bz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: Bz
-
-d2I6_dexydeyz = 2*Bx*Bz
-
-end function
-
 REAL*8 function d2I6_deyz2(By, Bz)
 implicit none
 REAL*8, intent(in) :: By
@@ -757,6 +827,15 @@ d2I6_deyzdezx = 2*Bx*By
 
 end function
 
+REAL*8 function d2I6_deyzdezz(By, Bz)
+implicit none
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+
+d2I6_deyzdezz = 2*By*Bz
+
+end function
+
 REAL*8 function dI6_dezx(Bx, By, Bz, exx, exy, eyz, ezx, ezz)
 implicit none
 REAL*8, intent(in) :: Bx
@@ -768,65 +847,8 @@ REAL*8, intent(in) :: eyz
 REAL*8, intent(in) :: ezx
 REAL*8, intent(in) :: ezz
 
-dI6_dezx = 2*Bx**2*ezx + 2*Bx*(By*eyz + Bz*(exx + ezz)) + 2*By*Bz*exy + &
-      2*Bz**2*ezx
-
-end function
-
-REAL*8 function d2I6_dBxdezx(Bx, By, Bz, exx, eyz, ezx, ezz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: exx
-REAL*8, intent(in) :: eyz
-REAL*8, intent(in) :: ezx
-REAL*8, intent(in) :: ezz
-
-d2I6_dBxdezx = 4*Bx*ezx + 2*By*eyz + 2*Bz*(exx + ezz)
-
-end function
-
-REAL*8 function d2I6_dBydezx(Bx, Bz, exy, eyz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: exy
-REAL*8, intent(in) :: eyz
-
-d2I6_dBydezx = 2*Bx*eyz + 2*Bz*exy
-
-end function
-
-REAL*8 function d2I6_dBzdezx(Bx, By, Bz, exx, exy, ezx, ezz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: exx
-REAL*8, intent(in) :: exy
-REAL*8, intent(in) :: ezx
-REAL*8, intent(in) :: ezz
-
-d2I6_dBzdezx = 2*Bx*(exx + ezz) + 2*By*exy + 4*Bz*ezx
-
-end function
-
-REAL*8 function d2I6_dexydezx(By, Bz)
-implicit none
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-
-d2I6_dexydezx = 2*By*Bz
-
-end function
-
-REAL*8 function d2I6_deyzdezx(Bx, By)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-
-d2I6_deyzdezx = 2*Bx*By
+dI6_dezx = 2*Bx**2*ezx + 2*Bx*By*eyz + 2*Bz**2*ezx + 2*Bz*(Bx*(exx + ezz &
+      ) + By*exy)
 
 end function
 
@@ -858,55 +880,6 @@ REAL*8, intent(in) :: ezx
 REAL*8, intent(in) :: ezz
 
 dI6_dezz = 2*Bz*(Bx*ezx + By*eyz + Bz*ezz)
-
-end function
-
-REAL*8 function d2I6_dBxdezz(Bz, ezx)
-implicit none
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: ezx
-
-d2I6_dBxdezz = 2*Bz*ezx
-
-end function
-
-REAL*8 function d2I6_dBydezz(Bz, eyz)
-implicit none
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: eyz
-
-d2I6_dBydezz = 2*Bz*eyz
-
-end function
-
-REAL*8 function d2I6_dBzdezz(Bx, By, Bz, eyz, ezx, ezz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: eyz
-REAL*8, intent(in) :: ezx
-REAL*8, intent(in) :: ezz
-
-d2I6_dBzdezz = 2*Bx*ezx + 2*By*eyz + 4*Bz*ezz
-
-end function
-
-REAL*8 function d2I6_deyzdezz(By, Bz)
-implicit none
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-
-d2I6_deyzdezz = 2*By*Bz
-
-end function
-
-REAL*8 function d2I6_dezxdezz(Bx, Bz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: Bz
-
-d2I6_dezxdezz = 2*Bx*Bz
 
 end function
 
@@ -968,19 +941,19 @@ d2vp_dI42 = 3*I5/I4**3
 
 end function
 
-REAL*8 function dvp_dI5(I4)
-implicit none
-REAL*8, intent(in) :: I4
-
-dvp_dI5 = (3.0d0/2.0d0)/I4
-
-end function
-
 REAL*8 function d2vp_dI4dI5(I4)
 implicit none
 REAL*8, intent(in) :: I4
 
 d2vp_dI4dI5 = -3.0d0/2.0d0/I4**2
+
+end function
+
+REAL*8 function dvp_dI5(I4)
+implicit none
+REAL*8, intent(in) :: I4
+
+dvp_dI5 = (3.0d0/2.0d0)/I4
 
 end function
 
@@ -1013,16 +986,6 @@ d2wp_dI42 = (1.0d0/4.0d0)*(-I4**2*I6**2 - 4*I4*I6*(I4*I6 - I5**2) + 8*( &
 
 end function
 
-REAL*8 function dwp_dI5(I4, I5, I6)
-implicit none
-REAL*8, intent(in) :: I4
-REAL*8, intent(in) :: I5
-REAL*8, intent(in) :: I6
-
-dwp_dI5 = -I5/(I4*sqrt(I4*I6 - I5**2))
-
-end function
-
 REAL*8 function d2wp_dI4dI5(I4, I5, I6)
 implicit none
 REAL*8, intent(in) :: I4
@@ -1031,26 +994,6 @@ REAL*8, intent(in) :: I6
 
 d2wp_dI4dI5 = (1.0d0/2.0d0)*I5*(3*I4*I6 - 2*I5**2)/(I4**2*(I4*I6 - I5**2 &
       )**(3.0d0/2.0d0))
-
-end function
-
-REAL*8 function d2wp_dI52(I4, I5, I6)
-implicit none
-REAL*8, intent(in) :: I4
-REAL*8, intent(in) :: I5
-REAL*8, intent(in) :: I6
-
-d2wp_dI52 = -I6/(I4*I6 - I5**2)**(3.0d0/2.0d0)
-
-end function
-
-REAL*8 function dwp_dI6(I4, I5, I6)
-implicit none
-REAL*8, intent(in) :: I4
-REAL*8, intent(in) :: I5
-REAL*8, intent(in) :: I6
-
-dwp_dI6 = (1.0d0/2.0d0)/sqrt(I4*I6 - I5**2)
 
 end function
 
@@ -1064,6 +1007,26 @@ d2wp_dI4dI6 = -1.0d0/4.0d0*I6/(I4*I6 - I5**2)**(3.0d0/2.0d0)
 
 end function
 
+REAL*8 function dwp_dI5(I4, I5, I6)
+implicit none
+REAL*8, intent(in) :: I4
+REAL*8, intent(in) :: I5
+REAL*8, intent(in) :: I6
+
+dwp_dI5 = -I5/(I4*sqrt(I4*I6 - I5**2))
+
+end function
+
+REAL*8 function d2wp_dI52(I4, I5, I6)
+implicit none
+REAL*8, intent(in) :: I4
+REAL*8, intent(in) :: I5
+REAL*8, intent(in) :: I6
+
+d2wp_dI52 = -I6/(I4*I6 - I5**2)**(3.0d0/2.0d0)
+
+end function
+
 REAL*8 function d2wp_dI5dI6(I4, I5, I6)
 implicit none
 REAL*8, intent(in) :: I4
@@ -1071,6 +1034,16 @@ REAL*8, intent(in) :: I5
 REAL*8, intent(in) :: I6
 
 d2wp_dI5dI6 = (1.0d0/2.0d0)*I5/(I4*I6 - I5**2)**(3.0d0/2.0d0)
+
+end function
+
+REAL*8 function dwp_dI6(I4, I5, I6)
+implicit none
+REAL*8, intent(in) :: I4
+REAL*8, intent(in) :: I5
+REAL*8, intent(in) :: I6
+
+dwp_dI6 = (1.0d0/2.0d0)/sqrt(I4*I6 - I5**2)
 
 end function
 
@@ -3971,8 +3944,8 @@ REAL*8, intent(in) :: eyz
 REAL*8, intent(in) :: ezx
 REAL*8, intent(in) :: ezz
 
-I5 = Bx**2*exx + 2*Bx*(By*exy + Bz*ezx) + By**2*eyy + 2*By*Bz*eyz + Bz** &
-      2*ezz
+I5 = Bx**2*exx + 2*Bx*By*exy + By**2*eyy + Bz**2*ezz + 2*Bz*(Bx*ezx + By &
+      *eyz)
 
 end function
 
@@ -3988,10 +3961,10 @@ REAL*8, intent(in) :: eyz
 REAL*8, intent(in) :: ezx
 REAL*8, intent(in) :: ezz
 
-I6 = Bx**2*(exx**2 + exy**2 + ezx**2) + 2*Bx*(By*(exx*exy + exy*eyy + &
-      eyz*ezx) + Bz*(exx*ezx + exy*eyz + ezx*ezz)) + By**2*(exy**2 + &
-      eyy**2 + eyz**2) + 2*By*Bz*(exy*ezx + eyy*eyz + eyz*ezz) + Bz**2* &
-      (eyz**2 + ezx**2 + ezz**2)
+I6 = Bx**2*(exx**2 + exy**2 + ezx**2) + 2*Bx*By*(exx*exy + exy*eyy + eyz &
+      *ezx) + By**2*(exy**2 + eyy**2 + eyz**2) + Bz**2*(eyz**2 + ezx**2 &
+      + ezz**2) + 2*Bz*(Bx*(exx*ezx + exy*eyz + ezx*ezz) + By*(exy*ezx &
+      + eyy*eyz + eyz*ezz))
 
 end function
 

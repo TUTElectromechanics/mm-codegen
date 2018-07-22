@@ -193,6 +193,30 @@ d2I5_dBxdBz_public = d2I5_dBxdBz(ezx_)
 
 end function
 
+REAL*8 function d2I5_dBxdexx_public(Bx)
+implicit none
+REAL*8, intent(in) :: Bx
+
+d2I5_dBxdexx_public = d2I5_dBxdexx(Bx)
+
+end function
+
+REAL*8 function d2I5_dBxdexy_public(By)
+implicit none
+REAL*8, intent(in) :: By
+
+d2I5_dBxdexy_public = d2I5_dBxdexy(By)
+
+end function
+
+REAL*8 function d2I5_dBxdezx_public(Bz)
+implicit none
+REAL*8, intent(in) :: Bz
+
+d2I5_dBxdezx_public = d2I5_dBxdezx(Bz)
+
+end function
+
 REAL*8 function dI5_dBy_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
       epszz)
 implicit none
@@ -240,6 +264,30 @@ d2I5_dBydBz_public = d2I5_dBydBz(eyz_)
 
 end function
 
+REAL*8 function d2I5_dBydexy_public(Bx)
+implicit none
+REAL*8, intent(in) :: Bx
+
+d2I5_dBydexy_public = d2I5_dBydexy(Bx)
+
+end function
+
+REAL*8 function d2I5_dBydeyy_public(By)
+implicit none
+REAL*8, intent(in) :: By
+
+d2I5_dBydeyy_public = d2I5_dBydeyy(By)
+
+end function
+
+REAL*8 function d2I5_dBydeyz_public(Bz)
+implicit none
+REAL*8, intent(in) :: Bz
+
+d2I5_dBydeyz_public = d2I5_dBydeyz(Bz)
+
+end function
+
 REAL*8 function dI5_dBz_public(Bx, By, Bz, epsxx, epsyy, epsyz, epszx, &
       epszz)
 implicit none
@@ -276,19 +324,35 @@ d2I5_dBz2_public = d2I5_dBz2(ezz_)
 
 end function
 
+REAL*8 function d2I5_dBzdeyz_public(By)
+implicit none
+REAL*8, intent(in) :: By
+
+d2I5_dBzdeyz_public = d2I5_dBzdeyz(By)
+
+end function
+
+REAL*8 function d2I5_dBzdezx_public(Bx)
+implicit none
+REAL*8, intent(in) :: Bx
+
+d2I5_dBzdezx_public = d2I5_dBzdezx(Bx)
+
+end function
+
+REAL*8 function d2I5_dBzdezz_public(Bz)
+implicit none
+REAL*8, intent(in) :: Bz
+
+d2I5_dBzdezz_public = d2I5_dBzdezz(Bz)
+
+end function
+
 REAL*8 function dI5_dexx_public(Bx)
 implicit none
 REAL*8, intent(in) :: Bx
 
 dI5_dexx_public = dI5_dexx(Bx)
-
-end function
-
-REAL*8 function d2I5_dBxdexx_public(Bx)
-implicit none
-REAL*8, intent(in) :: Bx
-
-d2I5_dBxdexx_public = d2I5_dBxdexx(Bx)
 
 end function
 
@@ -301,35 +365,11 @@ dI5_dexy_public = dI5_dexy(Bx, By)
 
 end function
 
-REAL*8 function d2I5_dBxdexy_public(By)
-implicit none
-REAL*8, intent(in) :: By
-
-d2I5_dBxdexy_public = d2I5_dBxdexy(By)
-
-end function
-
-REAL*8 function d2I5_dBydexy_public(Bx)
-implicit none
-REAL*8, intent(in) :: Bx
-
-d2I5_dBydexy_public = d2I5_dBydexy(Bx)
-
-end function
-
 REAL*8 function dI5_deyy_public(By)
 implicit none
 REAL*8, intent(in) :: By
 
 dI5_deyy_public = dI5_deyy(By)
-
-end function
-
-REAL*8 function d2I5_dBydeyy_public(By)
-implicit none
-REAL*8, intent(in) :: By
-
-d2I5_dBydeyy_public = d2I5_dBydeyy(By)
 
 end function
 
@@ -342,22 +382,6 @@ dI5_deyz_public = dI5_deyz(By, Bz)
 
 end function
 
-REAL*8 function d2I5_dBydeyz_public(Bz)
-implicit none
-REAL*8, intent(in) :: Bz
-
-d2I5_dBydeyz_public = d2I5_dBydeyz(Bz)
-
-end function
-
-REAL*8 function d2I5_dBzdeyz_public(By)
-implicit none
-REAL*8, intent(in) :: By
-
-d2I5_dBzdeyz_public = d2I5_dBzdeyz(By)
-
-end function
-
 REAL*8 function dI5_dezx_public(Bx, Bz)
 implicit none
 REAL*8, intent(in) :: Bx
@@ -367,35 +391,11 @@ dI5_dezx_public = dI5_dezx(Bx, Bz)
 
 end function
 
-REAL*8 function d2I5_dBxdezx_public(Bz)
-implicit none
-REAL*8, intent(in) :: Bz
-
-d2I5_dBxdezx_public = d2I5_dBxdezx(Bz)
-
-end function
-
-REAL*8 function d2I5_dBzdezx_public(Bx)
-implicit none
-REAL*8, intent(in) :: Bx
-
-d2I5_dBzdezx_public = d2I5_dBzdezx(Bx)
-
-end function
-
 REAL*8 function dI5_dezz_public(Bz)
 implicit none
 REAL*8, intent(in) :: Bz
 
 dI5_dezz_public = dI5_dezz(Bz)
-
-end function
-
-REAL*8 function d2I5_dBzdezz_public(Bz)
-implicit none
-REAL*8, intent(in) :: Bz
-
-d2I5_dBzdezz_public = d2I5_dBzdezz(Bz)
 
 end function
 
@@ -496,6 +496,119 @@ d2I6_dBxdBz_public = d2I6_dBxdBz(exx_, exy_, eyz_, ezx_, ezz_)
 
 end function
 
+REAL*8 function d2I6_dBxdexx_public(Bx, By, Bz, epsxx, epsxy, epsyy, epszx, &
+      epszz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epsxx
+REAL*8, intent(in) :: epsxy
+REAL*8, intent(in) :: epsyy
+REAL*8, intent(in) :: epszx
+REAL*8, intent(in) :: epszz
+REAL*8 exx_
+REAL*8 exy_
+REAL*8 ezx_
+
+exx_ = exx(epsxx, epsyy, epszz)
+exy_ = exy(epsxy)
+ezx_ = ezx(epszx)
+
+d2I6_dBxdexx_public = d2I6_dBxdexx(Bx, By, Bz, exx_, exy_, ezx_)
+
+end function
+
+REAL*8 function d2I6_dBxdexy_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
+      epszz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epsxx
+REAL*8, intent(in) :: epsxy
+REAL*8, intent(in) :: epsyy
+REAL*8, intent(in) :: epsyz
+REAL*8, intent(in) :: epszz
+REAL*8 exx_
+REAL*8 exy_
+REAL*8 eyy_
+REAL*8 eyz_
+
+exx_ = exx(epsxx, epsyy, epszz)
+exy_ = exy(epsxy)
+eyy_ = eyy(epsxx, epsyy, epszz)
+eyz_ = eyz(epsyz)
+
+d2I6_dBxdexy_public = d2I6_dBxdexy(Bx, By, Bz, exx_, exy_, eyy_, eyz_)
+
+end function
+
+REAL*8 function d2I6_dBxdeyy_public(By, epsxy)
+implicit none
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: epsxy
+REAL*8 exy_
+
+exy_ = exy(epsxy)
+
+d2I6_dBxdeyy_public = d2I6_dBxdeyy(By, exy_)
+
+end function
+
+REAL*8 function d2I6_dBxdeyz_public(By, Bz, epsxy, epszx)
+implicit none
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epsxy
+REAL*8, intent(in) :: epszx
+REAL*8 exy_
+REAL*8 ezx_
+
+exy_ = exy(epsxy)
+ezx_ = ezx(epszx)
+
+d2I6_dBxdeyz_public = d2I6_dBxdeyz(By, Bz, exy_, ezx_)
+
+end function
+
+REAL*8 function d2I6_dBxdezx_public(Bx, By, Bz, epsxx, epsyy, epsyz, epszx, &
+      epszz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epsxx
+REAL*8, intent(in) :: epsyy
+REAL*8, intent(in) :: epsyz
+REAL*8, intent(in) :: epszx
+REAL*8, intent(in) :: epszz
+REAL*8 exx_
+REAL*8 eyz_
+REAL*8 ezx_
+REAL*8 ezz_
+
+exx_ = exx(epsxx, epsyy, epszz)
+eyz_ = eyz(epsyz)
+ezx_ = ezx(epszx)
+ezz_ = ezz(epsxx, epsyy, epszz)
+
+d2I6_dBxdezx_public = d2I6_dBxdezx(Bx, By, Bz, exx_, eyz_, ezx_, ezz_)
+
+end function
+
+REAL*8 function d2I6_dBxdezz_public(Bz, epszx)
+implicit none
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epszx
+REAL*8 ezx_
+
+ezx_ = ezx(epszx)
+
+d2I6_dBxdezz_public = d2I6_dBxdezz(Bz, ezx_)
+
+end function
+
 REAL*8 function dI6_dBy_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
       epszx, epszz)
 implicit none
@@ -569,6 +682,119 @@ d2I6_dBydBz_public = d2I6_dBydBz(exy_, eyy_, eyz_, ezx_, ezz_)
 
 end function
 
+REAL*8 function d2I6_dBydexx_public(Bx, epsxy)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: epsxy
+REAL*8 exy_
+
+exy_ = exy(epsxy)
+
+d2I6_dBydexx_public = d2I6_dBydexx(Bx, exy_)
+
+end function
+
+REAL*8 function d2I6_dBydexy_public(Bx, By, Bz, epsxx, epsxy, epsyy, epszx, &
+      epszz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epsxx
+REAL*8, intent(in) :: epsxy
+REAL*8, intent(in) :: epsyy
+REAL*8, intent(in) :: epszx
+REAL*8, intent(in) :: epszz
+REAL*8 exx_
+REAL*8 exy_
+REAL*8 eyy_
+REAL*8 ezx_
+
+exx_ = exx(epsxx, epsyy, epszz)
+exy_ = exy(epsxy)
+eyy_ = eyy(epsxx, epsyy, epszz)
+ezx_ = ezx(epszx)
+
+d2I6_dBydexy_public = d2I6_dBydexy(Bx, By, Bz, exx_, exy_, eyy_, ezx_)
+
+end function
+
+REAL*8 function d2I6_dBydeyy_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
+      epszz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epsxx
+REAL*8, intent(in) :: epsxy
+REAL*8, intent(in) :: epsyy
+REAL*8, intent(in) :: epsyz
+REAL*8, intent(in) :: epszz
+REAL*8 exy_
+REAL*8 eyy_
+REAL*8 eyz_
+
+exy_ = exy(epsxy)
+eyy_ = eyy(epsxx, epsyy, epszz)
+eyz_ = eyz(epsyz)
+
+d2I6_dBydeyy_public = d2I6_dBydeyy(Bx, By, Bz, exy_, eyy_, eyz_)
+
+end function
+
+REAL*8 function d2I6_dBydeyz_public(Bx, By, Bz, epsxx, epsyy, epsyz, epszx, &
+      epszz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epsxx
+REAL*8, intent(in) :: epsyy
+REAL*8, intent(in) :: epsyz
+REAL*8, intent(in) :: epszx
+REAL*8, intent(in) :: epszz
+REAL*8 eyy_
+REAL*8 eyz_
+REAL*8 ezx_
+REAL*8 ezz_
+
+eyy_ = eyy(epsxx, epsyy, epszz)
+eyz_ = eyz(epsyz)
+ezx_ = ezx(epszx)
+ezz_ = ezz(epsxx, epsyy, epszz)
+
+d2I6_dBydeyz_public = d2I6_dBydeyz(Bx, By, Bz, eyy_, eyz_, ezx_, ezz_)
+
+end function
+
+REAL*8 function d2I6_dBydezx_public(Bx, Bz, epsxy, epsyz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epsxy
+REAL*8, intent(in) :: epsyz
+REAL*8 exy_
+REAL*8 eyz_
+
+exy_ = exy(epsxy)
+eyz_ = eyz(epsyz)
+
+d2I6_dBydezx_public = d2I6_dBydezx(Bx, Bz, exy_, eyz_)
+
+end function
+
+REAL*8 function d2I6_dBydezz_public(Bz, epsyz)
+implicit none
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epsyz
+REAL*8 eyz_
+
+eyz_ = eyz(epsyz)
+
+d2I6_dBydezz_public = d2I6_dBydezz(Bz, eyz_)
+
+end function
+
 REAL*8 function dI6_dBz_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
       epszx, epszz)
 implicit none
@@ -618,6 +844,119 @@ d2I6_dBz2_public = d2I6_dBz2(eyz_, ezx_, ezz_)
 
 end function
 
+REAL*8 function d2I6_dBzdexx_public(Bx, epszx)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: epszx
+REAL*8 ezx_
+
+ezx_ = ezx(epszx)
+
+d2I6_dBzdexx_public = d2I6_dBzdexx(Bx, ezx_)
+
+end function
+
+REAL*8 function d2I6_dBzdexy_public(Bx, By, epsyz, epszx)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: epsyz
+REAL*8, intent(in) :: epszx
+REAL*8 eyz_
+REAL*8 ezx_
+
+eyz_ = eyz(epsyz)
+ezx_ = ezx(epszx)
+
+d2I6_dBzdexy_public = d2I6_dBzdexy(Bx, By, eyz_, ezx_)
+
+end function
+
+REAL*8 function d2I6_dBzdeyy_public(By, epsyz)
+implicit none
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: epsyz
+REAL*8 eyz_
+
+eyz_ = eyz(epsyz)
+
+d2I6_dBzdeyy_public = d2I6_dBzdeyy(By, eyz_)
+
+end function
+
+REAL*8 function d2I6_dBzdeyz_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
+      epszz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epsxx
+REAL*8, intent(in) :: epsxy
+REAL*8, intent(in) :: epsyy
+REAL*8, intent(in) :: epsyz
+REAL*8, intent(in) :: epszz
+REAL*8 exy_
+REAL*8 eyy_
+REAL*8 eyz_
+REAL*8 ezz_
+
+exy_ = exy(epsxy)
+eyy_ = eyy(epsxx, epsyy, epszz)
+eyz_ = eyz(epsyz)
+ezz_ = ezz(epsxx, epsyy, epszz)
+
+d2I6_dBzdeyz_public = d2I6_dBzdeyz(Bx, By, Bz, exy_, eyy_, eyz_, ezz_)
+
+end function
+
+REAL*8 function d2I6_dBzdezx_public(Bx, By, Bz, epsxx, epsxy, epsyy, epszx, &
+      epszz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epsxx
+REAL*8, intent(in) :: epsxy
+REAL*8, intent(in) :: epsyy
+REAL*8, intent(in) :: epszx
+REAL*8, intent(in) :: epszz
+REAL*8 exx_
+REAL*8 exy_
+REAL*8 ezx_
+REAL*8 ezz_
+
+exx_ = exx(epsxx, epsyy, epszz)
+exy_ = exy(epsxy)
+ezx_ = ezx(epszx)
+ezz_ = ezz(epsxx, epsyy, epszz)
+
+d2I6_dBzdezx_public = d2I6_dBzdezx(Bx, By, Bz, exx_, exy_, ezx_, ezz_)
+
+end function
+
+REAL*8 function d2I6_dBzdezz_public(Bx, By, Bz, epsxx, epsyy, epsyz, epszx, &
+      epszz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epsxx
+REAL*8, intent(in) :: epsyy
+REAL*8, intent(in) :: epsyz
+REAL*8, intent(in) :: epszx
+REAL*8, intent(in) :: epszz
+REAL*8 eyz_
+REAL*8 ezx_
+REAL*8 ezz_
+
+eyz_ = eyz(epsyz)
+ezx_ = ezx(epszx)
+ezz_ = ezz(epsxx, epsyy, epszz)
+
+d2I6_dBzdezz_public = d2I6_dBzdezz(Bx, By, Bz, eyz_, ezx_, ezz_)
+
+end function
+
 REAL*8 function dI6_dexx_public(Bx, By, Bz, epsxx, epsxy, epsyy, epszx, &
       epszz)
 implicit none
@@ -638,53 +977,6 @@ exy_ = exy(epsxy)
 ezx_ = ezx(epszx)
 
 dI6_dexx_public = dI6_dexx(Bx, By, Bz, exx_, exy_, ezx_)
-
-end function
-
-REAL*8 function d2I6_dBxdexx_public(Bx, By, Bz, epsxx, epsxy, epsyy, epszx, &
-      epszz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epsxx
-REAL*8, intent(in) :: epsxy
-REAL*8, intent(in) :: epsyy
-REAL*8, intent(in) :: epszx
-REAL*8, intent(in) :: epszz
-REAL*8 exx_
-REAL*8 exy_
-REAL*8 ezx_
-
-exx_ = exx(epsxx, epsyy, epszz)
-exy_ = exy(epsxy)
-ezx_ = ezx(epszx)
-
-d2I6_dBxdexx_public = d2I6_dBxdexx(Bx, By, Bz, exx_, exy_, ezx_)
-
-end function
-
-REAL*8 function d2I6_dBydexx_public(Bx, epsxy)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: epsxy
-REAL*8 exy_
-
-exy_ = exy(epsxy)
-
-d2I6_dBydexx_public = d2I6_dBydexx(Bx, exy_)
-
-end function
-
-REAL*8 function d2I6_dBzdexx_public(Bx, epszx)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: epszx
-REAL*8 ezx_
-
-ezx_ = ezx(epszx)
-
-d2I6_dBzdexx_public = d2I6_dBzdexx(Bx, ezx_)
 
 end function
 
@@ -742,72 +1034,6 @@ dI6_dexy_public = dI6_dexy(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_)
 
 end function
 
-REAL*8 function d2I6_dBxdexy_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
-      epszz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epsxx
-REAL*8, intent(in) :: epsxy
-REAL*8, intent(in) :: epsyy
-REAL*8, intent(in) :: epsyz
-REAL*8, intent(in) :: epszz
-REAL*8 exx_
-REAL*8 exy_
-REAL*8 eyy_
-REAL*8 eyz_
-
-exx_ = exx(epsxx, epsyy, epszz)
-exy_ = exy(epsxy)
-eyy_ = eyy(epsxx, epsyy, epszz)
-eyz_ = eyz(epsyz)
-
-d2I6_dBxdexy_public = d2I6_dBxdexy(Bx, By, Bz, exx_, exy_, eyy_, eyz_)
-
-end function
-
-REAL*8 function d2I6_dBydexy_public(Bx, By, Bz, epsxx, epsxy, epsyy, epszx, &
-      epszz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epsxx
-REAL*8, intent(in) :: epsxy
-REAL*8, intent(in) :: epsyy
-REAL*8, intent(in) :: epszx
-REAL*8, intent(in) :: epszz
-REAL*8 exx_
-REAL*8 exy_
-REAL*8 eyy_
-REAL*8 ezx_
-
-exx_ = exx(epsxx, epsyy, epszz)
-exy_ = exy(epsxy)
-eyy_ = eyy(epsxx, epsyy, epszz)
-ezx_ = ezx(epszx)
-
-d2I6_dBydexy_public = d2I6_dBydexy(Bx, By, Bz, exx_, exy_, eyy_, ezx_)
-
-end function
-
-REAL*8 function d2I6_dBzdexy_public(Bx, By, epsyz, epszx)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: epsyz
-REAL*8, intent(in) :: epszx
-REAL*8 eyz_
-REAL*8 ezx_
-
-eyz_ = eyz(epsyz)
-ezx_ = ezx(epszx)
-
-d2I6_dBzdexy_public = d2I6_dBzdexy(Bx, By, eyz_, ezx_)
-
-end function
-
 REAL*8 function d2I6_dexy2_public(Bx, By)
 implicit none
 REAL*8, intent(in) :: Bx
@@ -817,12 +1043,30 @@ d2I6_dexy2_public = d2I6_dexy2(Bx, By)
 
 end function
 
+REAL*8 function d2I6_dexydeyy_public(Bx, By)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+
+d2I6_dexydeyy_public = d2I6_dexydeyy(Bx, By)
+
+end function
+
 REAL*8 function d2I6_dexydeyz_public(Bx, Bz)
 implicit none
 REAL*8, intent(in) :: Bx
 REAL*8, intent(in) :: Bz
 
 d2I6_dexydeyz_public = d2I6_dexydeyz(Bx, Bz)
+
+end function
+
+REAL*8 function d2I6_dexydezx_public(By, Bz)
+implicit none
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+
+d2I6_dexydezx_public = d2I6_dexydezx(By, Bz)
 
 end function
 
@@ -846,62 +1090,6 @@ eyy_ = eyy(epsxx, epsyy, epszz)
 eyz_ = eyz(epsyz)
 
 dI6_deyy_public = dI6_deyy(Bx, By, Bz, exy_, eyy_, eyz_)
-
-end function
-
-REAL*8 function d2I6_dBxdeyy_public(By, epsxy)
-implicit none
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: epsxy
-REAL*8 exy_
-
-exy_ = exy(epsxy)
-
-d2I6_dBxdeyy_public = d2I6_dBxdeyy(By, exy_)
-
-end function
-
-REAL*8 function d2I6_dBydeyy_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
-      epszz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epsxx
-REAL*8, intent(in) :: epsxy
-REAL*8, intent(in) :: epsyy
-REAL*8, intent(in) :: epsyz
-REAL*8, intent(in) :: epszz
-REAL*8 exy_
-REAL*8 eyy_
-REAL*8 eyz_
-
-exy_ = exy(epsxy)
-eyy_ = eyy(epsxx, epsyy, epszz)
-eyz_ = eyz(epsyz)
-
-d2I6_dBydeyy_public = d2I6_dBydeyy(Bx, By, Bz, exy_, eyy_, eyz_)
-
-end function
-
-REAL*8 function d2I6_dBzdeyy_public(By, epsyz)
-implicit none
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: epsyz
-REAL*8 eyz_
-
-eyz_ = eyz(epsyz)
-
-d2I6_dBzdeyy_public = d2I6_dBzdeyy(By, eyz_)
-
-end function
-
-REAL*8 function d2I6_dexydeyy_public(Bx, By)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-
-d2I6_dexydeyy_public = d2I6_dexydeyy(Bx, By)
 
 end function
 
@@ -950,81 +1138,6 @@ dI6_deyz_public = dI6_deyz(Bx, By, Bz, exy_, eyy_, eyz_, ezx_, ezz_)
 
 end function
 
-REAL*8 function d2I6_dBxdeyz_public(By, Bz, epsxy, epszx)
-implicit none
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epsxy
-REAL*8, intent(in) :: epszx
-REAL*8 exy_
-REAL*8 ezx_
-
-exy_ = exy(epsxy)
-ezx_ = ezx(epszx)
-
-d2I6_dBxdeyz_public = d2I6_dBxdeyz(By, Bz, exy_, ezx_)
-
-end function
-
-REAL*8 function d2I6_dBydeyz_public(Bx, By, Bz, epsxx, epsyy, epsyz, epszx, &
-      epszz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epsxx
-REAL*8, intent(in) :: epsyy
-REAL*8, intent(in) :: epsyz
-REAL*8, intent(in) :: epszx
-REAL*8, intent(in) :: epszz
-REAL*8 eyy_
-REAL*8 eyz_
-REAL*8 ezx_
-REAL*8 ezz_
-
-eyy_ = eyy(epsxx, epsyy, epszz)
-eyz_ = eyz(epsyz)
-ezx_ = ezx(epszx)
-ezz_ = ezz(epsxx, epsyy, epszz)
-
-d2I6_dBydeyz_public = d2I6_dBydeyz(Bx, By, Bz, eyy_, eyz_, ezx_, ezz_)
-
-end function
-
-REAL*8 function d2I6_dBzdeyz_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
-      epszz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epsxx
-REAL*8, intent(in) :: epsxy
-REAL*8, intent(in) :: epsyy
-REAL*8, intent(in) :: epsyz
-REAL*8, intent(in) :: epszz
-REAL*8 exy_
-REAL*8 eyy_
-REAL*8 eyz_
-REAL*8 ezz_
-
-exy_ = exy(epsxy)
-eyy_ = eyy(epsxx, epsyy, epszz)
-eyz_ = eyz(epsyz)
-ezz_ = ezz(epsxx, epsyy, epszz)
-
-d2I6_dBzdeyz_public = d2I6_dBzdeyz(Bx, By, Bz, exy_, eyy_, eyz_, ezz_)
-
-end function
-
-REAL*8 function d2I6_dexydeyz_public(Bx, Bz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: Bz
-
-d2I6_dexydeyz_public = d2I6_dexydeyz(Bx, Bz)
-
-end function
-
 REAL*8 function d2I6_deyz2_public(By, Bz)
 implicit none
 REAL*8, intent(in) :: By
@@ -1040,6 +1153,15 @@ REAL*8, intent(in) :: Bx
 REAL*8, intent(in) :: By
 
 d2I6_deyzdezx_public = d2I6_deyzdezx(Bx, By)
+
+end function
+
+REAL*8 function d2I6_deyzdezz_public(By, Bz)
+implicit none
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+
+d2I6_deyzdezz_public = d2I6_deyzdezz(By, Bz)
 
 end function
 
@@ -1068,90 +1190,6 @@ ezx_ = ezx(epszx)
 ezz_ = ezz(epsxx, epsyy, epszz)
 
 dI6_dezx_public = dI6_dezx(Bx, By, Bz, exx_, exy_, eyz_, ezx_, ezz_)
-
-end function
-
-REAL*8 function d2I6_dBxdezx_public(Bx, By, Bz, epsxx, epsyy, epsyz, epszx, &
-      epszz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epsxx
-REAL*8, intent(in) :: epsyy
-REAL*8, intent(in) :: epsyz
-REAL*8, intent(in) :: epszx
-REAL*8, intent(in) :: epszz
-REAL*8 exx_
-REAL*8 eyz_
-REAL*8 ezx_
-REAL*8 ezz_
-
-exx_ = exx(epsxx, epsyy, epszz)
-eyz_ = eyz(epsyz)
-ezx_ = ezx(epszx)
-ezz_ = ezz(epsxx, epsyy, epszz)
-
-d2I6_dBxdezx_public = d2I6_dBxdezx(Bx, By, Bz, exx_, eyz_, ezx_, ezz_)
-
-end function
-
-REAL*8 function d2I6_dBydezx_public(Bx, Bz, epsxy, epsyz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epsxy
-REAL*8, intent(in) :: epsyz
-REAL*8 exy_
-REAL*8 eyz_
-
-exy_ = exy(epsxy)
-eyz_ = eyz(epsyz)
-
-d2I6_dBydezx_public = d2I6_dBydezx(Bx, Bz, exy_, eyz_)
-
-end function
-
-REAL*8 function d2I6_dBzdezx_public(Bx, By, Bz, epsxx, epsxy, epsyy, epszx, &
-      epszz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epsxx
-REAL*8, intent(in) :: epsxy
-REAL*8, intent(in) :: epsyy
-REAL*8, intent(in) :: epszx
-REAL*8, intent(in) :: epszz
-REAL*8 exx_
-REAL*8 exy_
-REAL*8 ezx_
-REAL*8 ezz_
-
-exx_ = exx(epsxx, epsyy, epszz)
-exy_ = exy(epsxy)
-ezx_ = ezx(epszx)
-ezz_ = ezz(epsxx, epsyy, epszz)
-
-d2I6_dBzdezx_public = d2I6_dBzdezx(Bx, By, Bz, exx_, exy_, ezx_, ezz_)
-
-end function
-
-REAL*8 function d2I6_dexydezx_public(By, Bz)
-implicit none
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-
-d2I6_dexydezx_public = d2I6_dexydezx(By, Bz)
-
-end function
-
-REAL*8 function d2I6_deyzdezx_public(Bx, By)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-
-d2I6_deyzdezx_public = d2I6_deyzdezx(Bx, By)
 
 end function
 
@@ -1193,71 +1231,6 @@ ezx_ = ezx(epszx)
 ezz_ = ezz(epsxx, epsyy, epszz)
 
 dI6_dezz_public = dI6_dezz(Bx, By, Bz, eyz_, ezx_, ezz_)
-
-end function
-
-REAL*8 function d2I6_dBxdezz_public(Bz, epszx)
-implicit none
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epszx
-REAL*8 ezx_
-
-ezx_ = ezx(epszx)
-
-d2I6_dBxdezz_public = d2I6_dBxdezz(Bz, ezx_)
-
-end function
-
-REAL*8 function d2I6_dBydezz_public(Bz, epsyz)
-implicit none
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epsyz
-REAL*8 eyz_
-
-eyz_ = eyz(epsyz)
-
-d2I6_dBydezz_public = d2I6_dBydezz(Bz, eyz_)
-
-end function
-
-REAL*8 function d2I6_dBzdezz_public(Bx, By, Bz, epsxx, epsyy, epsyz, epszx, &
-      epszz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epsxx
-REAL*8, intent(in) :: epsyy
-REAL*8, intent(in) :: epsyz
-REAL*8, intent(in) :: epszx
-REAL*8, intent(in) :: epszz
-REAL*8 eyz_
-REAL*8 ezx_
-REAL*8 ezz_
-
-eyz_ = eyz(epsyz)
-ezx_ = ezx(epszx)
-ezz_ = ezz(epsxx, epsyy, epszz)
-
-d2I6_dBzdezz_public = d2I6_dBzdezz(Bx, By, Bz, eyz_, ezx_, ezz_)
-
-end function
-
-REAL*8 function d2I6_deyzdezz_public(By, Bz)
-implicit none
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-
-d2I6_deyzdezz_public = d2I6_deyzdezz(By, Bz)
-
-end function
-
-REAL*8 function d2I6_dezxdezz_public(Bx, Bz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: Bz
-
-d2I6_dezxdezz_public = d2I6_dezxdezz(Bx, Bz)
 
 end function
 
@@ -1379,19 +1352,6 @@ d2vp_dI42_public = d2vp_dI42(I4_, I5_)
 
 end function
 
-REAL*8 function dvp_dI5_public(Bx, By, Bz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8 I4_
-
-I4_ = I4(Bx, By, Bz)
-
-dvp_dI5_public = dvp_dI5(I4_)
-
-end function
-
 REAL*8 function d2vp_dI4dI5_public(Bx, By, Bz)
 implicit none
 REAL*8, intent(in) :: Bx
@@ -1402,6 +1362,19 @@ REAL*8 I4_
 I4_ = I4(Bx, By, Bz)
 
 d2vp_dI4dI5_public = d2vp_dI4dI5(I4_)
+
+end function
+
+REAL*8 function dvp_dI5_public(Bx, By, Bz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8 I4_
+
+I4_ = I4(Bx, By, Bz)
+
+dvp_dI5_public = dvp_dI5(I4_)
 
 end function
 
@@ -1485,42 +1458,6 @@ d2wp_dI42_public = d2wp_dI42(I4_, I5_, I6_)
 
 end function
 
-REAL*8 function dwp_dI5_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
-      epszx, epszz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epsxx
-REAL*8, intent(in) :: epsxy
-REAL*8, intent(in) :: epsyy
-REAL*8, intent(in) :: epsyz
-REAL*8, intent(in) :: epszx
-REAL*8, intent(in) :: epszz
-REAL*8 exx_
-REAL*8 exy_
-REAL*8 eyy_
-REAL*8 eyz_
-REAL*8 ezx_
-REAL*8 ezz_
-REAL*8 I4_
-REAL*8 I5_
-REAL*8 I6_
-
-exx_ = exx(epsxx, epsyy, epszz)
-exy_ = exy(epsxy)
-eyy_ = eyy(epsxx, epsyy, epszz)
-eyz_ = eyz(epsyz)
-ezx_ = ezx(epszx)
-ezz_ = ezz(epsxx, epsyy, epszz)
-I4_ = I4(Bx, By, Bz)
-I5_ = I5(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
-I6_ = I6(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
-
-dwp_dI5_public = dwp_dI5(I4_, I5_, I6_)
-
-end function
-
 REAL*8 function d2wp_dI4dI5_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
       epszx, epszz)
 implicit none
@@ -1554,78 +1491,6 @@ I5_ = I5(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
 I6_ = I6(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
 
 d2wp_dI4dI5_public = d2wp_dI4dI5(I4_, I5_, I6_)
-
-end function
-
-REAL*8 function d2wp_dI52_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
-      epszx, epszz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epsxx
-REAL*8, intent(in) :: epsxy
-REAL*8, intent(in) :: epsyy
-REAL*8, intent(in) :: epsyz
-REAL*8, intent(in) :: epszx
-REAL*8, intent(in) :: epszz
-REAL*8 exx_
-REAL*8 exy_
-REAL*8 eyy_
-REAL*8 eyz_
-REAL*8 ezx_
-REAL*8 ezz_
-REAL*8 I4_
-REAL*8 I5_
-REAL*8 I6_
-
-exx_ = exx(epsxx, epsyy, epszz)
-exy_ = exy(epsxy)
-eyy_ = eyy(epsxx, epsyy, epszz)
-eyz_ = eyz(epsyz)
-ezx_ = ezx(epszx)
-ezz_ = ezz(epsxx, epsyy, epszz)
-I4_ = I4(Bx, By, Bz)
-I5_ = I5(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
-I6_ = I6(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
-
-d2wp_dI52_public = d2wp_dI52(I4_, I5_, I6_)
-
-end function
-
-REAL*8 function dwp_dI6_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
-      epszx, epszz)
-implicit none
-REAL*8, intent(in) :: Bx
-REAL*8, intent(in) :: By
-REAL*8, intent(in) :: Bz
-REAL*8, intent(in) :: epsxx
-REAL*8, intent(in) :: epsxy
-REAL*8, intent(in) :: epsyy
-REAL*8, intent(in) :: epsyz
-REAL*8, intent(in) :: epszx
-REAL*8, intent(in) :: epszz
-REAL*8 exx_
-REAL*8 exy_
-REAL*8 eyy_
-REAL*8 eyz_
-REAL*8 ezx_
-REAL*8 ezz_
-REAL*8 I4_
-REAL*8 I5_
-REAL*8 I6_
-
-exx_ = exx(epsxx, epsyy, epszz)
-exy_ = exy(epsxy)
-eyy_ = eyy(epsxx, epsyy, epszz)
-eyz_ = eyz(epsyz)
-ezx_ = ezx(epszx)
-ezz_ = ezz(epsxx, epsyy, epszz)
-I4_ = I4(Bx, By, Bz)
-I5_ = I5(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
-I6_ = I6(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
-
-dwp_dI6_public = dwp_dI6(I4_, I5_, I6_)
 
 end function
 
@@ -1665,6 +1530,78 @@ d2wp_dI4dI6_public = d2wp_dI4dI6(I4_, I5_, I6_)
 
 end function
 
+REAL*8 function dwp_dI5_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
+      epszx, epszz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epsxx
+REAL*8, intent(in) :: epsxy
+REAL*8, intent(in) :: epsyy
+REAL*8, intent(in) :: epsyz
+REAL*8, intent(in) :: epszx
+REAL*8, intent(in) :: epszz
+REAL*8 exx_
+REAL*8 exy_
+REAL*8 eyy_
+REAL*8 eyz_
+REAL*8 ezx_
+REAL*8 ezz_
+REAL*8 I4_
+REAL*8 I5_
+REAL*8 I6_
+
+exx_ = exx(epsxx, epsyy, epszz)
+exy_ = exy(epsxy)
+eyy_ = eyy(epsxx, epsyy, epszz)
+eyz_ = eyz(epsyz)
+ezx_ = ezx(epszx)
+ezz_ = ezz(epsxx, epsyy, epszz)
+I4_ = I4(Bx, By, Bz)
+I5_ = I5(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
+I6_ = I6(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
+
+dwp_dI5_public = dwp_dI5(I4_, I5_, I6_)
+
+end function
+
+REAL*8 function d2wp_dI52_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
+      epszx, epszz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epsxx
+REAL*8, intent(in) :: epsxy
+REAL*8, intent(in) :: epsyy
+REAL*8, intent(in) :: epsyz
+REAL*8, intent(in) :: epszx
+REAL*8, intent(in) :: epszz
+REAL*8 exx_
+REAL*8 exy_
+REAL*8 eyy_
+REAL*8 eyz_
+REAL*8 ezx_
+REAL*8 ezz_
+REAL*8 I4_
+REAL*8 I5_
+REAL*8 I6_
+
+exx_ = exx(epsxx, epsyy, epszz)
+exy_ = exy(epsxy)
+eyy_ = eyy(epsxx, epsyy, epszz)
+eyz_ = eyz(epsyz)
+ezx_ = ezx(epszx)
+ezz_ = ezz(epsxx, epsyy, epszz)
+I4_ = I4(Bx, By, Bz)
+I5_ = I5(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
+I6_ = I6(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
+
+d2wp_dI52_public = d2wp_dI52(I4_, I5_, I6_)
+
+end function
+
 REAL*8 function d2wp_dI5dI6_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
       epszx, epszz)
 implicit none
@@ -1698,6 +1635,42 @@ I5_ = I5(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
 I6_ = I6(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
 
 d2wp_dI5dI6_public = d2wp_dI5dI6(I4_, I5_, I6_)
+
+end function
+
+REAL*8 function dwp_dI6_public(Bx, By, Bz, epsxx, epsxy, epsyy, epsyz, &
+      epszx, epszz)
+implicit none
+REAL*8, intent(in) :: Bx
+REAL*8, intent(in) :: By
+REAL*8, intent(in) :: Bz
+REAL*8, intent(in) :: epsxx
+REAL*8, intent(in) :: epsxy
+REAL*8, intent(in) :: epsyy
+REAL*8, intent(in) :: epsyz
+REAL*8, intent(in) :: epszx
+REAL*8, intent(in) :: epszz
+REAL*8 exx_
+REAL*8 exy_
+REAL*8 eyy_
+REAL*8 eyz_
+REAL*8 ezx_
+REAL*8 ezz_
+REAL*8 I4_
+REAL*8 I5_
+REAL*8 I6_
+
+exx_ = exx(epsxx, epsyy, epszz)
+exy_ = exy(epsxy)
+eyy_ = eyy(epsxx, epsyy, epszz)
+eyz_ = eyz(epsyz)
+ezx_ = ezx(epszx)
+ezz_ = ezz(epsxx, epsyy, epszz)
+I4_ = I4(Bx, By, Bz)
+I5_ = I5(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
+I6_ = I6(Bx, By, Bz, exx_, exy_, eyy_, eyz_, ezx_, ezz_)
+
+dwp_dI6_public = dwp_dI6(I4_, I5_, I6_)
 
 end function
 
