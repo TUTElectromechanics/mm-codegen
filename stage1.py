@@ -75,27 +75,32 @@ class CodeGenerator:
 
             The RHS values are not stripped.
         """
-        D = partial(sy.Derivative, evaluate=False)
         keyify = ModelBase.keyify
+        D = partial(sy.Derivative, evaluate=False)
         zero = sy.S.Zero
 
         def process_one(expr):
-            # Compute any needed derivatives for which we have the def.
+            # Compute any needed derivatives for which the function is in defs.
             ds = {}
             for f, *vs in symutil.derivatives_needed_by(expr):
                 fkey = keyify(f)
                 dkey = keyify(D(f, *vs))
-                if dkey not in defs and fkey in defs:
-                    ds[dkey] = simplify(sy.diff(defs[fkey], *vs))
+                if fkey in defs:
+                    if dkey in ds:
+                        pass
+                    elif dkey in defs:  # previously computed
+                        ds[dkey] = defs[dkey]
+                    else:
+                        ds[dkey] = simplify(sy.diff(defs[fkey], *vs))
 
-            # Optimize: in expr and ds, delete any identically zero derivatives.
+            # Optimize: in expr, delete any identically zero derivatives.
+            # (We optimize the set of definitions later, in run().)
             if len(ds):
                 def kill_zero(term):
                     key = keyify(term)
                     return zero if key in ds and ds[key] == 0 else term
                 final_expr = symutil.map_instancesof_in(kill_zero, sy.Derivative, expr)
-                final_ds = {k: v for k, v in ds.items() if v != zero}
-                return final_expr, final_ds
+                return final_expr, ds
             return expr, ds
 
         def recurse(expr, seen):
@@ -171,6 +176,10 @@ class CodeGenerator:
                                                                                               label=label, name=name))
 
             defs[key] = cls.process(expr, defs, model.simplify)
+
+        # Delete identically zero definitions
+        zero = sy.S.Zero
+        defs = {k: v for k, v in defs.items() if v != zero}
 
         print("stage1: {label} model: generating code".format(label=label))
 
