@@ -223,8 +223,8 @@ def collect_const_in(expr):
     """Collect constant factors in sums nested inside ``expr``."""
     return map_instancesof_in(sy.collect_const, sy.Add, expr)
 
-def doit_in(expr):
-    """Apply substitutions nested inside ``expr``."""
+def apply_substitutions_in(expr):
+    """Apply unevaluated substitutions nested inside ``expr``."""
     def doit_func(expr):
         return expr.doit()
     return map_instancesof_in(doit_func, sy.Subs, expr)

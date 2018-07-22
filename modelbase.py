@@ -101,8 +101,10 @@ class ModelBase:
                 dgdx_expr = (sy.diff(g, x)).doit()  # --> Derivative(f(x, y), x)*Derivative(g(f(x, y)), f(x, y))
 
             In the last example, the .doit() changes the format of the result
-            to standard notation. See PotentialModelBase.dϕdq() for another example
-            (search for "doit").
+            to standard notation. For more complex expressions which may have
+            unevaluated substitution objects nested anywhere in them, see
+            ``symutil.apply_substitutions_in()``. See explanation and example
+            in ``potentialmodelbase.PotentialModelBase.dϕdq()``.
 
         Abstract method, must be overridden in a derived class.
 

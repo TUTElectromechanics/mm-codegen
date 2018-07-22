@@ -128,7 +128,7 @@ class PotentialModelBase(ModelBase):
         # In SymPy, applying the Subs object returned by diff() converts
         # the derivative expressions to the human-readable notation.
         if len(qs):  # if we did any differentiations
-            expr = symutil.doit_in(expr)
+            expr = symutil.apply_substitutions_in(expr)
 
         if strip:
             expr = symutil.strip_function_arguments(expr)
