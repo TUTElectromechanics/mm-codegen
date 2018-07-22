@@ -30,7 +30,7 @@ def name_derivative(funcname, varnames, allow_reorder=True, as_fortran_identifie
 
         allow_reorder: bool
             If True, varnames will be sorted before writing out the derivative notation.
-
+              (Useful for higher derivatives of C^k functions.)
             If False, the ordering of varnames will be preserved.
 
         as_fortran_identifier: bool
