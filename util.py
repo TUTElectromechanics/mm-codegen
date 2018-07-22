@@ -10,7 +10,7 @@ Created on Thu Nov  2 00:12:57 2017
 import re
 from itertools import groupby
 
-def name_derivative(funcname, varnames, allow_reorder=True, as_fortran_identifier=False):
+def name_derivative(funcname, varnames, canonize=True, as_fortran_identifier=False):
     """Construct name of a partial derivative, such as ∂²ϕ/∂Bx².
 
     Parameters:
@@ -28,10 +28,10 @@ def name_derivative(funcname, varnames, allow_reorder=True, as_fortran_identifie
 
                 varnames=("Bx",)
 
-        allow_reorder: bool
-            If True, varnames will be sorted before writing out the derivative notation.
+        canonize: bool
+            If True, the varlist (diff w.r.t. what) of each derivative will be sorted.
               (Useful for higher derivatives of C^k functions.)
-            If False, the ordering of varnames will be preserved.
+            If False, the varlist is passed through as-is.
 
         as_fortran_identifier: bool
             If True, replace "/" -> "_" and "∂" -> "d", and do not use superscripts.
@@ -47,7 +47,7 @@ def name_derivative(funcname, varnames, allow_reorder=True, as_fortran_identifie
     if len(varnames) < 1:
         return funcname
 
-    input = sorted(varnames) if allow_reorder else varnames
+    input = sorted(varnames) if canonize else varnames
 
     # https://stackoverflow.com/questions/34443946/count-consecutive-characters
     groups = groupby(input)

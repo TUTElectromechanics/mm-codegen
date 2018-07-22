@@ -124,7 +124,29 @@ def strip_function_arguments(expr):
         cls = type(expr)
         return cls(*out)
 
-def derivatives_needed_by(expr, allow_reorder=True):
+def canonize_derivative(expr):
+    """Sort the varlist (diff w.r.t. what) in a derivative.
+
+    Useful for higher derivatives of C^k functions.
+
+    Parameters:
+        expr: sy.Derivative
+
+    Returns:
+        expr, with the variables w.r.t. which the derivative is taken,
+              sorted in canonical order using ``symutil.sortkey()``.
+    """
+    if not isinstance(expr, sy.Derivative):
+        raise TypeError("Expected Derivative, got {} {}".format(type(expr), expr))
+
+    f, *vs = expr.args
+    out = [f]
+    out.extend(sorted(vs, key=sortkey))
+
+    cls = type(expr)
+    return cls(*out, evaluate=False)  # FIXME: how to better handle the evaluate flag?
+
+def derivatives_needed_by(expr, canonize=True):
     """Return a list describing derivatives ``expr`` needs.
 
     This works by matching unevaluated ``Derivative`` symbols in ``expr``, recursively.
@@ -133,10 +155,10 @@ def derivatives_needed_by(expr, allow_reorder=True):
         expr: sy.Expr
             The expression.
 
-        allow_reorder: bool
-            If True, the differentiation variables will be sorted.
+        canonize: bool
+            If True, the varlist (diff w.r.t. what) of each derivative will be sorted.
               (Useful for higher derivatives of C^k functions.)
-            If False, the ordering of variables will be preserved.
+            If False, the varlist is passed through as-is.
 
     Returns: tuple
         containing tuples of symbols (f, x1, x2, ..., xn), where:
@@ -147,23 +169,18 @@ def derivatives_needed_by(expr, allow_reorder=True):
                              Higher derivatives are represented by repeating
                              the same symbol, e.g. ∂²f(x)/∂x² -> (f,x,x).
     """
+    maybe_canonize = canonize_derivative if canonize else lambda x: x
     derivatives = set()
-    def reorder(f, *vs):  # sort differentiation variables in a derivative
-        out = [f]
-        out.extend(sorted(vs, key=sortkey))
-        return tuple(out)
-    r = reorder if allow_reorder else lambda x: x
     def process(e):
         if isinstance(e, sy.Derivative):
-            # Prevent generating nonsense like "d(0)/dx".
-            if not e.args[0].is_Number:
-                derivatives.add(r(*e.args))  # args[0] = function, args[1:] = diff. w.r.t. what
+            # args[0] = function, args[1:] = diff. w.r.t. what
+            if not e.args[0].is_Number:  # ignore nonsense like "d(0)/dx"
+                derivatives.add(maybe_canonize(e).args)
         elif not e.is_Atom:  # compound other than a derivative
             for x in e.args:
                 process(x)
     process(expr)
-    # sort the derivatives (preserving current order of differentiation variables)
-    # item[0] = function as sy.Symbol, item[1:] = vars as sy.Symbol
+    # sort the derivatives (passing the final varlists through as-is)
     return sorted(derivatives, key=lambda item: [sortkey(x) for x in item])
 
 def map_instancesof_in(func, cls, expr):
