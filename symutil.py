@@ -124,10 +124,19 @@ def strip_function_arguments(expr):
         cls = type(expr)
         return cls(*out)
 
-def derivatives_needed_by(expr):
+def derivatives_needed_by(expr, allow_reorder=True):
     """Return a list describing derivatives ``expr`` needs.
 
     This works by matching unevaluated ``Derivative`` symbols in ``expr``, recursively.
+
+    Parameters:
+        expr: sy.Expr
+            The expression.
+
+        allow_reorder: bool
+            If True, the differentiation variables will be sorted.
+              (Useful for higher derivatives of C^k functions.)
+            If False, the ordering of variables will be preserved.
 
     Returns: tuple
         containing tuples of symbols (f, x1, x2, ..., xn), where:
@@ -139,15 +148,21 @@ def derivatives_needed_by(expr):
                              the same symbol, e.g. ∂²f(x)/∂x² -> (f,x,x).
     """
     derivatives = set()
+    def reorder(f, *vs):  # sort differentiation variables in a derivative
+        out = [f]
+        out.extend(sorted(vs, key=sortkey))
+        return tuple(out)
+    r = reorder if allow_reorder else lambda x: x
     def process(e):
         if isinstance(e, sy.Derivative):
             # Prevent generating nonsense like "d(0)/dx".
             if not e.args[0].is_Number:
-                derivatives.add(e.args)  # args[0] = function, args[1:] = diff. w.r.t. what
+                derivatives.add(r(*e.args))  # args[0] = function, args[1:] = diff. w.r.t. what
         elif not e.is_Atom:  # compound other than a derivative
             for x in e.args:
                 process(x)
     process(expr)
+    # sort the derivatives (preserving current order of differentiation variables)
     # item[0] = function as sy.Symbol, item[1:] = vars as sy.Symbol
     return sorted(derivatives, key=lambda item: [sortkey(x) for x in item])
 
