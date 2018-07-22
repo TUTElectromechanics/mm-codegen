@@ -64,7 +64,7 @@ class PotentialModelBase(ModelBase):
 
                 If False, return expr as-is.
 
-                sym is always stripped (to make it a key).
+                sym is always keyify()'d to make it a definition key.
 
         Example:
             m = Model()
@@ -112,7 +112,7 @@ class PotentialModelBase(ModelBase):
             q    = self.indepvars[varname]
             sym  = sy.diff(sym, q, evaluate=False)
             expr = sy.diff(expr, q)
-        sym = self.keyify(sym)  # always strip the name
+        sym = self.keyify(sym)
 
         # Apply the Subs object to eliminate the dummy variables in the
         # derivative expressions. E.g.

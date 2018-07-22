@@ -54,11 +54,12 @@ class Model(PotentialModelBase):
     def define_api(self):
         """See docstring for ``ModelBase.define_api()``."""
         defs = {}
+        keyify = self.keyify
 
 #        # Needed only if ϕ provided externally at stage2. We define ϕ in the model.
 #        print("model: {label} forming expression for ϕ".format(label=self.label))
 #        sym, expr = self.dϕdq(qs=(), strip=False)
-#        defs[sy.symbols("ϕp")] = expr  # ϕ' to avoid name conflict with user code "phi".
+#        defs[keyify(sy.symbols("ϕp"))] = expr  # ϕ' to avoid name conflict with user code "phi".
 
         # All 1st and 2nd derivatives of ϕ w.r.t. the independent vars B and ε.
         # Formally, without inserting expressions.
@@ -67,14 +68,12 @@ class Model(PotentialModelBase):
         # Define the quantities appearing at the various layers of the ϕ cake.
         print("model: {label} writing definitions".format(label=self.label))
 
-        keyify = self.keyify
-
         B = sy.Matrix(self.Bs)             # Magnetic flux density (as column vector)
         ε = symutil.voigt_to_mat(self.εs)  # Cauchy strain
         e = symutil.voigt_to_mat(self.es)  # Deviatoric strain
 
         εM_expr = sy.factor(sy.S("1/3") * ε.trace())  # mean volumetric strain
-        defs[sy.symbols("εM")] = εM_expr  # will be inserted to e_expr; just a convenience
+        defs[keyify(sy.symbols("εM"))] = εM_expr  # will be inserted to e_expr; just a convenience
 
         # e in terms of ε
         val = ε - εM_expr * sy.eye(3)

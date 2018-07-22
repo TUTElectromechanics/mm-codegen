@@ -62,20 +62,14 @@ class ModelBase:
 
         The LHS names are also used for lookup when generating the derivatives.
 
-        On the LHS, bare SymPy symbols are used (even if a function).
-
-        On the LHS, to represent a derivative, use an unevaluated Derivative
-        instance with bare symbols in it (with function arguments stripped).
-        Example: ∂ϕ/∂Bx is represented by sy.Derivative(ϕ, Bx, evaluate=False).
-        Use ``keyify()`` for the stripping.
+        Use ``keyify()`` to convert something into an LHS key.
 
         RHS is a SymPy expression; applied functions can be used here if needed.
-        Do not strip the RHSs - that will confuse the differentiation logic.
 
         CAUTION:
-            To reliably produce unevaluated derivatives for LHS names, first use
-            an applied function (with the desired dependencies), differentiate
-            that, and finally strip the result. This is required, since strictly
+            To reliably make LHS names for derivatives, first use an applied
+            function (with the desired dependencies), differentiate that,
+            and finally keyify the result. This is required, because strictly
             speaking, for bare symbols ∂x/∂x = 1 and ∂y/∂x = 0 for all y ≠ x.
 
             Example. Given:
@@ -94,7 +88,7 @@ class ModelBase:
                 import symutil
                 x, y = sy.symbols("x, y")
                 f = symutil.make_function("f", x, y)
-                d2fdxdy = D(D(f, x), y)  # --> ok  (just D(f, x, y) also ok)
+                d2fdxdy = D(D(f, x), y)  # --> now ok (just D(f, x, y) also ok)
                 name = ModelBase.keyify(d2fdxdy)  # --> "Derivative(f, x, y)"
 
             The same strategy for name generation applies also to layer cakes:
