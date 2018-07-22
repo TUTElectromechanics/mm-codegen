@@ -141,5 +141,9 @@ class ModelBase:
         # the type of an applied function is an instance of UndefinedFunction.
         if not isinstance(expr, (sy.Symbol, sy.Derivative)) and \
            not isinstance(expr.__class__, UndefinedFunction):
-            raise TypeError("Expected symbol, derivative or applied function; got {}".format(type(expr)))
+            raise TypeError("Expected symbol, derivative or applied function; got {} {}".format(type(expr), expr))
+
+        if isinstance(expr, sy.Derivative):
+            expr = symutil.canonize_derivative(expr)  # we assume at least C^k continuity.
+
         return symutil.strip_function_arguments(expr)
