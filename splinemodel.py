@@ -103,7 +103,7 @@ class Model(PotentialModelBase):
         # Define the quantities appearing at the various layers of the ϕ cake.
         print("model: {label} writing definitions".format(label=self.label))
 
-        strip = symutil.strip_function_arguments
+        keyify = self.keyify
 
         B = sy.Matrix(self.Bs)             # Magnetic flux density (as column vector)
         ε = symutil.voigt_to_mat(self.εs)  # Cauchy strain
@@ -116,7 +116,7 @@ class Model(PotentialModelBase):
         val = ε - εM_expr * sy.eye(3)
         assert symutil.is_symmetric(val)
         for _, (r, c) in symutil.voigt_mat_idx():
-            defs[strip(e[r, c])] = val[r, c]
+            defs[keyify(e[r, c])] = val[r, c]
 
         # I4, I5, I6 in terms of (B, e)
         I4, I5, I6 = self.Is
@@ -126,7 +126,7 @@ class Model(PotentialModelBase):
             if label is None or label == self.label:
                 assert val.shape == (1,1)  # result should be scalar
                 expr = val[0,0]  # extract scalar from matrix wrapper
-                defs[strip(key)] = self.simplify(expr)
+                defs[keyify(key)] = self.simplify(expr)
 
         # u', v', w' in terms of (I4, I5, I6)
         up, vp, wp = self.ups
@@ -134,7 +134,7 @@ class Model(PotentialModelBase):
                                 (vp, sy.S("3/2") * I5 / I4, None),
                                 (wp, sy.sqrt(I6*I4 - I5**2) / I4, "3par")):
             if label is None or label == self.label:
-                defs[strip(key)] = val  # no simplification possible; just save.
+                defs[keyify(key)] = val  # no simplification possible; just save.
 
         # u, v, w in terms of (u', v', w')
         u, v, w = self.us
@@ -143,7 +143,7 @@ class Model(PotentialModelBase):
                                 (v, vp / v0, None),
                                 (w, wp / w0, "3par")):
             if label is None or label == self.label:
-                defs[strip(key)] = val
+                defs[keyify(key)] = val
 
         assert all(isinstance(key, (sy.Symbol, sy.Derivative)) for key in defs)
         return defs

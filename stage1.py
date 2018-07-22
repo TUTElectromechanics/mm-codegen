@@ -41,6 +41,8 @@ from sympy.utilities.codegen import codegen  # not imported by default
 import symutil
 import util
 
+from modelbase import ModelBase
+
 class CodeGenerator:
     """Generate stage1 Fortran code (internal functions)."""
 
@@ -69,27 +71,27 @@ class CodeGenerator:
                 Like input, but any identically zero derivatives omitted.
 
             Any new keys for ``defs`` are in the format Derivative(f, *xs),
-            stripped using ``symutil.strip_function_arguments()``.
+            stripped using ``ModelBase.keyify()``.
 
             The RHS values are not stripped.
         """
         D = partial(sy.Derivative, evaluate=False)
-        strip = symutil.strip_function_arguments
+        keyify = ModelBase.keyify
         zero = sy.S.Zero
 
         def process_one(expr):
             # Compute any needed derivatives for which we have the def.
             ds = {}
             for f, *vs in symutil.derivatives_needed_by(expr):
-                fkey = strip(f)
-                dkey = strip(D(f, *vs))
+                fkey = keyify(f)
+                dkey = keyify(D(f, *vs))
                 if dkey not in defs and fkey in defs:
                     ds[dkey] = simplify(sy.diff(defs[fkey], *vs))
 
             # Optimize: in expr and ds, delete any identically zero derivatives.
             if len(ds):
                 def kill_zero(term):
-                    key = strip(term)
+                    key = keyify(term)
                     return zero if key in ds and ds[key] == 0 else term
                 final_expr = symutil.map_instancesof_in(kill_zero, sy.Derivative, expr)
                 final_ds = {k: v for k, v in ds.items() if v != zero}

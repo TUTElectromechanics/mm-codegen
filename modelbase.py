@@ -12,6 +12,9 @@ Created on Thu Nov  9 10:39:51 2017
 from abc import ABCMeta, abstractmethod
 
 import sympy as sy
+from sympy.core.function import UndefinedFunction
+
+import symutil
 
 class ModelBase:
     """Abstract base class for mathematical models supported by this software."""
@@ -64,6 +67,7 @@ class ModelBase:
         On the LHS, to represent a derivative, use an unevaluated Derivative
         instance with bare symbols in it (with function arguments stripped).
         Example: ∂ϕ/∂Bx is represented by sy.Derivative(ϕ, Bx, evaluate=False).
+        Use ``keyify()`` for the stripping.
 
         RHS is a SymPy expression; applied functions can be used here if needed.
         Do not strip the RHSs - that will confuse the differentiation logic.
@@ -91,15 +95,15 @@ class ModelBase:
                 x, y = sy.symbols("x, y")
                 f = symutil.make_function("f", x, y)
                 d2fdxdy = D(D(f, x), y)  # --> ok  (just D(f, x, y) also ok)
-                name = symutil.strip_function_arguments(d2fdxdy)  # --> "Derivative(f, x, y)"
+                name = ModelBase.keyify(d2fdxdy)  # --> "Derivative(f, x, y)"
 
             The same strategy for name generation applies also to layer cakes:
 
                 g = symutil.make_function("g", f)
                 dgdf = D(g, f)  # --> ok, Derivative(g(f(x)), f(x))
-                name = symutil.strip_function_arguments(dgdf)  # --> "Derivative(g, f)"
+                name = ModelBase.keyify(dgdf)  # --> "Derivative(g, f)"
 
-                dgdx_name = symutil.strip_function_arguments(D(g, x))  # --> "Derivative(g, x)"
+                dgdx_name = ModelBase.keyify(D(g, x))  # --> "Derivative(g, x)"
                 dgdx_expr = (sy.diff(g, x)).doit()  # --> Derivative(f(x, y), x)*Derivative(g(f(x, y)), f(x, y))
 
             In the last example, the .doit() changes the format of the result
@@ -122,3 +126,20 @@ class ModelBase:
         that works particularly well with their particular expressions.
         """
         return sy.simplify(expr)
+
+    @staticmethod
+    def keyify(expr):
+        """Convert expr into a key suitable for the LHS of a definition.
+
+        Parameters:
+            expr: sy.Symbol, sy.Derivative or a SymPy applied function
+                ``symutil.make_function()`` makes applied functions.
+
+        Returns:
+            expr converted to a key.
+        """
+        # the type of an applied function is an instance of UndefinedFunction.
+        if not isinstance(expr, (sy.Symbol, sy.Derivative)) and \
+           not isinstance(expr.__class__, UndefinedFunction):
+            raise TypeError("Expected symbol, derivative or applied function; got {}".format(type(expr)))
+        return symutil.strip_function_arguments(expr)

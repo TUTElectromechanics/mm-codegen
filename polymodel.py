@@ -67,7 +67,7 @@ class Model(PotentialModelBase):
         # Define the quantities appearing at the various layers of the ϕ cake.
         print("model: {label} writing definitions".format(label=self.label))
 
-        strip = symutil.strip_function_arguments
+        keyify = self.keyify
 
         B = sy.Matrix(self.Bs)             # Magnetic flux density (as column vector)
         ε = symutil.voigt_to_mat(self.εs)  # Cauchy strain
@@ -80,13 +80,13 @@ class Model(PotentialModelBase):
         val = ε - εM_expr * sy.eye(3)
         assert symutil.is_symmetric(val)
         for _, (r, c) in symutil.voigt_mat_idx():
-            defs[strip(e[r, c])] = val[r, c]
+            defs[keyify(e[r, c])] = val[r, c]
 
         # I1, I2 in terms of ε
         I1, I2, I4, I5, I6 = self.Is
         for key, val in ((I1, ε.trace()),
                          (I2, (ε.T * ε).trace())):
-            defs[strip(key)] = self.simplify(val)
+            defs[keyify(key)] = self.simplify(val)
 
         # I4, I5, I6 in terms of (B, e)
         for key, val in ((I4, B.T * B),
@@ -94,7 +94,7 @@ class Model(PotentialModelBase):
                          (I6, B.T * e * e * B)):
             assert val.shape == (1,1)  # result should be scalar
             expr = val[0,0]  # extract scalar from matrix wrapper
-            defs[strip(key)] = self.simplify(expr)
+            defs[keyify(key)] = self.simplify(expr)
 
         # The potential ϕ itself.
         #
@@ -116,7 +116,7 @@ class Model(PotentialModelBase):
         I6_terms = sum(γi * I6**i for i, γi in enumerate(γs, start=1))
         ϕ_magn = I4_terms + I5_terms + I6_terms
 
-        defs[strip(self.ϕ)] = ϕ_mech + ϕ_magn
+        defs[keyify(self.ϕ)] = ϕ_mech + ϕ_magn
 
         assert all(isinstance(key, (sy.Symbol, sy.Derivative)) for key in defs)
         return defs
