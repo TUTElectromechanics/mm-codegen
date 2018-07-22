@@ -56,13 +56,16 @@ def make_function(name, *deps):
         x, y = sy.symbols("x, y")              # independent variables
         λf = sy.symbols("f", cls=sy.Function)  # undefined function
         f = λf(x, y)                           # applied function
-        type(f)  # --> f
 
     Using ``make_function()``:
 
         import sympy as sy
         x, y = sy.symbols("x, y")
         f = make_function("f", x, y)
+
+    In both cases:
+
+        type(f)  # --> f
     """
     λf = sy.symbols(name, cls=sy.Function)
     return λf(*deps)
