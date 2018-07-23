@@ -133,16 +133,14 @@ class CodeGenerator:
                 if objtype == 'function':
                     invalid_args = sorted(set(allargs).difference(set(inargs)), key=str.lower)
                     if len(invalid_args):
-                        error("arg(s) not intent(in): {invalid}".format(fname=fname,
-                                                                        invalid=invalid_args))
+                        error("arg(s) not intent(in): {invalid}".format(invalid=invalid_args))
                         return
                 # Require metadata for all arguments to keep things explicit.
                 # (Alternatively, we could generate any missing metadata. The
                 #  code generator relies on the metadata always being present.)
                 invalid_args = sorted((arg for arg in allargs if arg not in meta), key=str.lower)
                 if len(invalid_args):
-                    error("missing intent for arg(s): {invalid}".format(fname=fname,
-                                                                        invalid=invalid_args))
+                    error("missing intent for arg(s): {invalid}".format(invalid=invalid_args))
                     return
                 if fname in seen:  # TODO: report also lineno of previous definition
                     error("duplicate definition for '{fname}'".format(fname=fname))
@@ -204,8 +202,7 @@ class CodeGenerator:
 
                 elif state == ReaderState.CAPTURING_ARGLIST:
                     if header_starts(line):
-                        error("nested definition not supported (maybe missing 'end {objtype}' above?)".format(objtype=objtype,
-                                                                                                              fname=fname))
+                        error("nested definition not supported (maybe missing 'end {objtype}' above?)".format(objtype=objtype))
 
                     # capture function arguments from this line
                     matches = re.findall(r"[^&)]+", line)  # all non-overlapping matches of pattern
@@ -222,8 +219,7 @@ class CodeGenerator:
                 # Parse parameter declarations.
                 elif state == ReaderState.CAPTURING_META:
                     if header_starts(line):
-                        error("nested definition not supported (maybe missing 'end {objtype}' above?)".format(objtype=objtype,
-                                                                                                              fname=fname))
+                        error("nested definition not supported (maybe missing 'end {objtype}' above?)".format(objtype=objtype))
 
                     p_dtype = r"\b([^\s,]+)"                  # e.g. 'REAL*8'
                     p_intent = r"(?:,\s*intent\((\w+)\))?"    # e.g. 'intent(in)'
@@ -244,9 +240,7 @@ class CodeGenerator:
                         dtype, intent, dimspec, argname = (g or None for g in groups)
 
                         if intent not in ("in", "out", "inout"):
-                            error("invalid intent '{intent}' for arg '{arg}'".format(objtype=objtype,
-                                                                                     fname=fname,
-                                                                                     intent=intent,
+                            error("invalid intent '{intent}' for arg '{arg}'".format(intent=intent,
                                                                                      arg=argname))
 
                         if intent in ("out", "inout"):
@@ -265,7 +259,7 @@ class CodeGenerator:
             # When we finish, the reader should be in the SCANNING state,
             # as always after a complete function/subroutine declaration.
             if state != ReaderState.SCANNING:
-                error("unexpected end of file".format(objtype=objtype, fname=fname))
+                error("unexpected end of file (maybe missing 'end {objtype}'?)".format(objtype=objtype))
 
             results[objtype] = result
 
@@ -286,13 +280,14 @@ class CodeGenerator:
         invalid = [(fname, arg) for fname,inargs,_,_,_ in results["function"]
                                   for arg in inargs if arg in subroutine_names]
         if len(invalid):
-            error("dependency from function to subroutine not supported; offending (function, subroutine) pairs: {invalid}".format(invalid=invalid))
+            # checking a global property of the input, different message format.
+            errors.append("Dependency from function to subroutine not supported; offending (function, subroutine) pairs: {invalid}".format(invalid=invalid))
 
         # report all errors at the end
         if len(errors):
             class ReaderError(ValueError):
                 pass
-            sep = "\n    "
+            sep = "\n" + 4*" "
             raise ReaderError("encountered {nerr:d} error(s):{sep}{msgs}".format(nerr=len(errors),
                                                                                  sep=sep,
                                                                                  msgs=sep.join(errors)))
