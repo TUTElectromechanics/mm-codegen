@@ -98,8 +98,24 @@ class CodeGenerator:
             CAPTURING_META = 2
 
         results = {}
+        errors = []
         seen = set()
         for objtype in ("function", "subroutine"):
+            def error(msg):  # lineno, objtype, fname from outer scope, defined later
+                errors.append("{lineno}: In {objtype} '{fname}': {msg}".format(lineno=lineno,
+                                                                               objtype=objtype,
+                                                                               fname=fname,
+                                                                               msg=msg))
+
+            def header_starts(line):  # TODO: now requires exactly one space after "end"
+                p_notend = r"(?<!\bend\b\s)"  # (?<!...) is "match if not preceded by" (see help(re))
+                p_objtype = r"\b{objtype}\b".format(objtype=objtype)
+                pattern = r"{notend}{objtype}".format(notend=p_notend,
+                                                      objtype=p_objtype)
+                matches = re.findall(pattern, line)
+                assert len(matches) <= 1  # should be at most one match for the whole regex
+                return (len(matches) > 0)
+
             def header_ends(line):
                 matches = re.findall(r"\)", line)
                 return (len(matches) > 0)
@@ -117,79 +133,80 @@ class CodeGenerator:
                 if objtype == 'function':
                     invalid_args = sorted(set(allargs).difference(set(inargs)), key=str.lower)
                     if len(invalid_args):
-                        raise ValueError("'{fname}' declares the following intent(out) or intent(inout) args (in alphabetical order): {invalid}".format(fname=fname,
-                                                                                                                                                        invalid=invalid_args))
+                        error("arg(s) not intent(in): {invalid}".format(fname=fname,
+                                                                        invalid=invalid_args))
+                        return
                 # Require metadata for all arguments to keep things explicit.
                 # (Alternatively, we could generate any missing metadata. The
                 #  code generator relies on the metadata always being present.)
                 invalid_args = sorted((arg for arg in allargs if arg not in meta), key=str.lower)
                 if len(invalid_args):
-                    raise ValueError("'{fname}' missing intent declaration for args (in alphabetical order): {invalid}".format(fname=fname,
-                                                                                                                               invalid=invalid_args))
-                if fname in seen:
-                    raise ValueError("Duplicate definition for '{fname}'".format(fname=fname))
+                    error("missing intent for arg(s): {invalid}".format(fname=fname,
+                                                                        invalid=invalid_args))
+                    return
+                if fname in seen:  # TODO: report also lineno of previous definition
+                    error("duplicate definition for '{fname}'".format(fname=fname))
+                    return
                 seen.add(fname)
                 result.append((fname, inargs, outargs, allargs, meta))
 
             result = []
             state = ReaderState.SCANNING
-            for line in code.split("\n"):
+            for lineno, line in enumerate(code.split("\n"), start=1):
                 if state == ReaderState.SCANNING:
-                    p_notend = r"(?<!\bend\b\s)"  # (?<!...) is "match if not preceded by" (see help(re))
+                    if not header_starts(line):
+                        continue
+
+                    # (?:...) makes a non-capturing group
+                    p_puredecl = r"(?:\b(pure)\b)?"  # some functions may have this
+                    p_rettype = r"(?:\b([^\s]+)\s+)?"  # optional; subroutines don't have a return type
                     p_objtype = r"\b{objtype}\b".format(objtype=objtype)
-                    pattern = r"{notend}\s*{objtype}".format(notend=p_notend,
-                                                             objtype=p_objtype)
+                    p_objname = r"(\S+)"
+                    p_arglist = r"([^&)]*)"  # 0 or more, because some functions might not take any args.
+                    pattern = r"{puredecl}\s*{rettype}\s*{objtype}\s+{objname}\s*\(\s*{arglist}".format(puredecl=p_puredecl,
+                                                                                                        rettype=p_rettype,
+                                                                                                        objtype=p_objtype,
+                                                                                                        objname=p_objname,
+                                                                                                        arglist=p_arglist)
                     matches = re.findall(pattern, line)
+                    assert len(matches) == 1
+                    groups = matches[0]
 
-                    if len(matches):  # if found, start capturing
-                        assert len(matches) == 1  # should be just one match for the whole regex
+                    puredecl, rettype, fname, argstuff = groups
 
-                        # (?:...) makes a non-capturing group
-                        p_puredecl = r"(?:\b(pure)\b)?"  # some functions may have this
-                        p_rettype = r"(?:\b([^\s]+)\s+)?"  # optional; subroutines don't have a return type
-                        p_objtype = r"\b{objtype}\b".format(objtype=objtype)
-                        p_objname = r"(\S+)"
-                        p_arglist = r"([^&)]*)"  # 0 or more, because some functions might not take any args.
-                        pattern = r"{puredecl}\s*{rettype}\s*{objtype}\s+{objname}\s*\(\s*{arglist}".format(puredecl=p_puredecl,
-                                                                                                            rettype=p_rettype,
-                                                                                                            objtype=p_objtype,
-                                                                                                            objname=p_objname,
-                                                                                                            arglist=p_arglist)
-                        matches = re.findall(pattern, line)
-                        assert len(matches) == 1
-                        groups = matches[0]
+                    puredecl = puredecl or None  # TODO: we don't actually use the puredecl
+                    rettype = rettype or None
+                    rawallargs = argstuff.split(",")
 
-                        puredecl, rettype, fname, argstuff = groups
+                    # Save the captured function arguments into three lists:
+                    #  - inargs: intent(in) args only, so that we can compute
+                    #    any dependent inputs by calling other stage1 API
+                    #    functions (of the same name as an input arg).
+                    #    Will be generated when we commit().
+                    #  - outargs: intent(inout) and intent(out) args,
+                    #    to be passed through (for the topmost layer
+                    #    of the cake, which may have subroutines)
+                    #  - allargs: all args in their original ordering,
+                    #    to write the call to the stage1 API function
+                    #    when writing the stage2 public API
+                    #    (since arguments are positional in Fortran)
+                    allargs = [arg for arg in (s.strip() for s in rawallargs) if len(arg)]
+                    outargs = []
+                    meta = {}
 
-                        puredecl = puredecl or None  # TODO: we don't actually use the puredecl
-                        rettype = rettype or None
-                        rawallargs = argstuff.split(",")
+                    if objtype == "function":
+                        meta[fname] = (rettype, '<return value>', None)  # dtype, intent, dimspec
 
-                        # Save the captured function arguments into three lists:
-                        #  - inargs: intent(in) args only, so that we can compute
-                        #    any dependent inputs by calling other stage1 API
-                        #    functions (of the same name as an input arg).
-                        #    Will be generated when we commit().
-                        #  - outargs: intent(inout) and intent(out) args,
-                        #    to be passed through (for the topmost layer
-                        #    of the cake, which may have subroutines)
-                        #  - allargs: all args in their original ordering,
-                        #    to write the call to the stage1 API function
-                        #    when writing the stage2 public API
-                        #    (since arguments are positional in Fortran)
-                        allargs = [arg for arg in (s.strip() for s in rawallargs) if len(arg)]
-                        outargs = []
-                        meta = {}
-
-                        if objtype == "function":
-                            meta[fname] = (rettype, '<return value>', None)  # dtype, intent, dimspec
-
-                        if not header_ends(line):
-                            state = ReaderState.CAPTURING_ARGLIST
-                        else:
-                            state = ReaderState.CAPTURING_META
+                    if not header_ends(line):
+                        state = ReaderState.CAPTURING_ARGLIST
+                    else:
+                        state = ReaderState.CAPTURING_META
 
                 elif state == ReaderState.CAPTURING_ARGLIST:
+                    if header_starts(line):
+                        error("nested definition not supported (maybe missing 'end {objtype}' above?)".format(objtype=objtype,
+                                                                                                              fname=fname))
+
                     # capture function arguments from this line
                     matches = re.findall(r"[^&)]+", line)  # all non-overlapping matches of pattern
                     assert len(matches) == 1
@@ -204,6 +221,10 @@ class CodeGenerator:
 
                 # Parse parameter declarations.
                 elif state == ReaderState.CAPTURING_META:
+                    if header_starts(line):
+                        error("nested definition not supported (maybe missing 'end {objtype}' above?)".format(objtype=objtype,
+                                                                                                              fname=fname))
+
                     p_dtype = r"\b([^\s,]+)"                  # e.g. 'REAL*8'
                     p_intent = r"(?:,\s*intent\((\w+)\))?"    # e.g. 'intent(in)'
                     p_dimspec = r"(?:,\s*dimension\((.*)\))?" # e.g. '1:3, 1:1'
@@ -223,9 +244,10 @@ class CodeGenerator:
                         dtype, intent, dimspec, argname = (g or None for g in groups)
 
                         if intent not in ("in", "out", "inout"):
-                            raise ValueError("In '{fname}': invalid intent '{intent}' for arg '{arg}'; valid: 'in', 'out' or 'inout'".format(fname=fname,
-                                                                                                                                             intent=intent,
-                                                                                                                                             arg=argname))
+                            error("invalid intent '{intent}' for arg '{arg}'".format(objtype=objtype,
+                                                                                     fname=fname,
+                                                                                     intent=intent,
+                                                                                     arg=argname))
 
                         if intent in ("out", "inout"):
                             outargs.append(argname)
@@ -238,14 +260,14 @@ class CodeGenerator:
                         state = ReaderState.SCANNING
 
                 else:
-                    assert False, "Unknown reader state"
+                    assert False, "Unknown reader state '{}'".format(state)
+
+            # When we finish, the reader should be in the SCANNING state,
+            # as always after a complete function/subroutine declaration.
+            if state != ReaderState.SCANNING:
+                error("unexpected end of file".format(objtype=objtype, fname=fname))
 
             results[objtype] = result
-
-        # When we finish, the reader should be in the SCANNING state,
-        # as always after a complete function declaration.
-        if state != ReaderState.SCANNING:
-            raise ValueError("Unexpected end of file while processing '{fname}'".format(fname=fname))
 
         # Validate: no subroutine names may appear in (intent(in)) args of any function.
         #
@@ -264,7 +286,16 @@ class CodeGenerator:
         invalid = [(fname, arg) for fname,inargs,_,_,_ in results["function"]
                                   for arg in inargs if arg in subroutine_names]
         if len(invalid):
-            raise ValueError("Dependency from function to subroutine not supported; offending (function, subroutine) pairs follow: {invalid}".format(invalid=invalid))
+            error("dependency from function to subroutine not supported; offending (function, subroutine) pairs: {invalid}".format(invalid=invalid))
+
+        # report all errors at the end
+        if len(errors):
+            class ReaderError(ValueError):
+                pass
+            sep = "\n    "
+            raise ReaderError("encountered {nerr:d} error(s):{sep}{msgs}".format(nerr=len(errors),
+                                                                                 sep=sep,
+                                                                                 msgs=sep.join(errors)))
 
         return [([(name, allargs) for name,_,_,allargs,_ in recs],  # for write_stage2_object()
                   {name: inargs for name,inargs,_,_,_ in recs},     # lookup
