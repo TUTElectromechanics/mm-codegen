@@ -10,7 +10,7 @@ Created on Wed Nov  1 14:46:34 2017
 import sympy as sy
 from sympy.core.function import UndefinedFunction
 
-from util import name_derivative
+from util import name_derivative, degreek
 
 def make_function(name, *deps):
     """Create an unspecified function with known dependencies.
@@ -77,6 +77,13 @@ def sortkey(sym):
         The string representation of ``sym``, lowercased.
     """
     return str(sym).lower()
+
+def nameof(sym):
+    """Return the name of ``sym`` as str."""
+    if hasattr(sym, "name"):
+        return sym.name
+    else:  # e.g. an undefined function has no name, but its *class* has a __name__.
+        return sym.__class__.__name__
 
 def nameof_as_symbol(sym):
     """Return a new ``sy.Symbol`` that has the same symbol name as ``sym``.
@@ -267,6 +274,18 @@ def is_symmetric(mat):
     """Return whether a sy.Matrix is symmetric."""
     n, nc = mat.shape
     return nc == n and all(mat[j,i] == mat[i,j] for i in range(n) for j in range(i+1, n))
+
+def degreek_in(expr, short=True):
+    """Remove Greek letters in ``expr``, recursively.
+
+    Delegates to ``util.degreek`` for each encountered Symbol.
+
+    Does not rename function symbols! (Strip their arguments first to convert
+    them to bare symbols.)
+    """
+    def rename(sym):
+        return sy.symbols(degreek(nameof(sym), short=short), **sym.assumptions0)
+    return map_instancesof_in(rename, sy.Symbol, expr)
 
 def voigt_mat_idx():
     """Return index conversion table between Voigt-packed vector and matrix.

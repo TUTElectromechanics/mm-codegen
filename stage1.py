@@ -139,8 +139,10 @@ class CodeGenerator:
                 v = RHS, sanitized for SymPy's codegen
         """
         def sanitize(expr):
-            stripped = symutil.strip_function_arguments(expr)
-            return symutil.derivatives_to_names_in(stripped, as_fortran_identifier=True)
+            e1 = symutil.strip_function_arguments(expr)
+            e2 = symutil.derivatives_to_names_in(e1, as_fortran_identifier=True)
+            e3 = symutil.degreek_in(e2, short=True)
+            return e3
         return [(sanitize(k), sanitize(defs[k]))
                   for k in sorted(defs.keys(), key=symutil.sortkey)]
 
@@ -148,7 +150,6 @@ class CodeGenerator:
     def finalize(content):
         """Finalize the output source code.
 
-         - Remove Unicode Greek characters.
          - Add "use types" for Elmer.
          - Change "REAL*8" to "REAL(KIND=dp)".
         """
@@ -198,7 +199,6 @@ class CodeGenerator:
                 raise ReaderError("unexpected end of file (incomplete function or subroutine declaration?)")
             return "\n".join(out)
 
-        content = util.degreek(content, short=True)
         content = add_usetypes(content)
         content = re.sub(r"REAL\*8", r"REAL(KIND=dp)", content)
         return content
