@@ -106,7 +106,7 @@ class Model(PotentialModelBase):
         ϕ_mech = sy.S("1/2") * λ * I1**2  +  µ * I2
 
         # magnetostrictive contribution
-        nα, nβ, nγ = 5, 1, 1
+        nα, nβ, nγ = 11, 1, 1
         *αs, = sy.symbols("α1:{:d}".format(nα+1))  # comma to make tuple context
         *βs, = sy.symbols("β1:{:d}".format(nβ+1))
         *γs, = sy.symbols("γ1:{:d}".format(nγ+1))
@@ -116,6 +116,36 @@ class Model(PotentialModelBase):
         ϕ_magn = I4_terms + I5_terms + I6_terms
 
         defs[keyify(self.ϕ)] = ϕ_mech + ϕ_magn
+
+        # parameter values for Galfenol from Umair (INRiM 2018)
+        αvalues = ( 1.162002e-02,
+                   -2.598907e-02,
+                    7.102752e-02,
+                   -1.620358e-01,
+                    2.743012e-01,
+                   -3.122956e-01,
+                    2.308285e-01,
+                   -1.086296e-01,
+                    3.132715e-02,
+                   -5.040493e-03,
+                    3.463586e-04)
+        βvalues = (6.103795e+00,)
+        γvalues = (1.448762e+01,)
+        E = 75e9 # Pa
+        ν = 0.4
+        λvalue = (E * ν) / ((1. + ν) * (1. - 2. * ν))  # Lamé λ
+        µvalue = E / (2. * (1. + ν))                   # Lamé µ
+
+        assert len(αvalues) == nα
+        assert len(βvalues) == nβ
+        assert len(γvalues) == nγ
+        for data in (zip(αs, αvalues),
+                     zip(βs, βvalues),
+                     zip(γs, γvalues)):
+            for k, v in data:
+                defs[keyify(k)] = sy.Number(v)
+        defs[keyify(λ)] = sy.Number(λvalue)
+        defs[keyify(µ)] = sy.Number(µvalue)
 
         assert all(isinstance(key, (sy.Symbol, sy.Derivative)) for key in defs)
         return defs
