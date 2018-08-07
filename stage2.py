@@ -116,6 +116,7 @@ class CodeGenerator:
                 assert len(matches) <= 1  # should be at most one match for the whole regex
                 return (len(matches) > 0)
 
+            # FIXME: brittle: we assume the return type decl contains no ")"
             def header_ends(line):
                 matches = re.findall(r"\)", line)
                 return (len(matches) > 0)
@@ -195,7 +196,10 @@ class CodeGenerator:
                     if objtype == "function":
                         meta[fname] = (rettype, '<return value>', None)  # dtype, intent, dimspec
 
-                    if not header_ends(line):
+                    # protect against the ")" in "REAL(KIND=dp) function foo(..."
+                    i_objtype_start = line.find(objtype)
+                    i_objtype_end = i_objtype_start + len(objtype)
+                    if not header_ends(line[i_objtype_end:]):
                         state = ReaderState.CAPTURING_ARGLIST
                     else:
                         state = ReaderState.CAPTURING_META
@@ -527,6 +531,7 @@ class CodeGenerator:
                                                                         name=stage2_oname))
         outbuf.append(key_both, ", ".join(freevars))
         outbuf.append(key_both, ")\n")
+        outbuf.append(key_both, "use types\n")
 
         # output: argument declarations for the public API function (free args only!)
         outbuf.append(key_both, "implicit none\n")

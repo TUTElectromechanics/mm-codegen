@@ -33,6 +33,7 @@ Created on Tue Oct 24 14:07:45 2017
 @author: Juha Jeronen <juha.jeronen@tut.fi>
 """
 
+import re
 from functools import partial  # partial application, not ∂!
 
 import sympy as sy
@@ -143,6 +144,65 @@ class CodeGenerator:
         return [(sanitize(k), sanitize(defs[k]))
                   for k in sorted(defs.keys(), key=symutil.sortkey)]
 
+    @staticmethod
+    def finalize(content):
+        """Finalize the output source code.
+
+         - Remove Unicode Greek characters.
+         - Add "use types" for Elmer.
+         - Change "REAL*8" to "REAL(KIND=dp)".
+        """
+        def add_usetypes(text):
+            # TODO: get rid of this stage2 copypasta
+            def header_starts(line):  # TODO: now requires exactly one space after "end"
+                for objtype in ("function", "subroutine"):
+                    p_notend = r"(?<!\bend\b\s)"  # (?<!...) is "match if not preceded by" (see help(re))
+                    p_objtype = r"\b{objtype}\b".format(objtype=objtype)
+                    pattern = r"{notend}{objtype}".format(notend=p_notend,
+                                                          objtype=p_objtype)
+                    matches = re.findall(pattern, line)
+                    assert len(matches) <= 1  # should be at most one match for the whole regex
+                    if len(matches) > 0:
+                        return True
+                return False
+
+            # FIXME: brittle: we assume the return type decl contains no ")"
+            def header_ends(line):
+                matches = re.findall(r"\)", line)
+                return (len(matches) > 0)
+
+            from enum import Enum
+            class ReaderState(Enum):
+                SCANNING  = 0
+                PROCESSING = 1
+
+            state = ReaderState.SCANNING
+            out = []
+            for line in text.split("\n"):
+                if state not in (ReaderState.SCANNING, ReaderState.PROCESSING):
+                    assert False, "Unknown reader state '{}'".format(state)
+                doitnow = False
+                if state is ReaderState.SCANNING:
+                    if header_starts(line):
+                        state = ReaderState.PROCESSING
+                if state is ReaderState.PROCESSING:
+                    if header_ends(line):
+                        doitnow = True
+                        state = ReaderState.SCANNING
+                out.append(line)
+                if doitnow:
+                    out.append("use types")  # Elmer-specific
+            if state != ReaderState.SCANNING:
+                class ReaderError(ValueError):
+                    pass
+                raise ReaderError("unexpected end of file (incomplete function or subroutine declaration?)")
+            return "\n".join(out)
+
+        content = util.degreek(content, short=True)
+        content = add_usetypes(content)
+        content = re.sub(r"REAL\*8", r"REAL(KIND=dp)", content)
+        return content
+
     @classmethod
     def run(cls, model):
         """Generate stage1 Fortran code.
@@ -188,6 +248,5 @@ class CodeGenerator:
                                  project="elmer-mgs-galfenol",
                                  prefix=basename)
 
-        # remove Unicode Greek characters.
-        return [(label, filename, util.degreek(content, short=True))
+        return [(label, filename, cls.finalize(content))
                   for filename, content in generated_code]
