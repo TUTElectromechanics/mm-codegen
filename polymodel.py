@@ -84,7 +84,7 @@ class Model(PotentialModelBase):
         # I1, I2 in terms of ε
         I1, I2, I4, I5, I6 = self.Is
         for key, val in ((I1, ε.trace()),
-                         (I2, (ε.T * ε).trace())):
+                         (I2, (ε.T * ε).trace())):  # either 1/2 here and 2µ in the I2 term, or no 1/2 here (and µ).
             defs[keyify(key)] = self.simplify(val)
 
         # I4, I5, I6 in terms of (B, e)
@@ -103,16 +103,19 @@ class Model(PotentialModelBase):
 
         # mechanical contribution
         λ, µ = sy.symbols("λ, µ")  # Lamé constants
-        ϕ_mech = sy.S("1/2") * λ * I1**2  +  µ * I2
+        I1_term = sy.S("1/2") * λ * I1**2
+        I2_term = µ * I2
+        ϕ_mech = I1_term + I2_term
 
         # magnetostrictive contribution
         nα, nβ, nγ = 11, 1, 1
-        *αs, = sy.symbols("α1:{:d}".format(nα+1))  # comma to make tuple context
-        *βs, = sy.symbols("β1:{:d}".format(nβ+1))
-        *γs, = sy.symbols("γ1:{:d}".format(nγ+1))
-        I4_terms = sum(αi * I4**i for i, αi in enumerate(αs, start=1))
-        I5_terms = sum(βi * I5**i for i, βi in enumerate(βs, start=1))
-        I6_terms = sum(γi * I6**i for i, γi in enumerate(γs, start=1))
+        i0 = 1  # index start value **in the definition of ϕ itself**
+        *αs, = sy.symbols("α{:d}:{:d}".format(i0, i0+nα))  # comma to make tuple context
+        *βs, = sy.symbols("β{:d}:{:d}".format(i0, i0+nβ))
+        *γs, = sy.symbols("γ{:d}:{:d}".format(i0, i0+nγ))
+        I4_terms = sum(αi * I4**i for i, αi in enumerate(αs, start=i0))
+        I5_terms = sum(βi * I5**i for i, βi in enumerate(βs, start=i0))
+        I6_terms = sum(γi * I6**i for i, γi in enumerate(γs, start=i0))
         ϕ_magn = I4_terms + I5_terms + I6_terms
 
         defs[keyify(self.ϕ)] = ϕ_mech + ϕ_magn
@@ -131,10 +134,24 @@ class Model(PotentialModelBase):
                     3.463586e-04)
         βvalues = (6.103795e+00,)
         γvalues = (1.448762e+01,)
+
+        # Undo the scaling (the parameters are originally scaled to ease fitting).
+        #
+        # Also undo the factors resulting from the differentiation - the MATLAB
+        # code specifies coefficients directly for the **derivatives** of ϕ,
+        # whereas we specify ϕ itself and let SymPy differentiate it in stage1.
+        #     ϕ      = α1 I4 +    α2  I4**2 +    α3  I4**3 + ...  <-- what we need
+        #     ∂ϕ/∂I4 = α1    + (2 α2) I4    + (3 α3) I4**2 + ...  <-- coeffs in the MATLAB code
+        π = sy.N(sy.pi)
+        µ0 = 4.*π*1e-7 # vacuum permeability, H / m
+        ν0 = 1. / µ0   # vacuum reluctivity
+        αvalues = tuple(      ν0            * αi / i for i, αi in enumerate(αvalues, start=i0))
+        βvalues = tuple(      ν0 * (1e2)**i * βi / i for i, βi in enumerate(βvalues, start=i0))
+        γvalues = tuple(1e3 * ν0 * (1e5)**i * γi / i for i, γi in enumerate(γvalues, start=i0))
         E = 75e9 # Pa
         ν = 0.4
-        λvalue = (E * ν) / ((1. + ν) * (1. - 2. * ν))  # Lamé λ
-        µvalue = E / (2. * (1. + ν))                   # Lamé µ
+        λvalue = (E * ν) / ((1. + ν) * (1. - 2. * ν))
+        µvalue = E / (2. * (1. + ν))
 
         assert len(αvalues) == nα
         assert len(βvalues) == nβ
@@ -142,8 +159,8 @@ class Model(PotentialModelBase):
         for data in (zip(αs, αvalues),
                      zip(βs, βvalues),
                      zip(γs, γvalues)):
-            for k, v in data:
-                defs[keyify(k)] = sy.Number(v)
+            for key, val in data:
+                defs[keyify(key)] = sy.Number(val)
         defs[keyify(λ)] = sy.Number(λvalue)
         defs[keyify(µ)] = sy.Number(µvalue)
 
