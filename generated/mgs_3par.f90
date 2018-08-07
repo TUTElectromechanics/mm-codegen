@@ -1901,9 +1901,9 @@ dwp_dI4_ = dwp_dI4(I4_, I5_, I6_)
 dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
-dphi_dBx_public = dphi_dBx(dI4_dBx_, dI5_dBx_, dI6_dBx_, du_dup_, dup_dI4_, &
-      dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_, &
-      dphi_du_, dphi_dv_, dphi_dw_)
+dphi_dBx_public = dphi_dBx(dI4_dBx_, dI5_dBx_, dI6_dBx_, dphi_du_, dphi_dv_, &
+      dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
+      dwp_dI4_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -2024,12 +2024,12 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_dBx2_public = d2phi_dBx2(d2I4_dBx2_, d2I5_dBx2_, d2I6_dBx2_, &
-      d2up_dI42_, d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, &
-      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_du2_, &
-      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
-      dI4_dBx_, dI5_dBx_, dI6_dBx_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, &
-      dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_du_, dphi_dv_, &
-      dphi_dw_)
+      d2phi_du2_, d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, &
+      d2phi_dw2_, d2up_dI42_, d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, &
+      d2wp_dI4dI5_, d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, &
+      dI4_dBx_, dI5_dBx_, dI6_dBx_, dphi_du_, dphi_dv_, dphi_dw_, du_dup_, &
+      dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, &
+      dwp_dI6_)
 
 end function
 
@@ -2153,13 +2153,13 @@ dwp_dI4_ = dwp_dI4(I4_, I5_, I6_)
 dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
-d2phi_dBxdBy_public = d2phi_dBxdBy(d2I5_dBxdBy_, d2I6_dBxdBy_, d2up_dI42_, &
-      d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, d2wp_dI4dI6_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_du2_, d2phi_dudv_, &
-      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI4_dBx_, dI4_dBy_, &
-      dI5_dBx_, dI5_dBy_, dI6_dBx_, dI6_dBy_, du_dup_, dup_dI4_, dv_dvp_, &
-      dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_du_, &
-      dphi_dv_, dphi_dw_)
+d2phi_dBxdBy_public = d2phi_dBxdBy(d2I5_dBxdBy_, d2I6_dBxdBy_, d2phi_du2_, &
+      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
+      d2up_dI42_, d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, &
+      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI4_dBx_, &
+      dI4_dBy_, dI5_dBx_, dI5_dBy_, dI6_dBx_, dI6_dBy_, dphi_du_, dphi_dv_, &
+      dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
+      dwp_dI4_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -2283,13 +2283,13 @@ dwp_dI4_ = dwp_dI4(I4_, I5_, I6_)
 dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
-d2phi_dBxdBz_public = d2phi_dBxdBz(d2I5_dBxdBz_, d2I6_dBxdBz_, d2up_dI42_, &
-      d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, d2wp_dI4dI6_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_du2_, d2phi_dudv_, &
-      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI4_dBx_, dI4_dBz_, &
-      dI5_dBx_, dI5_dBz_, dI6_dBx_, dI6_dBz_, du_dup_, dup_dI4_, dv_dvp_, &
-      dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_du_, &
-      dphi_dv_, dphi_dw_)
+d2phi_dBxdBz_public = d2phi_dBxdBz(d2I5_dBxdBz_, d2I6_dBxdBz_, d2phi_du2_, &
+      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
+      d2up_dI42_, d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, &
+      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI4_dBx_, &
+      dI4_dBz_, dI5_dBx_, dI5_dBz_, dI6_dBx_, dI6_dBz_, dphi_du_, dphi_dv_, &
+      dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
+      dwp_dI4_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -2420,13 +2420,13 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_dBxdepsxx_public = d2phi_dBxdepsxx(d2I5_dBxdexx_, d2I6_dBxdexx_, &
-      d2I6_dBxdeyy_, d2I6_dBxdezz_, d2vp_dI4dI5_, d2wp_dI4dI5_, &
-      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dudv_, &
-      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI4_dBx_, dI5_dBx_, &
-      dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dBx_, dI6_dexx_, dI6_deyy_, &
-      dI6_dezz_, dexx_depsxx_, deyy_depsxx_, dezz_depsxx_, du_dup_, &
+      d2I6_dBxdeyy_, d2I6_dBxdezz_, d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, &
+      d2phi_dvdw_, d2phi_dw2_, d2vp_dI4dI5_, d2wp_dI4dI5_, d2wp_dI4dI6_, &
+      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI4_dBx_, dI5_dBx_, dI5_dexx_, &
+      dI5_deyy_, dI5_dezz_, dI6_dBx_, dI6_dexx_, dI6_deyy_, dI6_dezz_, &
+      dexx_depsxx_, deyy_depsxx_, dezz_depsxx_, dphi_dv_, dphi_dw_, du_dup_, &
       dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, &
-      dwp_dI6_, dphi_dv_, dphi_dw_)
+      dwp_dI6_)
 
 end function
 
@@ -2541,11 +2541,11 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_dBxdepsxy_public = d2phi_dBxdepsxy(d2I5_dBxdexy_, d2I6_dBxdexy_, &
+      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
       d2vp_dI4dI5_, d2wp_dI4dI5_, d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, &
-      d2wp_dI62_, d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI4_dBx_, dI5_dBx_, dI5_dexy_, dI6_dBx_, dI6_dexy_, &
-      dexy_depsxy_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
-      dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
+      d2wp_dI62_, dI4_dBx_, dI5_dBx_, dI5_dexy_, dI6_dBx_, dI6_dexy_, &
+      dexy_depsxy_, dphi_dv_, dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, &
+      dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -2676,13 +2676,13 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_dBxdepsyy_public = d2phi_dBxdepsyy(d2I5_dBxdexx_, d2I6_dBxdexx_, &
-      d2I6_dBxdeyy_, d2I6_dBxdezz_, d2vp_dI4dI5_, d2wp_dI4dI5_, &
-      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dudv_, &
-      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI4_dBx_, dI5_dBx_, &
-      dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dBx_, dI6_dexx_, dI6_deyy_, &
-      dI6_dezz_, dexx_depsyy_, deyy_depsyy_, dezz_depsyy_, du_dup_, &
+      d2I6_dBxdeyy_, d2I6_dBxdezz_, d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, &
+      d2phi_dvdw_, d2phi_dw2_, d2vp_dI4dI5_, d2wp_dI4dI5_, d2wp_dI4dI6_, &
+      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI4_dBx_, dI5_dBx_, dI5_dexx_, &
+      dI5_deyy_, dI5_dezz_, dI6_dBx_, dI6_dexx_, dI6_deyy_, dI6_dezz_, &
+      dexx_depsyy_, deyy_depsyy_, dezz_depsyy_, dphi_dv_, dphi_dw_, du_dup_, &
       dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, &
-      dwp_dI6_, dphi_dv_, dphi_dw_)
+      dwp_dI6_)
 
 end function
 
@@ -2794,12 +2794,12 @@ dwp_dI4_ = dwp_dI4(I4_, I5_, I6_)
 dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
-d2phi_dBxdepsyz_public = d2phi_dBxdepsyz(d2I6_dBxdeyz_, d2vp_dI4dI5_, &
+d2phi_dBxdepsyz_public = d2phi_dBxdepsyz(d2I6_dBxdeyz_, d2phi_dudv_, &
+      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2vp_dI4dI5_, &
       d2wp_dI4dI5_, d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, &
-      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
       dI4_dBx_, dI5_dBx_, dI5_deyz_, dI6_dBx_, dI6_deyz_, deyz_depsyz_, &
-      du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, &
-      dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
+      dphi_dv_, dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, &
+      dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -2914,11 +2914,11 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_dBxdepszx_public = d2phi_dBxdepszx(d2I5_dBxdezx_, d2I6_dBxdezx_, &
+      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
       d2vp_dI4dI5_, d2wp_dI4dI5_, d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, &
-      d2wp_dI62_, d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI4_dBx_, dI5_dBx_, dI5_dezx_, dI6_dBx_, dI6_dezx_, &
-      dezx_depszx_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
-      dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
+      d2wp_dI62_, dI4_dBx_, dI5_dBx_, dI5_dezx_, dI6_dBx_, dI6_dezx_, &
+      dezx_depszx_, dphi_dv_, dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, &
+      dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -3049,13 +3049,13 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_dBxdepszz_public = d2phi_dBxdepszz(d2I5_dBxdexx_, d2I6_dBxdexx_, &
-      d2I6_dBxdeyy_, d2I6_dBxdezz_, d2vp_dI4dI5_, d2wp_dI4dI5_, &
-      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dudv_, &
-      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI4_dBx_, dI5_dBx_, &
-      dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dBx_, dI6_dexx_, dI6_deyy_, &
-      dI6_dezz_, dexx_depszz_, deyy_depszz_, dezz_depszz_, du_dup_, &
+      d2I6_dBxdeyy_, d2I6_dBxdezz_, d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, &
+      d2phi_dvdw_, d2phi_dw2_, d2vp_dI4dI5_, d2wp_dI4dI5_, d2wp_dI4dI6_, &
+      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI4_dBx_, dI5_dBx_, dI5_dexx_, &
+      dI5_deyy_, dI5_dezz_, dI6_dBx_, dI6_dexx_, dI6_deyy_, dI6_dezz_, &
+      dexx_depszz_, deyy_depszz_, dezz_depszz_, dphi_dv_, dphi_dw_, du_dup_, &
       dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, &
-      dwp_dI6_, dphi_dv_, dphi_dw_)
+      dwp_dI6_)
 
 end function
 
@@ -3139,9 +3139,9 @@ dwp_dI4_ = dwp_dI4(I4_, I5_, I6_)
 dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
-dphi_dBy_public = dphi_dBy(dI4_dBy_, dI5_dBy_, dI6_dBy_, du_dup_, dup_dI4_, &
-      dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_, &
-      dphi_du_, dphi_dv_, dphi_dw_)
+dphi_dBy_public = dphi_dBy(dI4_dBy_, dI5_dBy_, dI6_dBy_, dphi_du_, dphi_dv_, &
+      dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
+      dwp_dI4_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -3262,12 +3262,12 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_dBy2_public = d2phi_dBy2(d2I4_dBy2_, d2I5_dBy2_, d2I6_dBy2_, &
-      d2up_dI42_, d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, &
-      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_du2_, &
-      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
-      dI4_dBy_, dI5_dBy_, dI6_dBy_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, &
-      dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_du_, dphi_dv_, &
-      dphi_dw_)
+      d2phi_du2_, d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, &
+      d2phi_dw2_, d2up_dI42_, d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, &
+      d2wp_dI4dI5_, d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, &
+      dI4_dBy_, dI5_dBy_, dI6_dBy_, dphi_du_, dphi_dv_, dphi_dw_, du_dup_, &
+      dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, &
+      dwp_dI6_)
 
 end function
 
@@ -3391,13 +3391,13 @@ dwp_dI4_ = dwp_dI4(I4_, I5_, I6_)
 dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
-d2phi_dBydBz_public = d2phi_dBydBz(d2I5_dBydBz_, d2I6_dBydBz_, d2up_dI42_, &
-      d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, d2wp_dI4dI6_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_du2_, d2phi_dudv_, &
-      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI4_dBy_, dI4_dBz_, &
-      dI5_dBy_, dI5_dBz_, dI6_dBy_, dI6_dBz_, du_dup_, dup_dI4_, dv_dvp_, &
-      dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_du_, &
-      dphi_dv_, dphi_dw_)
+d2phi_dBydBz_public = d2phi_dBydBz(d2I5_dBydBz_, d2I6_dBydBz_, d2phi_du2_, &
+      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
+      d2up_dI42_, d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, &
+      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI4_dBy_, &
+      dI4_dBz_, dI5_dBy_, dI5_dBz_, dI6_dBy_, dI6_dBz_, dphi_du_, dphi_dv_, &
+      dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
+      dwp_dI4_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -3528,13 +3528,13 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_dBydepsxx_public = d2phi_dBydepsxx(d2I5_dBydeyy_, d2I6_dBydexx_, &
-      d2I6_dBydeyy_, d2I6_dBydezz_, d2vp_dI4dI5_, d2wp_dI4dI5_, &
-      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dudv_, &
-      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI4_dBy_, dI5_dBy_, &
-      dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dBy_, dI6_dexx_, dI6_deyy_, &
-      dI6_dezz_, dexx_depsxx_, deyy_depsxx_, dezz_depsxx_, du_dup_, &
+      d2I6_dBydeyy_, d2I6_dBydezz_, d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, &
+      d2phi_dvdw_, d2phi_dw2_, d2vp_dI4dI5_, d2wp_dI4dI5_, d2wp_dI4dI6_, &
+      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI4_dBy_, dI5_dBy_, dI5_dexx_, &
+      dI5_deyy_, dI5_dezz_, dI6_dBy_, dI6_dexx_, dI6_deyy_, dI6_dezz_, &
+      dexx_depsxx_, deyy_depsxx_, dezz_depsxx_, dphi_dv_, dphi_dw_, du_dup_, &
       dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, &
-      dwp_dI6_, dphi_dv_, dphi_dw_)
+      dwp_dI6_)
 
 end function
 
@@ -3649,11 +3649,11 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_dBydepsxy_public = d2phi_dBydepsxy(d2I5_dBydexy_, d2I6_dBydexy_, &
+      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
       d2vp_dI4dI5_, d2wp_dI4dI5_, d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, &
-      d2wp_dI62_, d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI4_dBy_, dI5_dBy_, dI5_dexy_, dI6_dBy_, dI6_dexy_, &
-      dexy_depsxy_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
-      dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
+      d2wp_dI62_, dI4_dBy_, dI5_dBy_, dI5_dexy_, dI6_dBy_, dI6_dexy_, &
+      dexy_depsxy_, dphi_dv_, dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, &
+      dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -3784,13 +3784,13 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_dBydepsyy_public = d2phi_dBydepsyy(d2I5_dBydeyy_, d2I6_dBydexx_, &
-      d2I6_dBydeyy_, d2I6_dBydezz_, d2vp_dI4dI5_, d2wp_dI4dI5_, &
-      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dudv_, &
-      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI4_dBy_, dI5_dBy_, &
-      dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dBy_, dI6_dexx_, dI6_deyy_, &
-      dI6_dezz_, dexx_depsyy_, deyy_depsyy_, dezz_depsyy_, du_dup_, &
+      d2I6_dBydeyy_, d2I6_dBydezz_, d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, &
+      d2phi_dvdw_, d2phi_dw2_, d2vp_dI4dI5_, d2wp_dI4dI5_, d2wp_dI4dI6_, &
+      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI4_dBy_, dI5_dBy_, dI5_dexx_, &
+      dI5_deyy_, dI5_dezz_, dI6_dBy_, dI6_dexx_, dI6_deyy_, dI6_dezz_, &
+      dexx_depsyy_, deyy_depsyy_, dezz_depsyy_, dphi_dv_, dphi_dw_, du_dup_, &
       dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, &
-      dwp_dI6_, dphi_dv_, dphi_dw_)
+      dwp_dI6_)
 
 end function
 
@@ -3905,11 +3905,11 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_dBydepsyz_public = d2phi_dBydepsyz(d2I5_dBydeyz_, d2I6_dBydeyz_, &
+      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
       d2vp_dI4dI5_, d2wp_dI4dI5_, d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, &
-      d2wp_dI62_, d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI4_dBy_, dI5_dBy_, dI5_deyz_, dI6_dBy_, dI6_deyz_, &
-      deyz_depsyz_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
-      dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
+      d2wp_dI62_, dI4_dBy_, dI5_dBy_, dI5_deyz_, dI6_dBy_, dI6_deyz_, &
+      deyz_depsyz_, dphi_dv_, dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, &
+      dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -4021,12 +4021,12 @@ dwp_dI4_ = dwp_dI4(I4_, I5_, I6_)
 dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
-d2phi_dBydepszx_public = d2phi_dBydepszx(d2I6_dBydezx_, d2vp_dI4dI5_, &
+d2phi_dBydepszx_public = d2phi_dBydepszx(d2I6_dBydezx_, d2phi_dudv_, &
+      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2vp_dI4dI5_, &
       d2wp_dI4dI5_, d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, &
-      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
       dI4_dBy_, dI5_dBy_, dI5_dezx_, dI6_dBy_, dI6_dezx_, dezx_depszx_, &
-      du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, &
-      dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
+      dphi_dv_, dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, &
+      dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -4157,13 +4157,13 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_dBydepszz_public = d2phi_dBydepszz(d2I5_dBydeyy_, d2I6_dBydexx_, &
-      d2I6_dBydeyy_, d2I6_dBydezz_, d2vp_dI4dI5_, d2wp_dI4dI5_, &
-      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dudv_, &
-      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI4_dBy_, dI5_dBy_, &
-      dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dBy_, dI6_dexx_, dI6_deyy_, &
-      dI6_dezz_, dexx_depszz_, deyy_depszz_, dezz_depszz_, du_dup_, &
+      d2I6_dBydeyy_, d2I6_dBydezz_, d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, &
+      d2phi_dvdw_, d2phi_dw2_, d2vp_dI4dI5_, d2wp_dI4dI5_, d2wp_dI4dI6_, &
+      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI4_dBy_, dI5_dBy_, dI5_dexx_, &
+      dI5_deyy_, dI5_dezz_, dI6_dBy_, dI6_dexx_, dI6_deyy_, dI6_dezz_, &
+      dexx_depszz_, deyy_depszz_, dezz_depszz_, dphi_dv_, dphi_dw_, du_dup_, &
       dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, &
-      dwp_dI6_, dphi_dv_, dphi_dw_)
+      dwp_dI6_)
 
 end function
 
@@ -4247,9 +4247,9 @@ dwp_dI4_ = dwp_dI4(I4_, I5_, I6_)
 dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
-dphi_dBz_public = dphi_dBz(dI4_dBz_, dI5_dBz_, dI6_dBz_, du_dup_, dup_dI4_, &
-      dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_, &
-      dphi_du_, dphi_dv_, dphi_dw_)
+dphi_dBz_public = dphi_dBz(dI4_dBz_, dI5_dBz_, dI6_dBz_, dphi_du_, dphi_dv_, &
+      dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
+      dwp_dI4_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -4370,12 +4370,12 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_dBz2_public = d2phi_dBz2(d2I4_dBz2_, d2I5_dBz2_, d2I6_dBz2_, &
-      d2up_dI42_, d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, &
-      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_du2_, &
-      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
-      dI4_dBz_, dI5_dBz_, dI6_dBz_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, &
-      dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_du_, dphi_dv_, &
-      dphi_dw_)
+      d2phi_du2_, d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, &
+      d2phi_dw2_, d2up_dI42_, d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, &
+      d2wp_dI4dI5_, d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, &
+      dI4_dBz_, dI5_dBz_, dI6_dBz_, dphi_du_, dphi_dv_, dphi_dw_, du_dup_, &
+      dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, &
+      dwp_dI6_)
 
 end function
 
@@ -4506,13 +4506,13 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_dBzdepsxx_public = d2phi_dBzdepsxx(d2I5_dBzdezz_, d2I6_dBzdexx_, &
-      d2I6_dBzdeyy_, d2I6_dBzdezz_, d2vp_dI4dI5_, d2wp_dI4dI5_, &
-      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dudv_, &
-      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI4_dBz_, dI5_dBz_, &
-      dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dBz_, dI6_dexx_, dI6_deyy_, &
-      dI6_dezz_, dexx_depsxx_, deyy_depsxx_, dezz_depsxx_, du_dup_, &
+      d2I6_dBzdeyy_, d2I6_dBzdezz_, d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, &
+      d2phi_dvdw_, d2phi_dw2_, d2vp_dI4dI5_, d2wp_dI4dI5_, d2wp_dI4dI6_, &
+      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI4_dBz_, dI5_dBz_, dI5_dexx_, &
+      dI5_deyy_, dI5_dezz_, dI6_dBz_, dI6_dexx_, dI6_deyy_, dI6_dezz_, &
+      dexx_depsxx_, deyy_depsxx_, dezz_depsxx_, dphi_dv_, dphi_dw_, du_dup_, &
       dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, &
-      dwp_dI6_, dphi_dv_, dphi_dw_)
+      dwp_dI6_)
 
 end function
 
@@ -4624,12 +4624,12 @@ dwp_dI4_ = dwp_dI4(I4_, I5_, I6_)
 dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
-d2phi_dBzdepsxy_public = d2phi_dBzdepsxy(d2I6_dBzdexy_, d2vp_dI4dI5_, &
+d2phi_dBzdepsxy_public = d2phi_dBzdepsxy(d2I6_dBzdexy_, d2phi_dudv_, &
+      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2vp_dI4dI5_, &
       d2wp_dI4dI5_, d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, &
-      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
       dI4_dBz_, dI5_dBz_, dI5_dexy_, dI6_dBz_, dI6_dexy_, dexy_depsxy_, &
-      du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, &
-      dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
+      dphi_dv_, dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, &
+      dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -4760,13 +4760,13 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_dBzdepsyy_public = d2phi_dBzdepsyy(d2I5_dBzdezz_, d2I6_dBzdexx_, &
-      d2I6_dBzdeyy_, d2I6_dBzdezz_, d2vp_dI4dI5_, d2wp_dI4dI5_, &
-      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dudv_, &
-      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI4_dBz_, dI5_dBz_, &
-      dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dBz_, dI6_dexx_, dI6_deyy_, &
-      dI6_dezz_, dexx_depsyy_, deyy_depsyy_, dezz_depsyy_, du_dup_, &
+      d2I6_dBzdeyy_, d2I6_dBzdezz_, d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, &
+      d2phi_dvdw_, d2phi_dw2_, d2vp_dI4dI5_, d2wp_dI4dI5_, d2wp_dI4dI6_, &
+      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI4_dBz_, dI5_dBz_, dI5_dexx_, &
+      dI5_deyy_, dI5_dezz_, dI6_dBz_, dI6_dexx_, dI6_deyy_, dI6_dezz_, &
+      dexx_depsyy_, deyy_depsyy_, dezz_depsyy_, dphi_dv_, dphi_dw_, du_dup_, &
       dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, &
-      dwp_dI6_, dphi_dv_, dphi_dw_)
+      dwp_dI6_)
 
 end function
 
@@ -4881,11 +4881,11 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_dBzdepsyz_public = d2phi_dBzdepsyz(d2I5_dBzdeyz_, d2I6_dBzdeyz_, &
+      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
       d2vp_dI4dI5_, d2wp_dI4dI5_, d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, &
-      d2wp_dI62_, d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI4_dBz_, dI5_dBz_, dI5_deyz_, dI6_dBz_, dI6_deyz_, &
-      deyz_depsyz_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
-      dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
+      d2wp_dI62_, dI4_dBz_, dI5_dBz_, dI5_deyz_, dI6_dBz_, dI6_deyz_, &
+      deyz_depsyz_, dphi_dv_, dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, &
+      dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -5000,11 +5000,11 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_dBzdepszx_public = d2phi_dBzdepszx(d2I5_dBzdezx_, d2I6_dBzdezx_, &
+      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
       d2vp_dI4dI5_, d2wp_dI4dI5_, d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, &
-      d2wp_dI62_, d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI4_dBz_, dI5_dBz_, dI5_dezx_, dI6_dBz_, dI6_dezx_, &
-      dezx_depszx_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
-      dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
+      d2wp_dI62_, dI4_dBz_, dI5_dBz_, dI5_dezx_, dI6_dBz_, dI6_dezx_, &
+      dezx_depszx_, dphi_dv_, dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, &
+      dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -5135,13 +5135,13 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_dBzdepszz_public = d2phi_dBzdepszz(d2I5_dBzdezz_, d2I6_dBzdexx_, &
-      d2I6_dBzdeyy_, d2I6_dBzdezz_, d2vp_dI4dI5_, d2wp_dI4dI5_, &
-      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dudv_, &
-      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI4_dBz_, dI5_dBz_, &
-      dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dBz_, dI6_dexx_, dI6_deyy_, &
-      dI6_dezz_, dexx_depszz_, deyy_depszz_, dezz_depszz_, du_dup_, &
+      d2I6_dBzdeyy_, d2I6_dBzdezz_, d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, &
+      d2phi_dvdw_, d2phi_dw2_, d2vp_dI4dI5_, d2wp_dI4dI5_, d2wp_dI4dI6_, &
+      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI4_dBz_, dI5_dBz_, dI5_dexx_, &
+      dI5_deyy_, dI5_dezz_, dI6_dBz_, dI6_dexx_, dI6_deyy_, dI6_dezz_, &
+      dexx_depszz_, deyy_depszz_, dezz_depszz_, dphi_dv_, dphi_dw_, du_dup_, &
       dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, &
-      dwp_dI6_, dphi_dv_, dphi_dw_)
+      dwp_dI6_)
 
 end function
 
@@ -5229,7 +5229,7 @@ dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 dphi_depsxx_public = dphi_depsxx(dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_dezz_, dexx_depsxx_, deyy_depsxx_, dezz_depsxx_, &
-      dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
+      dphi_dv_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -5332,10 +5332,10 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_depsxx2_public = d2phi_depsxx2(d2I6_dexx2_, d2I6_deyy2_, d2I6_dezz2_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, dI6_deyy_, &
-      dI6_dezz_, dexx_depsxx_, deyy_depsxx_, dezz_depsxx_, dv_dvp_, &
-      dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dw_)
+      d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, &
+      d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, dI6_deyy_, &
+      dI6_dezz_, dexx_depsxx_, deyy_depsxx_, dezz_depsxx_, dphi_dw_, &
+      dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -5442,11 +5442,11 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_depsxxdepsxy_public = d2phi_depsxxdepsxy(d2I6_dexxdexy_, &
-      d2I6_dexydeyy_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, &
-      d2phi_dvdw_, d2phi_dw2_, dI5_dexx_, dI5_dexy_, dI5_deyy_, dI5_dezz_, &
+      d2I6_dexydeyy_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, &
+      d2wp_dI5dI6_, d2wp_dI62_, dI5_dexx_, dI5_dexy_, dI5_deyy_, dI5_dezz_, &
       dI6_dexx_, dI6_dexy_, dI6_deyy_, dI6_dezz_, dexx_depsxx_, &
-      dexy_depsxy_, deyy_depsxx_, dezz_depsxx_, dv_dvp_, dvp_dI5_, dw_dwp_, &
-      dwp_dI5_, dwp_dI6_, dphi_dw_)
+      dexy_depsxy_, deyy_depsxx_, dezz_depsxx_, dphi_dw_, dv_dvp_, dvp_dI5_, &
+      dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -5555,11 +5555,11 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_depsxxdepsyy_public = d2phi_depsxxdepsyy(d2I6_dexx2_, d2I6_deyy2_, &
-      d2I6_dezz2_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, &
-      d2phi_dvdw_, d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
+      d2I6_dezz2_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, &
+      d2wp_dI5dI6_, d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_dezz_, dexx_depsxx_, dexx_depsyy_, deyy_depsxx_, &
-      deyy_depsyy_, dezz_depsxx_, dezz_depsyy_, dv_dvp_, dvp_dI5_, dw_dwp_, &
-      dwp_dI5_, dwp_dI6_, dphi_dw_)
+      deyy_depsyy_, dezz_depsxx_, dezz_depsyy_, dphi_dw_, dv_dvp_, dvp_dI5_, &
+      dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -5666,11 +5666,11 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_depsxxdepsyz_public = d2phi_depsxxdepsyz(d2I6_deyydeyz_, &
-      d2I6_deyzdezz_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, &
-      d2phi_dvdw_, d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_deyz_, dI5_dezz_, &
+      d2I6_deyzdezz_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, &
+      d2wp_dI5dI6_, d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_deyz_, dI5_dezz_, &
       dI6_dexx_, dI6_deyy_, dI6_deyz_, dI6_dezz_, dexx_depsxx_, &
-      deyy_depsxx_, deyz_depsyz_, dezz_depsxx_, dv_dvp_, dvp_dI5_, dw_dwp_, &
-      dwp_dI5_, dwp_dI6_, dphi_dw_)
+      deyy_depsxx_, deyz_depsyz_, dezz_depsxx_, dphi_dw_, dv_dvp_, dvp_dI5_, &
+      dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -5777,11 +5777,11 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_depsxxdepszx_public = d2phi_depsxxdepszx(d2I6_dexxdezx_, &
-      d2I6_dezxdezz_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, &
-      d2phi_dvdw_, d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_dezx_, dI5_dezz_, &
+      d2I6_dezxdezz_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, &
+      d2wp_dI5dI6_, d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_dezx_, dI5_dezz_, &
       dI6_dexx_, dI6_deyy_, dI6_dezx_, dI6_dezz_, dexx_depsxx_, &
-      deyy_depsxx_, dezx_depszx_, dezz_depsxx_, dv_dvp_, dvp_dI5_, dw_dwp_, &
-      dwp_dI5_, dwp_dI6_, dphi_dw_)
+      deyy_depsxx_, dezx_depszx_, dezz_depsxx_, dphi_dw_, dv_dvp_, dvp_dI5_, &
+      dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -5890,11 +5890,11 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_depsxxdepszz_public = d2phi_depsxxdepszz(d2I6_dexx2_, d2I6_deyy2_, &
-      d2I6_dezz2_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, &
-      d2phi_dvdw_, d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
+      d2I6_dezz2_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, &
+      d2wp_dI5dI6_, d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_dezz_, dexx_depsxx_, dexx_depszz_, deyy_depsxx_, &
-      deyy_depszz_, dezz_depsxx_, dezz_depszz_, dv_dvp_, dvp_dI5_, dw_dwp_, &
-      dwp_dI5_, dwp_dI6_, dphi_dw_)
+      deyy_depszz_, dezz_depsxx_, dezz_depszz_, dphi_dw_, dv_dvp_, dvp_dI5_, &
+      dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -5969,7 +5969,7 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 dphi_depsxy_public = dphi_depsxy(dI5_dexy_, dI6_dexy_, dexy_depsxy_, &
-      dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
+      dphi_dv_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -6055,10 +6055,10 @@ dw_dwp_ = dw_dwp(w0)
 dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
-d2phi_depsxy2_public = d2phi_depsxy2(d2I6_dexy2_, d2wp_dI52_, d2wp_dI5dI6_, &
-      d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI5_dexy_, dI6_dexy_, &
-      dexy_depsxy_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, &
-      dphi_dw_)
+d2phi_depsxy2_public = d2phi_depsxy2(d2I6_dexy2_, d2phi_dv2_, d2phi_dvdw_, &
+      d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI5_dexy_, &
+      dI6_dexy_, dexy_depsxy_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, &
+      dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -6165,11 +6165,11 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_depsxydepsyy_public = d2phi_depsxydepsyy(d2I6_dexxdexy_, &
-      d2I6_dexydeyy_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, &
-      d2phi_dvdw_, d2phi_dw2_, dI5_dexx_, dI5_dexy_, dI5_deyy_, dI5_dezz_, &
+      d2I6_dexydeyy_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, &
+      d2wp_dI5dI6_, d2wp_dI62_, dI5_dexx_, dI5_dexy_, dI5_deyy_, dI5_dezz_, &
       dI6_dexx_, dI6_dexy_, dI6_deyy_, dI6_dezz_, dexx_depsyy_, &
-      dexy_depsxy_, deyy_depsyy_, dezz_depsyy_, dv_dvp_, dvp_dI5_, dw_dwp_, &
-      dwp_dI5_, dwp_dI6_, dphi_dw_)
+      dexy_depsxy_, deyy_depsyy_, dezz_depsyy_, dphi_dw_, dv_dvp_, dvp_dI5_, &
+      dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -6261,11 +6261,11 @@ dw_dwp_ = dw_dwp(w0)
 dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
-d2phi_depsxydepsyz_public = d2phi_depsxydepsyz(d2I6_dexydeyz_, d2wp_dI52_, &
-      d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
+d2phi_depsxydepsyz_public = d2phi_depsxydepsyz(d2I6_dexydeyz_, d2phi_dv2_, &
+      d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, &
       dI5_dexy_, dI5_deyz_, dI6_dexy_, dI6_deyz_, dexy_depsxy_, &
-      deyz_depsyz_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, &
-      dphi_dw_)
+      deyz_depsyz_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, &
+      dwp_dI6_)
 
 end function
 
@@ -6357,11 +6357,11 @@ dw_dwp_ = dw_dwp(w0)
 dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
-d2phi_depsxydepszx_public = d2phi_depsxydepszx(d2I6_dexydezx_, d2wp_dI52_, &
-      d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
+d2phi_depsxydepszx_public = d2phi_depsxydepszx(d2I6_dexydezx_, d2phi_dv2_, &
+      d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, &
       dI5_dexy_, dI5_dezx_, dI6_dexy_, dI6_dezx_, dexy_depsxy_, &
-      dezx_depszx_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, &
-      dphi_dw_)
+      dezx_depszx_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, &
+      dwp_dI6_)
 
 end function
 
@@ -6468,11 +6468,11 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_depsxydepszz_public = d2phi_depsxydepszz(d2I6_dexxdexy_, &
-      d2I6_dexydeyy_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, &
-      d2phi_dvdw_, d2phi_dw2_, dI5_dexx_, dI5_dexy_, dI5_deyy_, dI5_dezz_, &
+      d2I6_dexydeyy_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, &
+      d2wp_dI5dI6_, d2wp_dI62_, dI5_dexx_, dI5_dexy_, dI5_deyy_, dI5_dezz_, &
       dI6_dexx_, dI6_dexy_, dI6_deyy_, dI6_dezz_, dexx_depszz_, &
-      dexy_depsxy_, deyy_depszz_, dezz_depszz_, dv_dvp_, dvp_dI5_, dw_dwp_, &
-      dwp_dI5_, dwp_dI6_, dphi_dw_)
+      dexy_depsxy_, deyy_depszz_, dezz_depszz_, dphi_dw_, dv_dvp_, dvp_dI5_, &
+      dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -6560,7 +6560,7 @@ dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 dphi_depsyy_public = dphi_depsyy(dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_dezz_, dexx_depsyy_, deyy_depsyy_, dezz_depsyy_, &
-      dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
+      dphi_dv_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -6663,10 +6663,10 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_depsyy2_public = d2phi_depsyy2(d2I6_dexx2_, d2I6_deyy2_, d2I6_dezz2_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, dI6_deyy_, &
-      dI6_dezz_, dexx_depsyy_, deyy_depsyy_, dezz_depsyy_, dv_dvp_, &
-      dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dw_)
+      d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, &
+      d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, dI6_deyy_, &
+      dI6_dezz_, dexx_depsyy_, deyy_depsyy_, dezz_depsyy_, dphi_dw_, &
+      dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -6773,11 +6773,11 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_depsyydepsyz_public = d2phi_depsyydepsyz(d2I6_deyydeyz_, &
-      d2I6_deyzdezz_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, &
-      d2phi_dvdw_, d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_deyz_, dI5_dezz_, &
+      d2I6_deyzdezz_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, &
+      d2wp_dI5dI6_, d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_deyz_, dI5_dezz_, &
       dI6_dexx_, dI6_deyy_, dI6_deyz_, dI6_dezz_, dexx_depsyy_, &
-      deyy_depsyy_, deyz_depsyz_, dezz_depsyy_, dv_dvp_, dvp_dI5_, dw_dwp_, &
-      dwp_dI5_, dwp_dI6_, dphi_dw_)
+      deyy_depsyy_, deyz_depsyz_, dezz_depsyy_, dphi_dw_, dv_dvp_, dvp_dI5_, &
+      dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -6884,11 +6884,11 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_depsyydepszx_public = d2phi_depsyydepszx(d2I6_dexxdezx_, &
-      d2I6_dezxdezz_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, &
-      d2phi_dvdw_, d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_dezx_, dI5_dezz_, &
+      d2I6_dezxdezz_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, &
+      d2wp_dI5dI6_, d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_dezx_, dI5_dezz_, &
       dI6_dexx_, dI6_deyy_, dI6_dezx_, dI6_dezz_, dexx_depsyy_, &
-      deyy_depsyy_, dezx_depszx_, dezz_depsyy_, dv_dvp_, dvp_dI5_, dw_dwp_, &
-      dwp_dI5_, dwp_dI6_, dphi_dw_)
+      deyy_depsyy_, dezx_depszx_, dezz_depsyy_, dphi_dw_, dv_dvp_, dvp_dI5_, &
+      dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -6997,11 +6997,11 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_depsyydepszz_public = d2phi_depsyydepszz(d2I6_dexx2_, d2I6_deyy2_, &
-      d2I6_dezz2_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, &
-      d2phi_dvdw_, d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
+      d2I6_dezz2_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, &
+      d2wp_dI5dI6_, d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_dezz_, dexx_depsyy_, dexx_depszz_, deyy_depsyy_, &
-      deyy_depszz_, dezz_depsyy_, dezz_depszz_, dv_dvp_, dvp_dI5_, dw_dwp_, &
-      dwp_dI5_, dwp_dI6_, dphi_dw_)
+      deyy_depszz_, dezz_depsyy_, dezz_depszz_, dphi_dw_, dv_dvp_, dvp_dI5_, &
+      dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -7076,7 +7076,7 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 dphi_depsyz_public = dphi_depsyz(dI5_deyz_, dI6_deyz_, deyz_depsyz_, &
-      dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
+      dphi_dv_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -7162,10 +7162,10 @@ dw_dwp_ = dw_dwp(w0)
 dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
-d2phi_depsyz2_public = d2phi_depsyz2(d2I6_deyz2_, d2wp_dI52_, d2wp_dI5dI6_, &
-      d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI5_deyz_, dI6_deyz_, &
-      deyz_depsyz_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, &
-      dphi_dw_)
+d2phi_depsyz2_public = d2phi_depsyz2(d2I6_deyz2_, d2phi_dv2_, d2phi_dvdw_, &
+      d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI5_deyz_, &
+      dI6_deyz_, deyz_depsyz_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, &
+      dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -7257,11 +7257,11 @@ dw_dwp_ = dw_dwp(w0)
 dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
-d2phi_depsyzdepszx_public = d2phi_depsyzdepszx(d2I6_deyzdezx_, d2wp_dI52_, &
-      d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
+d2phi_depsyzdepszx_public = d2phi_depsyzdepszx(d2I6_deyzdezx_, d2phi_dv2_, &
+      d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, &
       dI5_deyz_, dI5_dezx_, dI6_deyz_, dI6_dezx_, deyz_depsyz_, &
-      dezx_depszx_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, &
-      dphi_dw_)
+      dezx_depszx_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, &
+      dwp_dI6_)
 
 end function
 
@@ -7368,11 +7368,11 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_depsyzdepszz_public = d2phi_depsyzdepszz(d2I6_deyydeyz_, &
-      d2I6_deyzdezz_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, &
-      d2phi_dvdw_, d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_deyz_, dI5_dezz_, &
+      d2I6_deyzdezz_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, &
+      d2wp_dI5dI6_, d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_deyz_, dI5_dezz_, &
       dI6_dexx_, dI6_deyy_, dI6_deyz_, dI6_dezz_, dexx_depszz_, &
-      deyy_depszz_, deyz_depsyz_, dezz_depszz_, dv_dvp_, dvp_dI5_, dw_dwp_, &
-      dwp_dI5_, dwp_dI6_, dphi_dw_)
+      deyy_depszz_, deyz_depsyz_, dezz_depszz_, dphi_dw_, dv_dvp_, dvp_dI5_, &
+      dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -7447,7 +7447,7 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 dphi_depszx_public = dphi_depszx(dI5_dezx_, dI6_dezx_, dezx_depszx_, &
-      dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
+      dphi_dv_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -7533,10 +7533,10 @@ dw_dwp_ = dw_dwp(w0)
 dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
-d2phi_depszx2_public = d2phi_depszx2(d2I6_dezx2_, d2wp_dI52_, d2wp_dI5dI6_, &
-      d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI5_dezx_, dI6_dezx_, &
-      dezx_depszx_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, &
-      dphi_dw_)
+d2phi_depszx2_public = d2phi_depszx2(d2I6_dezx2_, d2phi_dv2_, d2phi_dvdw_, &
+      d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI5_dezx_, &
+      dI6_dezx_, dezx_depszx_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, &
+      dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -7643,11 +7643,11 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_depszxdepszz_public = d2phi_depszxdepszz(d2I6_dexxdezx_, &
-      d2I6_dezxdezz_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, &
-      d2phi_dvdw_, d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_dezx_, dI5_dezz_, &
+      d2I6_dezxdezz_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, &
+      d2wp_dI5dI6_, d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_dezx_, dI5_dezz_, &
       dI6_dexx_, dI6_deyy_, dI6_dezx_, dI6_dezz_, dexx_depszz_, &
-      deyy_depszz_, dezx_depszx_, dezz_depszz_, dv_dvp_, dvp_dI5_, dw_dwp_, &
-      dwp_dI5_, dwp_dI6_, dphi_dw_)
+      deyy_depszz_, dezx_depszx_, dezz_depszz_, dphi_dw_, dv_dvp_, dvp_dI5_, &
+      dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -7735,7 +7735,7 @@ dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 dphi_depszz_public = dphi_depszz(dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_dezz_, dexx_depszz_, deyy_depszz_, dezz_depszz_, &
-      dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
+      dphi_dv_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -7838,10 +7838,10 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 
 d2phi_depszz2_public = d2phi_depszz2(d2I6_dexx2_, d2I6_deyy2_, d2I6_dezz2_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, dI6_deyy_, &
-      dI6_dezz_, dexx_depszz_, deyy_depszz_, dezz_depszz_, dv_dvp_, &
-      dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dw_)
+      d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, &
+      d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, dI6_deyy_, &
+      dI6_dezz_, dexx_depszz_, deyy_depszz_, dezz_depszz_, dphi_dw_, &
+      dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 end function
 
@@ -8861,15 +8861,15 @@ dw_dwp_ = dw_dwp(w0)
 dwp_dI4_ = dwp_dI4(I4_, I5_, I6_)
 dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
-dphi_dBx_ = dphi_dBx(dI4_dBx_, dI5_dBx_, dI6_dBx_, du_dup_, dup_dI4_, &
-      dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_, &
-      dphi_du_, dphi_dv_, dphi_dw_)
-dphi_dBy_ = dphi_dBy(dI4_dBy_, dI5_dBy_, dI6_dBy_, du_dup_, dup_dI4_, &
-      dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_, &
-      dphi_du_, dphi_dv_, dphi_dw_)
-dphi_dBz_ = dphi_dBz(dI4_dBz_, dI5_dBz_, dI6_dBz_, du_dup_, dup_dI4_, &
-      dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_, &
-      dphi_du_, dphi_dv_, dphi_dw_)
+dphi_dBx_ = dphi_dBx(dI4_dBx_, dI5_dBx_, dI6_dBx_, dphi_du_, dphi_dv_, &
+      dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
+      dwp_dI4_, dwp_dI5_, dwp_dI6_)
+dphi_dBy_ = dphi_dBy(dI4_dBy_, dI5_dBy_, dI6_dBy_, dphi_du_, dphi_dv_, &
+      dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
+      dwp_dI4_, dwp_dI5_, dwp_dI6_)
+dphi_dBz_ = dphi_dBz(dI4_dBz_, dI5_dBz_, dI6_dBz_, dphi_du_, dphi_dv_, &
+      dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
+      dwp_dI4_, dwp_dI5_, dwp_dI6_)
 
 call H(dphi_dBx_, dphi_dBy_, dphi_dBz_, H_out)
 
@@ -9033,45 +9033,45 @@ dw_dwp_ = dw_dwp(w0)
 dwp_dI4_ = dwp_dI4(I4_, I5_, I6_)
 dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
-d2phi_dBx2_ = d2phi_dBx2(d2I4_dBx2_, d2I5_dBx2_, d2I6_dBx2_, d2up_dI42_, &
-      d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, d2wp_dI4dI6_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_du2_, d2phi_dudv_, &
-      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI4_dBx_, dI5_dBx_, &
-      dI6_dBx_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
-      dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_du_, dphi_dv_, dphi_dw_)
-d2phi_dBxdBy_ = d2phi_dBxdBy(d2I5_dBxdBy_, d2I6_dBxdBy_, d2up_dI42_, &
-      d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, d2wp_dI4dI6_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_du2_, d2phi_dudv_, &
-      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI4_dBx_, dI4_dBy_, &
-      dI5_dBx_, dI5_dBy_, dI6_dBx_, dI6_dBy_, du_dup_, dup_dI4_, dv_dvp_, &
-      dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_du_, &
-      dphi_dv_, dphi_dw_)
-d2phi_dBxdBz_ = d2phi_dBxdBz(d2I5_dBxdBz_, d2I6_dBxdBz_, d2up_dI42_, &
-      d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, d2wp_dI4dI6_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_du2_, d2phi_dudv_, &
-      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI4_dBx_, dI4_dBz_, &
-      dI5_dBx_, dI5_dBz_, dI6_dBx_, dI6_dBz_, du_dup_, dup_dI4_, dv_dvp_, &
-      dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_du_, &
-      dphi_dv_, dphi_dw_)
-d2phi_dBy2_ = d2phi_dBy2(d2I4_dBy2_, d2I5_dBy2_, d2I6_dBy2_, d2up_dI42_, &
-      d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, d2wp_dI4dI6_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_du2_, d2phi_dudv_, &
-      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI4_dBy_, dI5_dBy_, &
-      dI6_dBy_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
-      dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_du_, dphi_dv_, dphi_dw_)
-d2phi_dBydBz_ = d2phi_dBydBz(d2I5_dBydBz_, d2I6_dBydBz_, d2up_dI42_, &
-      d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, d2wp_dI4dI6_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_du2_, d2phi_dudv_, &
-      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI4_dBy_, dI4_dBz_, &
-      dI5_dBy_, dI5_dBz_, dI6_dBy_, dI6_dBz_, du_dup_, dup_dI4_, dv_dvp_, &
-      dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_du_, &
-      dphi_dv_, dphi_dw_)
-d2phi_dBz2_ = d2phi_dBz2(d2I4_dBz2_, d2I5_dBz2_, d2I6_dBz2_, d2up_dI42_, &
-      d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, d2wp_dI4dI6_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_du2_, d2phi_dudv_, &
-      d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI4_dBz_, dI5_dBz_, &
-      dI6_dBz_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
-      dwp_dI4_, dwp_dI5_, dwp_dI6_, dphi_du_, dphi_dv_, dphi_dw_)
+d2phi_dBx2_ = d2phi_dBx2(d2I4_dBx2_, d2I5_dBx2_, d2I6_dBx2_, d2phi_du2_, &
+      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
+      d2up_dI42_, d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, &
+      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI4_dBx_, &
+      dI5_dBx_, dI6_dBx_, dphi_du_, dphi_dv_, dphi_dw_, du_dup_, dup_dI4_, &
+      dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_)
+d2phi_dBxdBy_ = d2phi_dBxdBy(d2I5_dBxdBy_, d2I6_dBxdBy_, d2phi_du2_, &
+      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
+      d2up_dI42_, d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, &
+      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI4_dBx_, &
+      dI4_dBy_, dI5_dBx_, dI5_dBy_, dI6_dBx_, dI6_dBy_, dphi_du_, dphi_dv_, &
+      dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
+      dwp_dI4_, dwp_dI5_, dwp_dI6_)
+d2phi_dBxdBz_ = d2phi_dBxdBz(d2I5_dBxdBz_, d2I6_dBxdBz_, d2phi_du2_, &
+      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
+      d2up_dI42_, d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, &
+      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI4_dBx_, &
+      dI4_dBz_, dI5_dBx_, dI5_dBz_, dI6_dBx_, dI6_dBz_, dphi_du_, dphi_dv_, &
+      dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
+      dwp_dI4_, dwp_dI5_, dwp_dI6_)
+d2phi_dBy2_ = d2phi_dBy2(d2I4_dBy2_, d2I5_dBy2_, d2I6_dBy2_, d2phi_du2_, &
+      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
+      d2up_dI42_, d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, &
+      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI4_dBy_, &
+      dI5_dBy_, dI6_dBy_, dphi_du_, dphi_dv_, dphi_dw_, du_dup_, dup_dI4_, &
+      dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_)
+d2phi_dBydBz_ = d2phi_dBydBz(d2I5_dBydBz_, d2I6_dBydBz_, d2phi_du2_, &
+      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
+      d2up_dI42_, d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, &
+      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI4_dBy_, &
+      dI4_dBz_, dI5_dBy_, dI5_dBz_, dI6_dBy_, dI6_dBz_, dphi_du_, dphi_dv_, &
+      dphi_dw_, du_dup_, dup_dI4_, dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, &
+      dwp_dI4_, dwp_dI5_, dwp_dI6_)
+d2phi_dBz2_ = d2phi_dBz2(d2I4_dBz2_, d2I5_dBz2_, d2I6_dBz2_, d2phi_du2_, &
+      d2phi_dudv_, d2phi_dudw_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
+      d2up_dI42_, d2vp_dI42_, d2vp_dI4dI5_, d2wp_dI42_, d2wp_dI4dI5_, &
+      d2wp_dI4dI6_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI4_dBz_, &
+      dI5_dBz_, dI6_dBz_, dphi_du_, dphi_dv_, dphi_dw_, du_dup_, dup_dI4_, &
+      dv_dvp_, dvp_dI4_, dvp_dI5_, dw_dwp_, dwp_dI4_, dwp_dI5_, dwp_dI6_)
 
 call dH_dB(d2phi_dBx2_, d2phi_dBy2_, d2phi_dBz2_, d2phi_dBxdBy_, &
       d2phi_dBxdBz_, d2phi_dBydBz_, dH_dB_out)
@@ -9198,19 +9198,19 @@ dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 dphi_depsxx_ = dphi_depsxx(dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_dezz_, dexx_depsxx_, deyy_depsxx_, dezz_depsxx_, &
-      dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
-dphi_depsxy_ = dphi_depsxy(dI5_dexy_, dI6_dexy_, dexy_depsxy_, dv_dvp_, &
-      dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
+      dphi_dv_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_)
+dphi_depsxy_ = dphi_depsxy(dI5_dexy_, dI6_dexy_, dexy_depsxy_, dphi_dv_, &
+      dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_)
 dphi_depsyy_ = dphi_depsyy(dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_dezz_, dexx_depsyy_, deyy_depsyy_, dezz_depsyy_, &
-      dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
-dphi_depsyz_ = dphi_depsyz(dI5_deyz_, dI6_deyz_, deyz_depsyz_, dv_dvp_, &
-      dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
-dphi_depszx_ = dphi_depszx(dI5_dezx_, dI6_dezx_, dezx_depszx_, dv_dvp_, &
-      dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
+      dphi_dv_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_)
+dphi_depsyz_ = dphi_depsyz(dI5_deyz_, dI6_deyz_, deyz_depsyz_, dphi_dv_, &
+      dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_)
+dphi_depszx_ = dphi_depszx(dI5_dezx_, dI6_dezx_, dezx_depszx_, dphi_dv_, &
+      dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_)
 dphi_depszz_ = dphi_depszz(dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_dezz_, dexx_depszz_, deyy_depszz_, dezz_depszz_, &
-      dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dv_, dphi_dw_)
+      dphi_dv_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 call S(dphi_depsxx_, dphi_depsyy_, dphi_depszz_, dphi_depsyz_, dphi_depszx_, &
       dphi_depsxy_, S_out)
@@ -9391,119 +9391,119 @@ dw_dwp_ = dw_dwp(w0)
 dwp_dI5_ = dwp_dI5(I4_, I5_, I6_)
 dwp_dI6_ = dwp_dI6(I4_, I5_, I6_)
 d2phi_depsxx2_ = d2phi_depsxx2(d2I6_dexx2_, d2I6_deyy2_, d2I6_dezz2_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, dI6_deyy_, &
-      dI6_dezz_, dexx_depsxx_, deyy_depsxx_, dezz_depsxx_, dv_dvp_, &
-      dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dw_)
+      d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, &
+      d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, dI6_deyy_, &
+      dI6_dezz_, dexx_depsxx_, deyy_depsxx_, dezz_depsxx_, dphi_dw_, &
+      dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_)
 d2phi_depsxxdepsxy_ = d2phi_depsxxdepsxy(d2I6_dexxdexy_, d2I6_dexydeyy_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI5_dexx_, dI5_dexy_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
+      d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, &
+      d2wp_dI62_, dI5_dexx_, dI5_dexy_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
       dI6_dexy_, dI6_deyy_, dI6_dezz_, dexx_depsxx_, dexy_depsxy_, &
-      deyy_depsxx_, dezz_depsxx_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, &
-      dwp_dI6_, dphi_dw_)
+      deyy_depsxx_, dezz_depsxx_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, &
+      dwp_dI5_, dwp_dI6_)
 d2phi_depsxxdepsyy_ = d2phi_depsxxdepsyy(d2I6_dexx2_, d2I6_deyy2_, &
-      d2I6_dezz2_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, &
-      d2phi_dvdw_, d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
+      d2I6_dezz2_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, &
+      d2wp_dI5dI6_, d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_dezz_, dexx_depsxx_, dexx_depsyy_, deyy_depsxx_, &
-      deyy_depsyy_, dezz_depsxx_, dezz_depsyy_, dv_dvp_, dvp_dI5_, dw_dwp_, &
-      dwp_dI5_, dwp_dI6_, dphi_dw_)
+      deyy_depsyy_, dezz_depsxx_, dezz_depsyy_, dphi_dw_, dv_dvp_, dvp_dI5_, &
+      dw_dwp_, dwp_dI5_, dwp_dI6_)
 d2phi_depsxxdepsyz_ = d2phi_depsxxdepsyz(d2I6_deyydeyz_, d2I6_deyzdezz_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_deyz_, dI5_dezz_, dI6_dexx_, &
+      d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, &
+      d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_deyz_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_deyz_, dI6_dezz_, dexx_depsxx_, deyy_depsxx_, &
-      deyz_depsyz_, dezz_depsxx_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, &
-      dwp_dI6_, dphi_dw_)
+      deyz_depsyz_, dezz_depsxx_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, &
+      dwp_dI5_, dwp_dI6_)
 d2phi_depsxxdepszx_ = d2phi_depsxxdepszx(d2I6_dexxdezx_, d2I6_dezxdezz_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_dezx_, dI5_dezz_, dI6_dexx_, &
+      d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, &
+      d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_dezx_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_dezx_, dI6_dezz_, dexx_depsxx_, deyy_depsxx_, &
-      dezx_depszx_, dezz_depsxx_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, &
-      dwp_dI6_, dphi_dw_)
+      dezx_depszx_, dezz_depsxx_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, &
+      dwp_dI5_, dwp_dI6_)
 d2phi_depsxxdepszz_ = d2phi_depsxxdepszz(d2I6_dexx2_, d2I6_deyy2_, &
-      d2I6_dezz2_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, &
-      d2phi_dvdw_, d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
+      d2I6_dezz2_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, &
+      d2wp_dI5dI6_, d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_dezz_, dexx_depsxx_, dexx_depszz_, deyy_depsxx_, &
-      deyy_depszz_, dezz_depsxx_, dezz_depszz_, dv_dvp_, dvp_dI5_, dw_dwp_, &
-      dwp_dI5_, dwp_dI6_, dphi_dw_)
-d2phi_depsxy2_ = d2phi_depsxy2(d2I6_dexy2_, d2wp_dI52_, d2wp_dI5dI6_, &
-      d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI5_dexy_, dI6_dexy_, &
-      dexy_depsxy_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, &
-      dphi_dw_)
+      deyy_depszz_, dezz_depsxx_, dezz_depszz_, dphi_dw_, dv_dvp_, dvp_dI5_, &
+      dw_dwp_, dwp_dI5_, dwp_dI6_)
+d2phi_depsxy2_ = d2phi_depsxy2(d2I6_dexy2_, d2phi_dv2_, d2phi_dvdw_, &
+      d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI5_dexy_, &
+      dI6_dexy_, dexy_depsxy_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, &
+      dwp_dI5_, dwp_dI6_)
 d2phi_depsxydepsyy_ = d2phi_depsxydepsyy(d2I6_dexxdexy_, d2I6_dexydeyy_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI5_dexx_, dI5_dexy_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
+      d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, &
+      d2wp_dI62_, dI5_dexx_, dI5_dexy_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
       dI6_dexy_, dI6_deyy_, dI6_dezz_, dexx_depsyy_, dexy_depsxy_, &
-      deyy_depsyy_, dezz_depsyy_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, &
-      dwp_dI6_, dphi_dw_)
-d2phi_depsxydepsyz_ = d2phi_depsxydepsyz(d2I6_dexydeyz_, d2wp_dI52_, &
-      d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
+      deyy_depsyy_, dezz_depsyy_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, &
+      dwp_dI5_, dwp_dI6_)
+d2phi_depsxydepsyz_ = d2phi_depsxydepsyz(d2I6_dexydeyz_, d2phi_dv2_, &
+      d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, &
       dI5_dexy_, dI5_deyz_, dI6_dexy_, dI6_deyz_, dexy_depsxy_, &
-      deyz_depsyz_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, &
-      dphi_dw_)
-d2phi_depsxydepszx_ = d2phi_depsxydepszx(d2I6_dexydezx_, d2wp_dI52_, &
-      d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
+      deyz_depsyz_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, &
+      dwp_dI6_)
+d2phi_depsxydepszx_ = d2phi_depsxydepszx(d2I6_dexydezx_, d2phi_dv2_, &
+      d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, &
       dI5_dexy_, dI5_dezx_, dI6_dexy_, dI6_dezx_, dexy_depsxy_, &
-      dezx_depszx_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, &
-      dphi_dw_)
+      dezx_depszx_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, &
+      dwp_dI6_)
 d2phi_depsxydepszz_ = d2phi_depsxydepszz(d2I6_dexxdexy_, d2I6_dexydeyy_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI5_dexx_, dI5_dexy_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
+      d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, &
+      d2wp_dI62_, dI5_dexx_, dI5_dexy_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
       dI6_dexy_, dI6_deyy_, dI6_dezz_, dexx_depszz_, dexy_depsxy_, &
-      deyy_depszz_, dezz_depszz_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, &
-      dwp_dI6_, dphi_dw_)
+      deyy_depszz_, dezz_depszz_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, &
+      dwp_dI5_, dwp_dI6_)
 d2phi_depsyy2_ = d2phi_depsyy2(d2I6_dexx2_, d2I6_deyy2_, d2I6_dezz2_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, dI6_deyy_, &
-      dI6_dezz_, dexx_depsyy_, deyy_depsyy_, dezz_depsyy_, dv_dvp_, &
-      dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dw_)
+      d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, &
+      d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, dI6_deyy_, &
+      dI6_dezz_, dexx_depsyy_, deyy_depsyy_, dezz_depsyy_, dphi_dw_, &
+      dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_)
 d2phi_depsyydepsyz_ = d2phi_depsyydepsyz(d2I6_deyydeyz_, d2I6_deyzdezz_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_deyz_, dI5_dezz_, dI6_dexx_, &
+      d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, &
+      d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_deyz_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_deyz_, dI6_dezz_, dexx_depsyy_, deyy_depsyy_, &
-      deyz_depsyz_, dezz_depsyy_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, &
-      dwp_dI6_, dphi_dw_)
+      deyz_depsyz_, dezz_depsyy_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, &
+      dwp_dI5_, dwp_dI6_)
 d2phi_depsyydepszx_ = d2phi_depsyydepszx(d2I6_dexxdezx_, d2I6_dezxdezz_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_dezx_, dI5_dezz_, dI6_dexx_, &
+      d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, &
+      d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_dezx_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_dezx_, dI6_dezz_, dexx_depsyy_, deyy_depsyy_, &
-      dezx_depszx_, dezz_depsyy_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, &
-      dwp_dI6_, dphi_dw_)
+      dezx_depszx_, dezz_depsyy_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, &
+      dwp_dI5_, dwp_dI6_)
 d2phi_depsyydepszz_ = d2phi_depsyydepszz(d2I6_dexx2_, d2I6_deyy2_, &
-      d2I6_dezz2_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, &
-      d2phi_dvdw_, d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
+      d2I6_dezz2_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, &
+      d2wp_dI5dI6_, d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_dezz_, dexx_depsyy_, dexx_depszz_, deyy_depsyy_, &
-      deyy_depszz_, dezz_depsyy_, dezz_depszz_, dv_dvp_, dvp_dI5_, dw_dwp_, &
-      dwp_dI5_, dwp_dI6_, dphi_dw_)
-d2phi_depsyz2_ = d2phi_depsyz2(d2I6_deyz2_, d2wp_dI52_, d2wp_dI5dI6_, &
-      d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI5_deyz_, dI6_deyz_, &
-      deyz_depsyz_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, &
-      dphi_dw_)
-d2phi_depsyzdepszx_ = d2phi_depsyzdepszx(d2I6_deyzdezx_, d2wp_dI52_, &
-      d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, &
+      deyy_depszz_, dezz_depsyy_, dezz_depszz_, dphi_dw_, dv_dvp_, dvp_dI5_, &
+      dw_dwp_, dwp_dI5_, dwp_dI6_)
+d2phi_depsyz2_ = d2phi_depsyz2(d2I6_deyz2_, d2phi_dv2_, d2phi_dvdw_, &
+      d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI5_deyz_, &
+      dI6_deyz_, deyz_depsyz_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, &
+      dwp_dI5_, dwp_dI6_)
+d2phi_depsyzdepszx_ = d2phi_depsyzdepszx(d2I6_deyzdezx_, d2phi_dv2_, &
+      d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, &
       dI5_deyz_, dI5_dezx_, dI6_deyz_, dI6_dezx_, deyz_depsyz_, &
-      dezx_depszx_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, &
-      dphi_dw_)
+      dezx_depszx_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, &
+      dwp_dI6_)
 d2phi_depsyzdepszz_ = d2phi_depsyzdepszz(d2I6_deyydeyz_, d2I6_deyzdezz_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_deyz_, dI5_dezz_, dI6_dexx_, &
+      d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, &
+      d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_deyz_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_deyz_, dI6_dezz_, dexx_depszz_, deyy_depszz_, &
-      deyz_depsyz_, dezz_depszz_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, &
-      dwp_dI6_, dphi_dw_)
-d2phi_depszx2_ = d2phi_depszx2(d2I6_dezx2_, d2wp_dI52_, d2wp_dI5dI6_, &
-      d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, dI5_dezx_, dI6_dezx_, &
-      dezx_depszx_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, &
-      dphi_dw_)
+      deyz_depsyz_, dezz_depszz_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, &
+      dwp_dI5_, dwp_dI6_)
+d2phi_depszx2_ = d2phi_depszx2(d2I6_dezx2_, d2phi_dv2_, d2phi_dvdw_, &
+      d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, dI5_dezx_, &
+      dI6_dezx_, dezx_depszx_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, &
+      dwp_dI5_, dwp_dI6_)
 d2phi_depszxdepszz_ = d2phi_depszxdepszz(d2I6_dexxdezx_, d2I6_dezxdezz_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_dezx_, dI5_dezz_, dI6_dexx_, &
+      d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, &
+      d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_dezx_, dI5_dezz_, dI6_dexx_, &
       dI6_deyy_, dI6_dezx_, dI6_dezz_, dexx_depszz_, deyy_depszz_, &
-      dezx_depszx_, dezz_depszz_, dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, &
-      dwp_dI6_, dphi_dw_)
+      dezx_depszx_, dezz_depszz_, dphi_dw_, dv_dvp_, dvp_dI5_, dw_dwp_, &
+      dwp_dI5_, dwp_dI6_)
 d2phi_depszz2_ = d2phi_depszz2(d2I6_dexx2_, d2I6_deyy2_, d2I6_dezz2_, &
-      d2wp_dI52_, d2wp_dI5dI6_, d2wp_dI62_, d2phi_dv2_, d2phi_dvdw_, &
-      d2phi_dw2_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, dI6_deyy_, &
-      dI6_dezz_, dexx_depszz_, deyy_depszz_, dezz_depszz_, dv_dvp_, &
-      dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_, dphi_dw_)
+      d2phi_dv2_, d2phi_dvdw_, d2phi_dw2_, d2wp_dI52_, d2wp_dI5dI6_, &
+      d2wp_dI62_, dI5_dexx_, dI5_deyy_, dI5_dezz_, dI6_dexx_, dI6_deyy_, &
+      dI6_dezz_, dexx_depszz_, deyy_depszz_, dezz_depszz_, dphi_dw_, &
+      dv_dvp_, dvp_dI5_, dw_dwp_, dwp_dI5_, dwp_dI6_)
 
 call dS_deps(d2phi_depsxx2_, d2phi_depsyy2_, d2phi_depszz2_, d2phi_depsyz2_, &
       d2phi_depszx2_, d2phi_depsxy2_, d2phi_depsxxdepsxy_, &
