@@ -18,68 +18,74 @@
 ! The potential ϕ, 2-parameter model.
 
 interface
-pure REAL*8 function phi(u, v,
+pure REAL(KIND=dp) function phi(u, v,
                          young_E, poisson_nu)
+use types
 implicit none
-REAL*8, intent(in) :: u
-REAL*8, intent(in) :: v
-REAL*8, intent(in) :: young_E
-REAL*8, intent(in) :: poisson_nu
+REAL(KIND=dp), intent(in) :: u
+REAL(KIND=dp), intent(in) :: v
+REAL(KIND=dp), intent(in) :: young_E
+REAL(KIND=dp), intent(in) :: poisson_nu
 end function
 end interface
 
 interface
-pure REAL*8 function dphi_du(u, v,
+pure REAL(KIND=dp) function dphi_du(u, v,
                              young_E, poisson_nu)
+use types
 implicit none
-REAL*8, intent(in) :: u
-REAL*8, intent(in) :: v
-REAL*8, intent(in) :: young_E
-REAL*8, intent(in) :: poisson_nu
+REAL(KIND=dp), intent(in) :: u
+REAL(KIND=dp), intent(in) :: v
+REAL(KIND=dp), intent(in) :: young_E
+REAL(KIND=dp), intent(in) :: poisson_nu
 end function
 end interface
 
 interface
-pure REAL*8 function dphi_dv(u, v,
+pure REAL(KIND=dp) function dphi_dv(u, v,
                              young_E, poisson_nu)
+use types
 implicit none
-REAL*8, intent(in) :: u
-REAL*8, intent(in) :: v
-REAL*8, intent(in) :: young_E
-REAL*8, intent(in) :: poisson_nu
+REAL(KIND=dp), intent(in) :: u
+REAL(KIND=dp), intent(in) :: v
+REAL(KIND=dp), intent(in) :: young_E
+REAL(KIND=dp), intent(in) :: poisson_nu
 end function
 end interface
 
 interface
-pure REAL*8 function d2phi_du2(u, v,
+pure REAL(KIND=dp) function d2phi_du2(u, v,
                                young_E, poisson_nu)
+use types
 implicit none
-REAL*8, intent(in) :: u
-REAL*8, intent(in) :: v
-REAL*8, intent(in) :: young_E
-REAL*8, intent(in) :: poisson_nu
+REAL(KIND=dp), intent(in) :: u
+REAL(KIND=dp), intent(in) :: v
+REAL(KIND=dp), intent(in) :: young_E
+REAL(KIND=dp), intent(in) :: poisson_nu
 end function
 end interface
 
 interface
-pure REAL*8 function d2phi_dudv(u, v,
+pure REAL(KIND=dp) function d2phi_dudv(u, v,
                                 young_E, poisson_nu)
+use types
 implicit none
-REAL*8, intent(in) :: u
-REAL*8, intent(in) :: v
-REAL*8, intent(in) :: young_E
-REAL*8, intent(in) :: poisson_nu
+REAL(KIND=dp), intent(in) :: u
+REAL(KIND=dp), intent(in) :: v
+REAL(KIND=dp), intent(in) :: young_E
+REAL(KIND=dp), intent(in) :: poisson_nu
 end function
 end interface
 
 interface
-pure REAL*8 function d2phi_dv2(u, v,
+pure REAL(KIND=dp) function d2phi_dv2(u, v,
                                young_E, poisson_nu)
+use types
 implicit none
-REAL*8, intent(in) :: u
-REAL*8, intent(in) :: v
-REAL*8, intent(in) :: young_E
-REAL*8, intent(in) :: poisson_nu
+REAL(KIND=dp), intent(in) :: u
+REAL(KIND=dp), intent(in) :: v
+REAL(KIND=dp), intent(in) :: young_E
+REAL(KIND=dp), intent(in) :: poisson_nu
 end function
 end interface
 

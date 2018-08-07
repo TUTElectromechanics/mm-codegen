@@ -14,27 +14,31 @@
 
 interface
   subroutine mgs_H(B1, B2, B3, e11, e12, e13, e21, e22, e23, e31, e32, e33, h)
+    use types
     implicit none
-    real*8, intent(in) :: B1, B2, B3, e11, e12, e13, e21, e22, e23, e31, e32, e33
-    real*8, intent(out), dimension(1:3, 1:1) :: h
+    REAL(KIND=dp), intent(in) :: B1, B2, B3, e11, e12, e13, e21, e22, e23, e31, e32, e33
+    REAL(KIND=dp), intent(out), dimension(1:3, 1:1) :: h
   end subroutine
 
   subroutine mgs_dHdB(B1, B2, B3, e11, e12, e13, e21, e22, e23, e31, e32, e33, dhdb)
+    use types
     implicit none
-    real*8, intent(in) :: B1, B2, B3, e11, e12, e13, e21, e22, e23, e31, e32, e33
-    real*8, intent(out), dimension(1:3, 1:3) :: dhdb
+    REAL(KIND=dp), intent(in) :: B1, B2, B3, e11, e12, e13, e21, e22, e23, e31, e32, e33
+    REAL(KIND=dp), intent(out), dimension(1:3, 1:3) :: dhdb
   end subroutine
 
-  subroutine mgs_S(B1, B2, B3, young, e11, e12, e13, e21, e22, e23, e31, e32, e33, poisson, sigma)
+  subroutine mgs_S(B1, B2, B3, e11, e12, e13, e21, e22, e23, e31, e32, e33, sigma)
+    use types
     implicit none
-    real*8, intent(in) :: B1, B2, B3, young, e11, e12, e13, e21, e22, e23, e31, e32, e33, poisson
-    real*8, intent(out), dimension(1:3, 1:3) :: sigma
+    REAL(KIND=dp), intent(in) :: B1, B2, B3, e11, e12, e13, e21, e22, e23, e31, e32, e33
+    REAL(KIND=dp), intent(out), dimension(1:3, 1:3) :: sigma
   end subroutine
 
-  subroutine mgs_dSde(B1, B2, B3, young, e11, e12, e13, e21, e22, e23, e31, e32, e33, poisson, dsde)
+  subroutine mgs_dSde(B1, B2, B3, e11, e12, e13, e21, e22, e23, e31, e32, e33, dsde)
+    use types
     implicit none
-    real*8, intent(in) :: B1, B2, B3, e11, e12, e13, e21, e22, e23, e31, e32, e33, young, poisson
-    real*8, intent(out), dimension(1:9, 1:9) :: dsde
+    REAL(KIND=dp), intent(in) :: B1, B2, B3, e11, e12, e13, e21, e22, e23, e31, e32, e33
+    REAL(KIND=dp), intent(out), dimension(1:9, 1:9) :: dsde
   end subroutine
 end interface
 
