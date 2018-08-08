@@ -151,7 +151,7 @@ class CodeGenerator:
         """Finalize the output source code.
 
          - Add "use types" for Elmer.
-         - Change numeric literals "123.456d0" to "123.456_dp".
+         - Change numeric literals "123.456d0" to "123.456e0_dp".
          - Change "REAL*8" to "REAL(KIND=dp)".
         """
         def add_usetypes(text):
@@ -201,7 +201,7 @@ class CodeGenerator:
             return "\n".join(out)
 
         content = add_usetypes(content)
-        content = re.sub(r"([0-9.]+)[Dd]0", r"\1_dp", content)
+        content = re.sub(r"([0-9.]+)[DdEe]([+-]?[0-9]+)", r"\1e\2_dp", content)
         content = re.sub(r"REAL\*8", r"REAL(KIND=dp)", content)
         return content
 
