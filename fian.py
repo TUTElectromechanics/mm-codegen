@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """A very simplistic Fortran interface analyzer. Used by stage2."""
 
+import re
+
 def analyze_interface(code):
     """Extract function call dependencies from a Fortran interface.
 
