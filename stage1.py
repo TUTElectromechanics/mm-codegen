@@ -40,7 +40,6 @@ import sympy as sy
 from sympy.utilities.codegen import codegen  # not imported by default
 
 import symutil
-import util
 
 from modelbase import ModelBase
 
@@ -155,7 +154,7 @@ class CodeGenerator:
          - Change "REAL*8" to "REAL(KIND=dp)".
         """
         def add_usetypes(text):
-            # TODO: get rid of this stage2 copypasta
+            # TODO: get rid of this fian.py copypasta
             def header_starts(line):  # TODO: now requires exactly one space after "end"
                 for objtype in ("function", "subroutine"):
                     p_notend = r"(?<!\bend\b\s)"  # (?<!...) is "match if not preceded by" (see help(re))
