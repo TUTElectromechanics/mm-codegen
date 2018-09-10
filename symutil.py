@@ -101,10 +101,7 @@ def nameof_as_symbol(sym):
     completely faithfully, as these datatypes are *intended* to have
     different behavior.
     """
-    if hasattr(sym, "name"):
-        return sy.symbols(sym.name, **sym.assumptions0)
-    else:  # e.g. an undefined function has no name, but its *class* has a __name__.
-        return sy.symbols(sym.__class__.__name__, **sym.assumptions0)
+    return sy.symbols(nameof(sym), **sym.assumptions0)
 
 def strip_function_arguments(expr):
     """Strip argument lists from unknown functions in ``expr``.
@@ -124,7 +121,6 @@ def strip_function_arguments(expr):
     # is an instance of UndefinedFunction.
     #
     # This pattern is specific to UndefinedFunctions, so we implement manually.
-
     if isinstance(expr.__class__, UndefinedFunction):
         return nameof_as_symbol(expr)  # don't bother recursing into args since they get deleted here
     elif expr.is_Atom:
@@ -154,7 +150,7 @@ def canonize_derivative(expr):
     out.extend(sorted(vs, key=sortkey))
 
     cls = type(expr)
-    return cls(*out, evaluate=False)  # FIXME: how to better handle the evaluate flag?
+    return cls(*out, evaluate=False)
 
 def derivatives_needed_by(expr, canonize=True):
     """Return a list describing derivatives ``expr`` needs.
@@ -223,7 +219,7 @@ def map_instancesof_in(func, cls, expr):
         return func(expr) if isinstance(expr, cls) else expr
     else:
         # note order of processing: we must do args first, then expr itself
-        out = [map_instancesof_in(func, cls, x) for x in expr.args]
+        out = (map_instancesof_in(func, cls, x) for x in expr.args)
         expr_cls = type(expr)
         # TODO: do we need to copy also something other than assumptions here?
         tmp = expr_cls(*out, **expr.assumptions0)
@@ -264,8 +260,7 @@ def derivatives_to_names_in(expr, as_fortran_identifier=False):
     """
     def rename(expr):
         expr = strip_function_arguments(expr)
-        fname  = str(expr.args[0])
-        vnames = [str(arg) for arg in expr.args[1:]]
+        fname, *vnames  = (str(arg) for arg in expr.args)
         # we must return an Expr, so wrap the identifier in a Symbol
         return sy.symbols(name_derivative(fname, vnames, as_fortran_identifier=as_fortran_identifier))
     return map_instancesof_in(rename, sy.Derivative, expr)
