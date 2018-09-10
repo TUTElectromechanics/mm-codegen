@@ -108,7 +108,8 @@ class Model(PotentialModelBase):
         ϕ_mech = I1_term + I2_term
 
         # magnetostrictive contribution
-        nα, nβ, nγ = 11, 1, 1
+#        nα, nβ, nγ = 3, 3, 3  # DEBUG
+        nα, nβ, nγ = 11, 1, 1  # Umair's values for Galfenol (INRiM 2018)
         i0 = 1  # index start value **in the definition of ϕ itself**
         *αs, = sy.symbols("α{:d}:{:d}".format(i0, i0+nα))  # comma to make tuple context
         *βs, = sy.symbols("β{:d}:{:d}".format(i0, i0+nβ))
@@ -134,6 +135,11 @@ class Model(PotentialModelBase):
                     3.463586e-04)
         βvalues = (6.103795e+00,)
         γvalues = (1.448762e+01,)
+
+#        # DEBUG
+#        αvalues = (1,) * nα
+#        βvalues = (1,) * nβ
+#        γvalues = (1,) * nγ
 
         # Undo the scaling (the parameters are originally scaled to ease fitting).
         #
