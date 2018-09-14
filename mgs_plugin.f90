@@ -64,9 +64,6 @@ subroutine mgs_dSde(B1, B2, B3, e11, e12, e13, e21, e22, e23, e31, e32, e33, dsd
   REAL(KIND=dp), intent(out), dimension(1:9, 1:9) :: dsde_out
   REAL(KIND=dp) c1, c2
   INTEGER :: n, m
-  ! Doesn't need ε (linear elasticity!), so no need to convert the input.
-  call dS_deps_public(B1, B2, B3, dsde_out)
-  ! Convert the shear-related entries of ∂σij/∂εkl.
   ! These index packing constants come from mgs_physfields.f90.
   integer, parameter :: i11 = 1
   integer, parameter :: i21 = 2
@@ -77,6 +74,9 @@ subroutine mgs_dSde(B1, B2, B3, e11, e12, e13, e21, e22, e23, e31, e32, e33, dsd
   integer, parameter :: i13 = 7
   integer, parameter :: i23 = 8
   integer, parameter :: i33 = 9
+  ! Doesn't need ε (linear elasticity!), so no need to convert the input.
+  call dS_deps_public(B1, B2, B3, dsde_out)
+  ! Convert the shear-related entries of ∂σij/∂εkl.
   do n = 1, 9    ! packed index of σij
     if (n == i11 .or. n == i22 .or. n == i33) then
       c1 = 1d0
